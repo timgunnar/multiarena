@@ -1,46 +1,46 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为 Claude Code（claude.ai/code）在此仓库中工作时提供指引。
 
-## Project
+## 项目
 
-A terminal-native multi-model AI coding assistant. Users chat with multiple LLMs simultaneously, compare answers, and select the best solution for file edits and shell commands.
+一个终端原生的多模型 AI 编程助手。用户同时与多个大模型对话，对比回答，选择最佳方案来编辑文件和执行命令。
 
-**Core differentiator:** Not bound to a single provider. Every turn runs through N models concurrently.
+**核心差异化：** 不绑定单一供应商。每轮对话同时跑 N 个模型。
 
-## Tech Stack
+## 技术栈
 
-- TypeScript, Node.js
-- Terminal UI: Ink (React for terminal)
-- Distribution: npm
+- TypeScript、Node.js
+- 终端 UI：Ink（基于 React 的终端渲染框架）
+- 分发方式：npm
 
-## Architecture (4 layers)
+## 架构（四层）
 
 ```
-UI (Ink/React) → Core (Session / Stream / Task) → Provider (unified interface + adapters) → Tool Runtime
+UI 层（Ink/React） → Core 层（会话 / 流调度 / 任务） → Provider 层（统一接口 + 适配器） → 工具运行时
 ```
 
-- **UI:** Render only. Three-zone fixed layout: top status bar (model list), scrollable output area, bottom input bar.
-- **Core:** Multi-model orchestration, per-model conversation history, streaming dispatch, structured proposal management.
-- **Provider:** Normalize different LLM APIs (Anthropic, OpenAI, Google, local) into a single interface. Streaming and tool calling are adapter responsibilities.
-- **Tool:** File/shell operations with permission control.
+- **UI：** 只管渲染。三区固定布局：顶部状态条（模型列表）、中间可滚动输出区、底部输入栏。
+- **Core：** 多模型编排、每个模型独立对话历史、流式分发、结构化提案管理。
+- **Provider：** 将不同 LLM API（Anthropic、OpenAI、Google、本地模型）归一到统一接口。流式输出和工具调用的格式转换由各适配器负责。
+- **工具：** 文件/Shell 操作，带权限控制。
 
-## Key Design Decisions
+## 关键设计决策
 
-- **Interaction:** Tab cycles the conversation target (model prefix in input bar). Output area switches to the selected model's full-width detail. No animations/flickers.
-- **Message routing:** Default broadcasts to all models. Selecting a specific model via Tab sends only to that model.
-- **Conversation history:** Each model maintains independent history. Broadcast messages append to all; directed messages append only to the target.
-- **File isolation:** Each model works in its own `git worktree` — no shared filesystem, no conflicts, clean diffs.
-- **Divergence detection:** Code blocks and tool calls only (AST/text diff + structured comparison). Natural language is not auto-analyzed.
+- **交互方式：** Tab 循环切换对话目标（输入栏前缀变化），输出区联动切换到对应模型的全宽详情。无动画、无闪烁。
+- **消息路由：** 默认广播给所有模型。通过 Tab 选择特定模型时，消息只发给该模型。
+- **对话历史：** 每个模型独立维护历史。广播消息追加到所有历史，定向消息只追加到目标模型。
+- **文件隔离：** 每个模型运行在独立的 `git worktree` 中 — 无共享文件系统，无冲突，干净的 Diff。
+- **差异检测：** 仅对代码块和工具调用做自动标记（AST / 文本 Diff + 结构化对比）。自然语言不做自动分析。
 
-## Design Spec
+## 设计文档
 
-`docs/superpowers/specs/2026-05-22-multi-model-cli-design.md` — the full spec (Chinese). Currently in design phase; no code written yet.
+`docs/superpowers/specs/2026-05-22-multi-model-cli-design.md` — 完整设计说明。当前处于设计阶段，尚未开始编码。
 
-## Open
+## 待讨论
 
-- Provider unified interface (streaming + tool call normalization)
-- Tool execution model (shared results vs per-model invocation)
-- Config format and session persistence
-- Permission granularity
-- Product name
+- Provider 统一接口设计（流式输出、工具调用归一化）
+- 工具执行模式（各模型共享结果还是各自调用）
+- 配置文件格式和会话持久化方案
+- 权限系统粒度
+- 产品名称
