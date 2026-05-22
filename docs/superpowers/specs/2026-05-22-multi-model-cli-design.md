@@ -1,100 +1,100 @@
-# Multi-Model CLI AI Coding Assistant — Design Spec (WIP)
+# 多模型 CLI AI 编程助手 — 设计说明（进行中）
 
-**Date:** 2026-05-22  
-**Status:** In Progress (completed: project vision, tech stack, display model, architecture, file isolation)
-
----
-
-## Project Vision
-
-A terminal-native, multi-model AI coding assistant. Users chat with multiple LLMs simultaneously, compare their answers side-by-side, and when executing tasks, review structured proposals from each model and pick the best solution.
-
-**Core differentiator from Claude Code:** Not bound to a single provider. Every turn runs through N models concurrently, turning model selection from a pre-choice into a post-comparison.
+**日期：** 2026-05-22  
+**状态：** 进行中（已完成：项目愿景、技术栈、展示模式、架构、文件隔离）
 
 ---
 
-## Target Audience
+## 项目愿景
 
-Open-source developers. Distributed via npm. `npm install -g <name>` to get started.
+一个终端原生的多模型 AI 编程助手。用户可以同时与多个大模型对话，并排对比它们的回答；执行任务时，以结构化提案的形式审查每个模型的方案，选择最佳结果。
 
----
-
-## Tech Stack
-
-- **Language:** TypeScript
-- **Runtime:** Node.js
-- **Terminal UI:** Ink (React for terminal)
-- **Distribution:** npm
+**与 Claude Code 的核心差异：** 不绑定单一供应商。每轮对话同时跑 N 个模型，把"事先选模型"变成"事后比结果"。
 
 ---
 
-## Display Model (Mixed-Mode)
+## 目标用户
 
-### Chat Mode — Compact Streaming Panels
-
-The terminal splits horizontally into N columns, one per model. All models stream tokens simultaneously, visible in real time.
-
-- `Tab` / `1/2/3` — expand one model to full screen
-- `d` — diff the focused model's output against another
-- Color-coded per model
-
-### Task Mode — Structured Proposal Comparison
-
-When models propose file edits or shell commands, the UI switches to a proposal view:
-
-- Side-by-side diffs per file, per model
-- Accept/reject per proposal (not all-or-nothing)
-- Conflict detection when multiple models touch the same region
+开源开发者。通过 npm 分发。`npm install -g <名称>` 即可开始使用。
 
 ---
 
-## Architecture (4 Layers)
+## 技术栈
+
+- **语言：** TypeScript
+- **运行时：** Node.js
+- **终端 UI：** Ink（基于 React 的终端渲染框架）
+- **分发方式：** npm
+
+---
+
+## 展示模式（混合模式）
+
+### 对话模式 — 紧凑流式面板
+
+终端水平均分 N 栏，每个模型一栏，所有模型同时流式输出，实时可见。
+
+- `Tab` / `1/2/3` — 将某个模型展开到全屏细读
+- `d` — 将焦点模型的输出与另一个做差异对比
+- 每个模型用不同颜色区分
+
+### 任务模式 — 结构化提案对比
+
+当模型需要修改文件或执行命令时，界面切换为提案视图：
+
+- 每个文件、每个模型并排展示 Diff
+- 按提案粒度逐条接受/拒绝（不是要么全接受要么全拒绝）
+- 多个模型修改同一行代码时自动标记冲突
+
+---
+
+## 架构（四层）
 
 ```
-UI Layer (Ink/React)
+UI 层（Ink/React）
     ↕
-Core Layer (Session → Stream → Task)
+Core 层（会话管理 → 流调度 → 任务引擎）
     ↕
-Provider Layer (Unified Interface → Per-Adapter)
+Provider 层（统一接口 → 各适配器）
     ↕
-Tool Runtime (ReadFile, WriteFile, EditFile, Grep, Glob, Bash, Git...)
+工具运行时（读文件、写文件、编辑、Grep、Glob、Bash、Git…）
 ```
 
-| Layer | Responsibility |
-|-------|---------------|
-| UI | Render only; no model logic |
-| Core | Multi-model orchestration, conversation state, task proposals |
-| Provider | Normalize different LLM APIs into a single interface |
-| Tool | File/shell operations with permission control |
+| 层 | 职责 |
+|----|------|
+| UI | 只管渲染，不碰模型逻辑 |
+| Core | 多模型编排、对话状态管理、任务提案处理 |
+| Provider | 把不同 LLM API 归一到同一接口，对上层透明 |
+| 工具 | 文件/Shell 操作，带权限控制 |
 
 ---
 
-## File Isolation via Git Worktree
+## 文件隔离：Git Worktree
 
-Each model gets its own isolated worktree. No shared file system — no conflicts, no locks, clean diffs.
+每个模型分配独立的 worktree。不共享文件系统 — 无冲突、无锁、干净的 Diff。
 
 ```
-User project: ~/project (main branch)
+用户项目：~/project（main 分支）
 
-On user prompt:
-  → git worktree add /tmp/agent-claude   -b agent/claude-{task}
-  → git worktree add /tmp/agent-gpt4     -b agent/gpt4-{task}
-  → git worktree add /tmp/agent-deepseek -b agent/deepseek-{task}
+用户提问后：
+  → git worktree add /tmp/agent-claude   -b agent/claude-{任务ID}
+  → git worktree add /tmp/agent-gpt4     -b agent/gpt4-{任务ID}
+  → git worktree add /tmp/agent-deepseek -b agent/deepseek-{任务ID}
 
-Each model works in isolation.
-User picks a winner → merge that worktree back, discard others.
+每个模型在隔离环境中工作。
+用户选定优胜方案 → 合并对应 worktree，丢弃其余。
 ```
 
-**Rationale:** Sharing a file system across concurrent agents creates conflict-resolution complexity disproportionate to the value. Worktree isolation makes each agent's output a clean git diff with zero cross-contamination.
+**理由：** 让多个 Agent 共享文件系统会引入复杂的冲突检测、文件锁和合并逻辑，复杂度和价值不成比例。Worktree 隔离让每个 Agent 的输出是干净的 Git Diff，零交叉污染。
 
 ---
 
-## Open Questions (to resolve next session)
+## 待讨论事项（下次继续）
 
-- Provider unified interface design (streaming, tool calling normalization)
-- Shared vs per-model conversation history
-- Tool execution model: shared results or per-model invocation?
-- Configuration format (.multillmrc or similar)
-- Session persistence
-- Permission system granularity
-- Product name
+- Provider 统一接口设计（流式输出、工具调用如何归一化）
+- 对话历史：各模型共享还是各自独立
+- 工具执行模式：所有模型共享一次执行结果还是各模型各自调用工具
+- 配置文件格式（.multillmrc 或类似）
+- 会话持久化方案
+- 权限系统粒度
+- 产品名称
