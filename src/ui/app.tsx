@@ -5,11 +5,10 @@ import { OutputArea } from "./components/OutputArea.js";
 import { InputBar } from "./components/InputBar.js";
 import { Session } from "../core/session.js";
 import { loadConfig } from "../config/loader.js";
-import { launchStreams } from "../core/stream.js";
 import type { ModelState } from "../core/types.js";
 import { createDefaultRegistry } from "../tools/registry.js";
 import { PermissionManager } from "../tools/permission.js";
-import { executeToolCalls } from "../tools/executor.js";
+import { runTurn } from "../core/turn.js";
 import { WorktreeManager } from "../isolation/worktree.js";
 
 const SYSTEM_PROMPT = "You are a helpful AI coding assistant. Be concise.";
@@ -155,30 +154,32 @@ export const App: React.FC = () => {
       }
       setModelStates([...session.models]);
 
-      // Launch concurrent streams with tool definitions
-      const streams = launchStreams(
-        session,
-        config,
-        SYSTEM_PROMPT,
-        toolRegistry.getDefinitions(),
-      );
-
-      // Process all streams concurrently, with tool-call interception
+      // Launch concurrent turns for all target models
       await Promise.all(
-        streams.map(async ({ modelName, events }) => {
-          const m = session.models.find((mm) => mm.name === modelName);
-          if (!m) return;
+        targets.map(async (m) => {
+          const mc = config.models[m.name];
+          if (!mc) {
+            m.buffer = `[Error: No config for model "${m.name}"]`;
+            m.isStreaming = false;
+            setModelStates([...session.models]);
+            return;
+          }
 
           const worktreePath =
-            worktreeManager.getWorktreePath(modelName) ?? process.cwd();
-          const toolStream = executeToolCalls(
-            events,
-            toolRegistry,
-            permissionManager,
-            worktreePath,
-          );
+            worktreeManager.getWorktreePath(m.name) ?? process.cwd();
 
-          for await (const event of toolStream) {
+          const stream = runTurn({
+            modelName: m.name,
+            config: mc,
+            messages: m.messages,
+            systemPrompt: SYSTEM_PROMPT,
+            tools: toolRegistry.getDefinitions(),
+            registry: toolRegistry,
+            permission: permissionManager,
+            worktreePath,
+          });
+
+          for await (const event of stream) {
             if (event.type === "text") {
               m.buffer += event.content;
             } else if (event.type === "done") {
@@ -191,14 +192,6 @@ export const App: React.FC = () => {
           }
         }),
       );
-
-      // Save final responses to history
-      for (const { modelName } of streams) {
-        const m = session.models.find((mm) => mm.name === modelName);
-        if (m && m.buffer) {
-          session.addAssistantMessage(modelName, m.buffer);
-        }
-      }
 
       // ── Worktree cleanup (keep none by default) ─────────────────
       await worktreeManager.cleanup(taskId);
