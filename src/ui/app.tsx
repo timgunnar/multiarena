@@ -62,6 +62,28 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   // bar in a post-render effect (avoids ink-text-input re-populating it).
   const shortcutHandledRef = useRef(false);
 
+  // ── Save helper (used by handleSubmit and quit) ──────────────────
+  const saveCurrentSession = useCallback(() => {
+    const lastTarget =
+      session.targetMode.type === "broadcast"
+        ? "broadcast"
+        : session.targetMode.modelName;
+    saveSession({
+      id: sessionId,
+      timestamp: new Date().toISOString(),
+      models: session.models.map((m) => ({
+        name: m.name,
+        messages: m.messages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+          tool_call_id: msg.tool_call_id,
+        })),
+        buffer: m.buffer,
+      })),
+      lastTarget,
+    });
+  }, [session, sessionId]);
+
   const targetPrefix =
     session.targetMode.type === "broadcast"
       ? "all"
@@ -69,6 +91,21 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
   const activeModelName =
     session.targetMode.type === "broadcast" ? null : session.targetMode.modelName;
+
+  // Save session on process exit (Ctrl+C, kill, etc.)
+  useEffect(() => {
+    const onExit = () => {
+      try {
+        saveCurrentSession();
+      } catch {
+        // Best-effort save
+      }
+    };
+    process.on("exit", onExit);
+    return () => {
+      process.off("exit", onExit);
+    };
+  }, [saveCurrentSession]);
 
   // Clear the input bar whenever a shortcut was handled (runs after the render
   // batch so it overrides any concurrent setInput from ink-text-input).
@@ -156,6 +193,13 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       shortcutHandledRef.current = true;
       return;
     }
+
+    // 'q' — quit (save session and exit)
+    if (inputValue === "q") {
+      saveCurrentSession();
+      exit();
+      return;
+    }
   });
 
   const handleSubmit = useCallback(
@@ -229,26 +273,9 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       await worktreeManager.cleanup(taskId);
 
       // ── Auto-save session ─────────────────────────────────────
-      const lastTarget =
-        session.targetMode.type === "broadcast"
-          ? "broadcast"
-          : session.targetMode.modelName;
-      saveSession({
-        id: sessionId,
-        timestamp: new Date().toISOString(),
-        models: session.models.map((m) => ({
-          name: m.name,
-          messages: m.messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-            tool_call_id: msg.tool_call_id,
-          })),
-          buffer: m.buffer,
-        })),
-        lastTarget,
-      });
+      saveCurrentSession();
     },
-    [session, config, sessionId],
+    [session, config, sessionId, saveCurrentSession],
   );
 
   const terminalWidth = process.stdout.columns ?? 80;
