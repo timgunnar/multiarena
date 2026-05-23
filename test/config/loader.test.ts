@@ -67,6 +67,21 @@ broadcast = true
     expect(config.defaults.broadcast).toBe(true);
   });
 
+  it("uses defaults when [defaults] section is missing", () => {
+    const tomlContent = `
+[models.claude]
+provider = "anthropic"
+model = "claude-sonnet-4-6"
+`;
+    fs.writeFileSync(path.join(tmpDir, ".arenarc"), tomlContent);
+
+    const config = loadConfig();
+
+    expect(config.models.claude.provider).toBe("anthropic");
+    expect(config.defaults.broadcast).toBe(true);
+    expect(config.defaults.active).toEqual([]);
+  });
+
   it("resolves env vars in config values", () => {
     process.env.TEST_ARENA_KEY = "secret-from-env";
 
