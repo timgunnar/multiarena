@@ -1,6 +1,6 @@
-// src/index.ts
-const main = () => {
-  console.log("Arena — multi-model AI coding assistant");
-};
+#!/usr/bin/env node
+import React from "react";
+import { render } from "ink";
+import { App } from "./ui/app.js";
 
-main();
+render(React.createElement(App));
