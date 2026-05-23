@@ -24,6 +24,36 @@ function resolveConfig(raw: Record<string, unknown>): ArenaConfig {
   return walk(raw) as ArenaConfig;
 }
 
+export interface ConfigWarning {
+  message: string;
+}
+
+export function validateConfig(config: ArenaConfig): ConfigWarning[] {
+  const warnings: ConfigWarning[] = [];
+
+  for (const name of config.defaults.active) {
+    const mc = config.models[name];
+    if (!mc) {
+      warnings.push({
+        message: `Model "${name}" is in defaults.active but has no [models.${name}] config section`,
+      });
+      continue;
+    }
+    if (!mc.provider) {
+      warnings.push({
+        message: `Model "${name}" has no provider set`,
+      });
+    }
+    if (!mc.api_key && mc.provider !== "ollama") {
+      warnings.push({
+        message: `Model "${name}" (${mc.provider}) has no api_key — set it or the \${ENV_VAR} may be missing`,
+      });
+    }
+  }
+
+  return warnings;
+}
+
 export function loadConfig(): ArenaConfig {
   const candidates = [
     path.join(process.cwd(), ".arenarc"),

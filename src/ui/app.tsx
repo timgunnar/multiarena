@@ -4,7 +4,7 @@ import { StatusBar } from "./components/StatusBar.js";
 import { OutputArea } from "./components/OutputArea.js";
 import { InputBar } from "./components/InputBar.js";
 import { Session, type SessionSnapshot } from "../core/session.js";
-import { loadConfig } from "../config/loader.js";
+import { loadConfig, validateConfig } from "../config/loader.js";
 import type { ModelState } from "../core/types.js";
 import { createDefaultRegistry } from "../tools/registry.js";
 import { PermissionManager } from "../tools/permission.js";
@@ -21,6 +21,7 @@ const permissionManager = new PermissionManager();
 
 export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessionId }) => {
   const config = loadConfig();
+  const configWarnings = validateConfig(config);
   const { exit } = useApp();
 
   // Generate or reuse session ID
@@ -290,6 +291,15 @@ broadcast = true`;
     <Box flexDirection="column" width="100%">
       {/* Top: fixed status bar */}
       <StatusBar models={modelStates} activeModelName={activeModelName} contextUsages={contextUsages} />
+
+      {/* Config warnings */}
+      {configWarnings.length > 0 && (
+        <Box flexDirection="column">
+          {configWarnings.map((w, i) => (
+            <Text key={i} color="yellow">⚠ {w.message}</Text>
+          ))}
+        </Box>
+      )}
 
       {/* Divider */}
       <Text>{"─".repeat(terminalWidth)}</Text>

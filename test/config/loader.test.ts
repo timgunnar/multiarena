@@ -15,7 +15,7 @@ vi.mock("os", async () => {
   };
 });
 
-import { loadConfig } from "../../src/config/loader.js";
+import { loadConfig, validateConfig } from "../../src/config/loader.js";
 
 describe("config loader", () => {
   let tmpDir: string;
@@ -115,6 +115,40 @@ broadcast = true
     expect(config.defaults.active).toEqual(["claude", "gpt-4o"]);
 
     delete process.env.TEST_ARENA_MODEL;
+  });
+
+  it("warns on missing model config", () => {
+    const warnings = validateConfig({
+      models: {},
+      defaults: { active: ["claude"], broadcast: true },
+    });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].message).toContain("claude");
+  });
+
+  it("warns on missing api_key for non-ollama provider", () => {
+    const warnings = validateConfig({
+      models: { gpt: { provider: "openai", model: "gpt-4o" } },
+      defaults: { active: ["gpt"], broadcast: true },
+    });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].message).toContain("api_key");
+  });
+
+  it("does not warn on missing api_key for ollama", () => {
+    const warnings = validateConfig({
+      models: { local: { provider: "ollama", model: "llama3" } },
+      defaults: { active: ["local"], broadcast: true },
+    });
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("returns no warnings for valid config", () => {
+    const warnings = validateConfig({
+      models: { claude: { provider: "anthropic", model: "claude", api_key: "sk-key" } },
+      defaults: { active: ["claude"], broadcast: true },
+    });
+    expect(warnings).toHaveLength(0);
   });
 
   it("loads config from home directory when project-level .arenarc is absent", () => {
