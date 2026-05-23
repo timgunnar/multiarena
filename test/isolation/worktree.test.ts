@@ -10,7 +10,7 @@ describe("WorktreeManager", () => {
   let testRepo: string;
 
   beforeEach(() => {
-    testRepo = fs.mkdtempSync(path.join(os.tmpdir(), "arena-test-repo-"));
+    testRepo = fs.mkdtempSync(path.join(os.tmpdir(), "multiarena-test-repo-"));
     execSync("git init", { cwd: testRepo });
     execSync('git config user.email "test@test.com"', { cwd: testRepo });
     execSync('git config user.name "Test"', { cwd: testRepo });

@@ -8,7 +8,7 @@ describe("readFile tool", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "arena-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "multiarena-test-"));
   });
 
   afterEach(() => {

@@ -4,7 +4,7 @@ import * as path from "path";
 import * as os from "os";
 
 const mocks = vi.hoisted(() => ({
-  homeDir: "/tmp/nonexistent-arena-home",
+  homeDir: "/tmp/nonexistent-multiarena-home",
 }));
 
 vi.mock("os", async () => {
@@ -22,9 +22,9 @@ describe("config loader", () => {
   let cwdSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "arena-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "multiarena-test-"));
     cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tmpDir);
-    mocks.homeDir = "/tmp/nonexistent-arena-home";
+    mocks.homeDir = "/tmp/nonexistent-multiarena-home";
   });
 
   afterEach(() => {
@@ -32,7 +32,7 @@ describe("config loader", () => {
     cwdSpy.mockRestore();
   });
 
-  it("returns default config when no .arenarc found", () => {
+  it("returns default config when no .multiarenarc found", () => {
     const config = loadConfig();
 
     expect(config.models).toEqual({});
@@ -40,7 +40,7 @@ describe("config loader", () => {
     expect(config.defaults.active).toEqual([]);
   });
 
-  it("loads models from .arenarc", () => {
+  it("loads models from .multiarenarc", () => {
     const tomlContent = `
 [models.claude]
 provider = "anthropic"
@@ -55,7 +55,7 @@ api_key = "sk-test123"
 active = ["claude", "gpt"]
 broadcast = true
 `;
-    fs.writeFileSync(path.join(tmpDir, ".arenarc"), tomlContent);
+    fs.writeFileSync(path.join(tmpDir, ".multiarenarc"), tomlContent);
 
     const config = loadConfig();
 
@@ -73,7 +73,7 @@ broadcast = true
 provider = "anthropic"
 model = "claude-sonnet-4-6"
 `;
-    fs.writeFileSync(path.join(tmpDir, ".arenarc"), tomlContent);
+    fs.writeFileSync(path.join(tmpDir, ".multiarenarc"), tomlContent);
 
     const config = loadConfig();
 
@@ -83,38 +83,38 @@ model = "claude-sonnet-4-6"
   });
 
   it("resolves env vars in config values", () => {
-    process.env.TEST_ARENA_KEY = "secret-from-env";
+    process.env.TEST_MULTIARENA_KEY = "secret-from-env";
 
     const tomlContent = `
 [models.claude]
 provider = "anthropic"
 model = "claude-sonnet-4-6"
-api_key = "\${TEST_ARENA_KEY}"
+api_key = "\${TEST_MULTIARENA_KEY}"
 `;
-    fs.writeFileSync(path.join(tmpDir, ".arenarc"), tomlContent);
+    fs.writeFileSync(path.join(tmpDir, ".multiarenarc"), tomlContent);
 
     const config = loadConfig();
 
     expect(config.models.claude.api_key).toBe("secret-from-env");
 
-    delete process.env.TEST_ARENA_KEY;
+    delete process.env.TEST_MULTIARENA_KEY;
   });
 
   it("resolves env vars nested in arrays", () => {
-    process.env.TEST_ARENA_MODEL = "gpt-4o";
+    process.env.TEST_MULTIARENA_MODEL = "gpt-4o";
 
     const tomlContent = `
 [defaults]
-active = ["claude", "\${TEST_ARENA_MODEL}"]
+active = ["claude", "\${TEST_MULTIARENA_MODEL}"]
 broadcast = true
 `;
-    fs.writeFileSync(path.join(tmpDir, ".arenarc"), tomlContent);
+    fs.writeFileSync(path.join(tmpDir, ".multiarenarc"), tomlContent);
 
     const config = loadConfig();
 
     expect(config.defaults.active).toEqual(["claude", "gpt-4o"]);
 
-    delete process.env.TEST_ARENA_MODEL;
+    delete process.env.TEST_MULTIARENA_MODEL;
   });
 
   it("warns on missing model config", () => {
@@ -151,17 +151,17 @@ broadcast = true
     expect(warnings).toHaveLength(0);
   });
 
-  it("loads config from home directory when project-level .arenarc is absent", () => {
+  it("loads config from home directory when project-level .multiarenarc is absent", () => {
     const homeConfigContent = `
 [models.home-model]
 provider = "ollama"
 model = "llama3"
 `;
-    // Point homedir to tmpDir and write .arenarc there
+    // Point homedir to tmpDir and write .multiarenarc there
     mocks.homeDir = tmpDir;
-    fs.writeFileSync(path.join(tmpDir, ".arenarc"), homeConfigContent);
+    fs.writeFileSync(path.join(tmpDir, ".multiarenarc"), homeConfigContent);
 
-    // cwd points to a subdirectory with no .arenarc
+    // cwd points to a subdirectory with no .multiarenarc
     cwdSpy.mockRestore();
     cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(path.join(tmpDir, "no-config-here"));
 

@@ -8,7 +8,7 @@ describe("grep tool", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "arena-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "multiarena-test-"));
     fs.writeFileSync(
       path.join(tmpDir, "a.ts"),
       "const x = 42;\nexport default x;",

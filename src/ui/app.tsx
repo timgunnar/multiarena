@@ -364,9 +364,9 @@ broadcast = true`;
 
     return (
       <Box flexDirection="column" padding={1}>
-        <Text bold color="cyan">Arena — Multi-Model AI Coding Assistant</Text>
+        <Text bold color="cyan">multiarena — Multi-Model AI Coding Assistant</Text>
         <Text> </Text>
-        <Text>No models configured. Create a <Text color="yellow">.arenarc</Text> file in your project root or home directory:</Text>
+        <Text>No models configured. Create a <Text color="yellow">.multiarenarc</Text> file in your project root or home directory:</Text>
         <Text> </Text>
         <Text color="gray">{example}</Text>
         <Text> </Text>

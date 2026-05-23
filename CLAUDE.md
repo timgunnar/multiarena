@@ -41,7 +41,7 @@ UI 层（Ink/React） → Core 层（会话 / 流调度 / 任务） → Provider
 
 - Provider 统一接口：`Provider` 接口 + AsyncGenerator + Adapter 模式
 - 工具执行：各模型在各自 worktree 中独立调用
-- 配置文件：TOML（`.multillmrc`），支持 `${ENV}`
-- 会话持久化：JSON 文件（`~/.arena/sessions/`）
+- 配置文件：TOML（`.multiarenarc`），支持 `${ENV}`
+- 会话持久化：JSON 文件（`~/.multiarena/sessions/`）
 - 权限：会话记忆，跨模型共享授权，硬编码安全底线
-- 产品名称：Arena
+- 产品名称：multiarena

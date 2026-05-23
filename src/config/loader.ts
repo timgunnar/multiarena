@@ -56,8 +56,8 @@ export function validateConfig(config: ArenaConfig): ConfigWarning[] {
 
 export function loadConfig(): ArenaConfig {
   const candidates = [
-    path.join(process.cwd(), ".arenarc"),
-    path.join(os.homedir(), ".arenarc"),
+    path.join(process.cwd(), ".multiarenarc"),
+    path.join(os.homedir(), ".multiarenarc"),
   ];
 
   let resolved: Partial<ArenaConfig> = {};

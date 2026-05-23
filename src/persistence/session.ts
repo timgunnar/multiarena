@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
-const SESSIONS_DIR = path.join(os.homedir(), ".arena", "sessions");
+const SESSIONS_DIR = path.join(os.homedir(), ".multiarena", "sessions");
 
 export interface SavedSession {
   id: string;

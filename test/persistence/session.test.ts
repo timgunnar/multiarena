@@ -4,7 +4,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 // Mock os.homedir to use a temp directory
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "arena-persist-test-"));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "multiarena-persist-test-"));
 vi.mock("node:os", async () => {
   const actual = await vi.importActual<typeof os>("node:os");
   return { ...actual, homedir: () => tmpDir };
@@ -17,14 +17,14 @@ const { saveSession, loadSession, listSessions } =
 describe("session persistence", () => {
   beforeEach(() => {
     // Clean the temp sessions dir
-    const sessionsDir = path.join(tmpDir, ".arena", "sessions");
+    const sessionsDir = path.join(tmpDir, ".multiarena", "sessions");
     if (fs.existsSync(sessionsDir)) {
       fs.rmSync(sessionsDir, { recursive: true, force: true });
     }
   });
 
   afterEach(() => {
-    const sessionsDir = path.join(tmpDir, ".arena", "sessions");
+    const sessionsDir = path.join(tmpDir, ".multiarena", "sessions");
     if (fs.existsSync(sessionsDir)) {
       fs.rmSync(sessionsDir, { recursive: true, force: true });
     }

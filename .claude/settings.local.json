@@ -14,8 +14,8 @@
       "Bash(npm ls *)",
       "Bash(node -e \"import\\('./dist/index.js'\\).then\\(\\(\\) => console.log\\('ESM import OK'\\)\\)\")",
       "Bash(npx vitest *)",
-      "Bash(rm -rf /c/Users/Tim/AppData/Local/Temp/arena-worktrees/)",
-      "Bash(rm -rf /c/Users/Tim/AppData/Local/Temp/arena-test-repo-*)",
+      "Bash(rm -rf /c/Users/Tim/AppData/Local/Temp/multiarena-worktrees/)",
+      "Bash(rm -rf /c/Users/Tim/AppData/Local/Temp/multiarena-test-repo-*)",
       "Bash(node -e \"const sg = require\\('simple-git'\\); console.log\\(typeof sg, typeof sg.default, typeof sg.simpleGit\\)\")",
       "Bash(node -e \"const sg = require\\('simple-git'\\); console.log\\(Object.keys\\(sg\\)\\)\")",
       "Bash(npx tsx *)",
@@ -23,7 +23,9 @@
       "Bash(npm search *)",
       "Bash(npm whoami *)",
       "Bash(npm view *)",
-      "Bash(npm pack *)"
+      "Bash(npm pack *)",
+      "Bash(npm publish *)",
+      "Bash(node *)"
     ]
   }
 }

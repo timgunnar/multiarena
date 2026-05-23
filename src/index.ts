@@ -19,10 +19,10 @@ const PKG_VERSION = (() => {
   }
 })();
 
-const HELP = `Arena — Multi-Model AI Coding Assistant
+const HELP = `multiarena — Multi-Model AI Coding Assistant
 
 Usage:
-  arena [options]
+  multiarena [options]
 
 Options:
   --new              Start a new session (default)
@@ -72,7 +72,7 @@ if (showHelp) {
 }
 
 if (showVersion) {
-  console.log(`arena v${PKG_VERSION}`);
+  console.log(`multiarena v${PKG_VERSION}`);
   process.exit(0);
 }
 

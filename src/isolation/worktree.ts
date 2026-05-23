@@ -11,7 +11,7 @@ export class WorktreeManager {
     this.git = simpleGit(repoPath);
   }
 
-  /** Clean up orphaned arena branches and worktree directories from prior crashes. */
+  /** Clean up orphaned multiarena branches and worktree directories from prior crashes. */
   async sweepOrphans(): Promise<number> {
     let cleaned = 0;
 
@@ -26,7 +26,7 @@ export class WorktreeManager {
           currentPath = line.slice("worktree ".length);
           registeredPaths.add(currentPath);
         } else if (line.startsWith("branch ") && currentPath) {
-          // branch line looks like "branch refs/heads/arena/..."
+          // branch line looks like "branch refs/heads/multiarena/..."
           const ref = line.slice("branch ".length);
           const branchName = ref.replace("refs/heads/", "");
           registeredBranches.add(branchName);
@@ -36,10 +36,10 @@ export class WorktreeManager {
       return cleaned;
     }
 
-    // Remove orphaned arena branches (branch exists but no worktree)
+    // Remove orphaned multiarena branches (branch exists but no worktree)
     const branches = await this.git.branchLocal();
     for (const branch of branches.all) {
-      if (!branch.startsWith("arena/")) continue;
+      if (!branch.startsWith("multiarena/")) continue;
       if (!registeredBranches.has(branch)) {
         await this.git.deleteLocalBranch(branch, true).catch(() => {});
         cleaned++;
@@ -47,7 +47,7 @@ export class WorktreeManager {
     }
 
     // Remove orphaned worktree directories (dir exists but not registered)
-    const arenaDir = path.join(os.tmpdir(), "arena-worktrees");
+    const arenaDir = path.join(os.tmpdir(), "multiarena-worktrees");
     if (fs.existsSync(arenaDir)) {
       let entries: string[] = [];
       try { entries = fs.readdirSync(arenaDir); } catch { /* ignore */ }
@@ -68,11 +68,11 @@ export class WorktreeManager {
   }
 
   async setup(taskId: string, modelNames: string[]): Promise<Map<string, string>> {
-    const baseName = `arena/${taskId}`;
+    const baseName = `multiarena/${taskId}`;
 
     for (const name of modelNames) {
       const branchName = `${baseName}-${name}`;
-      const worktreePath = path.join(os.tmpdir(), "arena-worktrees", `${taskId}-${name}`);
+      const worktreePath = path.join(os.tmpdir(), "multiarena-worktrees", `${taskId}-${name}`);
 
       // Ensure the parent directory exists; git worktree add creates the leaf directory
       fs.mkdirSync(path.dirname(worktreePath), { recursive: true });
@@ -116,7 +116,7 @@ export class WorktreeManager {
         fs.rmSync(wtPath, { recursive: true, force: true });
       }
       await this.git
-        .deleteLocalBranch(`arena/${taskId}-${modelName}`, true)
+        .deleteLocalBranch(`multiarena/${taskId}-${modelName}`, true)
         .catch(() => {});
       this.worktrees.delete(modelName);
     }
