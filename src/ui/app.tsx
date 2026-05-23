@@ -54,9 +54,36 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     return new Session(config, process.cwd());
   });
   const [input, setInput] = useState("");
-  const [scrollOffset, setScrollOffset] = useState(0);
+  const [scrollOffsets, setScrollOffsets] = useState<Record<string, number>>({});
   const [modelStates, setModelStates] = useState<ModelState[]>(() => session.models);
   const [comparisonModel, setComparisonModel] = useState<string | null>(null);
+
+  const activeScrollModel =
+    session.targetMode.type === "directed" ? session.targetMode.modelName : null;
+
+  const adjustScroll = useCallback(
+    (delta: number) => {
+      const modelName = activeScrollModel;
+      if (!modelName) return;
+      setScrollOffsets((prev) => ({
+        ...prev,
+        [modelName]: Math.max(0, (prev[modelName] ?? 0) + delta),
+      }));
+    },
+    [activeScrollModel],
+  );
+
+  // Input history
+  const inputHistoryRef = useRef<string[]>([]);
+  const historyIdxRef = useRef(-1);
+
+  const handleInputChange = useCallback((value: string) => {
+    // Reset history navigation when user starts typing
+    if (historyIdxRef.current !== -1) {
+      historyIdxRef.current = -1;
+    }
+    setInput(value);
+  }, []);
 
   // Track whether a shortcut key was just handled so we can clear the input
   // bar in a post-render effect (avoids ink-text-input re-populating it).
@@ -122,7 +149,6 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   useInput((inputValue, key) => {
     if (key.tab) {
       session.cycleTarget();
-      setScrollOffset(0);
       setComparisonModel(null);
       setModelStates([...session.models]);
       return;
@@ -138,11 +164,32 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     }
 
     if (key.upArrow) {
-      setScrollOffset((o) => Math.max(0, o - 1));
+      if (input.length === 0) {
+        const history = inputHistoryRef.current;
+        if (history.length === 0) return;
+        const idx = historyIdxRef.current === -1 ? history.length - 1 : Math.max(0, historyIdxRef.current - 1);
+        historyIdxRef.current = idx;
+        setInput(history[idx]);
+      } else {
+        adjustScroll(-1);
+      }
       return;
     }
     if (key.downArrow) {
-      setScrollOffset((o) => o + 1);
+      if (input.length === 0) {
+        const history = inputHistoryRef.current;
+        if (historyIdxRef.current === -1) return;
+        const idx = historyIdxRef.current + 1;
+        if (idx >= history.length) {
+          historyIdxRef.current = -1;
+          setInput("");
+        } else {
+          historyIdxRef.current = idx;
+          setInput(history[idx]);
+        }
+      } else {
+        adjustScroll(1);
+      }
       return;
     }
 
@@ -207,8 +254,14 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       const trimmed = value.trim();
       if (!trimmed) return;
 
+      // Add to input history
+      inputHistoryRef.current.push(trimmed);
+      historyIdxRef.current = -1;
+
       setInput("");
-      setScrollOffset(0);
+      if (activeScrollModel) {
+        setScrollOffsets((prev) => ({ ...prev, [activeScrollModel]: 0 }));
+      }
       setComparisonModel(null);
 
       // ── Worktree setup ──────────────────────────────────────────
@@ -337,7 +390,7 @@ broadcast = true`;
       <OutputArea
         models={modelStates}
         targetMode={session.targetMode}
-        scrollOffset={scrollOffset}
+        scrollOffsets={scrollOffsets}
         comparisonModel={comparisonModel}
       />
 
@@ -348,7 +401,7 @@ broadcast = true`;
       <InputBar
         prefix={targetPrefix}
         value={input}
-        onChange={setInput}
+        onChange={handleInputChange}
         onSubmit={handleSubmit}
       />
     </Box>

@@ -14,6 +14,12 @@ function renderBar(ratio: number): string {
   return "█".repeat(filled) + "░".repeat(blocks - filled);
 }
 
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return String(n);
+}
+
 function barColor(ratio: number): string {
   if (ratio > 0.9) return "red";
   if (ratio > 0.7) return "yellow";
@@ -39,14 +45,18 @@ export const StatusBar: React.FC<Props> = ({ models, activeModelName, contextUsa
         );
       })}
     </Box>
-    {/* Row 2: context watermarks */}
+    {/* Row 2: context watermarks with token counts */}
     <Box height={1} flexDirection="row">
       {models.map((m) => {
         const usage = contextUsages[m.name] ?? 0;
         const pct = Math.round(usage * 100);
         const color = barColor(usage);
+        const used = m.usage.input + m.usage.output;
         return (
           <Box key={m.name} marginRight={1}>
+            <Text dimColor>
+              {formatTokens(used)}/{formatTokens(m.contextLimit)}{" "}
+            </Text>
             <Text color={color}>
               {renderBar(usage)} {pct}%
             </Text>

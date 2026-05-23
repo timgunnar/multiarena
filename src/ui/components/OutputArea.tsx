@@ -7,19 +7,17 @@ import { ModelDetail } from "./ModelDetail.js";
 interface Props {
   models: ModelState[];
   targetMode: { type: "broadcast" } | { type: "directed"; modelName: string };
-  scrollOffset: number;
-  /** When set, render this model side-by-side with the active model. */
+  scrollOffsets: Record<string, number>;
   comparisonModel?: string | null;
 }
 
 export const OutputArea: React.FC<Props> = ({
   models,
   targetMode,
-  scrollOffset,
+  scrollOffsets,
   comparisonModel,
 }) => {
   if (targetMode.type === "broadcast") {
-    // Comparison mode is not applied in broadcast — show the regular summary.
     return <BroadcastSummary models={models} />;
   }
 
@@ -36,21 +34,21 @@ export const OutputArea: React.FC<Props> = ({
   if (comparisonModel) {
     const compModel = models.find((m) => m.name === comparisonModel);
     if (!compModel) {
-      return <ModelDetail model={activeModel} scrollOffset={scrollOffset} />;
+      return <ModelDetail model={activeModel} scrollOffset={scrollOffsets[activeModel.name] ?? 0} />;
     }
     return (
       <Box flexDirection="row" flexGrow={1}>
         <Box flexDirection="column" flexGrow={1} marginRight={1}>
           <Text bold>{activeModel.name}</Text>
-          <ModelDetail model={activeModel} scrollOffset={scrollOffset} />
+          <ModelDetail model={activeModel} scrollOffset={scrollOffsets[activeModel.name] ?? 0} />
         </Box>
         <Box flexDirection="column" flexGrow={1}>
           <Text bold>{compModel.name}</Text>
-          <ModelDetail model={compModel} scrollOffset={scrollOffset} />
+          <ModelDetail model={compModel} scrollOffset={scrollOffsets[compModel.name] ?? 0} />
         </Box>
       </Box>
     );
   }
 
-  return <ModelDetail model={activeModel} scrollOffset={scrollOffset} />;
+  return <ModelDetail model={activeModel} scrollOffset={scrollOffsets[activeModel.name] ?? 0} />;
 };
