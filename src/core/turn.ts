@@ -52,6 +52,7 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
       const pendingToolCalls: ToolCall[] = [];
       let hasToolCall = false;
       let roundText = "";
+      let lastUsage = { input: 0, output: 0 };
 
       for await (const event of provider.chat(request)) {
         switch (event.type) {
@@ -75,6 +76,7 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
             return;
 
           case "done":
+            lastUsage = event.usage;
             break;
         }
       }
@@ -84,7 +86,7 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
         if (roundText) {
           ctx.messages.push({ role: "assistant", content: roundText });
         }
-        yield { type: "done", usage: { input: 0, output: 0 } };
+        yield { type: "done", usage: lastUsage };
         return;
       }
 

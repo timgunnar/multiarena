@@ -259,6 +259,8 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
             if (event.type === "text") {
               m.buffer += event.content;
             } else if (event.type === "done") {
+              m.usage.input += event.usage.input;
+              m.usage.output += event.usage.output;
               m.isStreaming = false;
             } else if (event.type === "error") {
               m.buffer += `\n[Error: ${event.message}]`;
