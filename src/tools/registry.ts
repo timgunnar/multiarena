@@ -32,11 +32,17 @@ export class ToolRegistry {
 import { readFileTool } from "./builtin/readFile.js";
 import { grepTool } from "./builtin/grep.js";
 import { bashTool } from "./builtin/bash.js";
+import { globTool } from "./builtin/glob.js";
+import { writeFileTool } from "./builtin/writeFile.js";
+import { editFileTool } from "./builtin/editFile.js";
 
 export function createDefaultRegistry(): ToolRegistry {
   const registry = new ToolRegistry();
   registry.register(readFileTool);
   registry.register(grepTool);
   registry.register(bashTool);
+  registry.register(globTool);
+  registry.register(writeFileTool);
+  registry.register(editFileTool);
   return registry;
 }

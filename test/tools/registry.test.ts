@@ -5,8 +5,8 @@ describe("ToolRegistry", () => {
   it("getDefinitions returns registered tool definitions", () => {
     const registry = createDefaultRegistry();
     const defs = registry.getDefinitions();
-    expect(defs).toHaveLength(3);
-    expect(defs.map((d) => d.name).sort()).toEqual(["bash", "grep", "readFile"]);
+    expect(defs).toHaveLength(6);
+    expect(defs.map((d) => d.name).sort()).toEqual(["bash", "editFile", "glob", "grep", "readFile", "writeFile"]);
   });
 
   it("execute returns error for unknown tool", async () => {
