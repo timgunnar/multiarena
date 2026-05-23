@@ -17,7 +17,7 @@ export class OpenAIProvider implements Provider {
   private activeController: AbortController | null = null;
 
   constructor(apiKey: string, baseURL?: string) {
-    this.client = new OpenAI({ apiKey, baseURL, timeout: DEFAULT_TIMEOUT_MS });
+    this.client = new OpenAI({ apiKey, baseURL, timeout: DEFAULT_TIMEOUT_MS, maxRetries: 2 });
   }
 
   async *chat(request: ChatRequest): AsyncGenerator<StreamEvent> {

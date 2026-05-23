@@ -3,6 +3,7 @@ export interface ModelConfig {
   model: string;
   api_key?: string;
   endpoint?: string;
+  context_limit?: number;
 }
 
 export interface ArenaConfig {

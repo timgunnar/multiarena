@@ -12,7 +12,7 @@ export class AnthropicProvider implements Provider {
   private activeController: AbortController | null = null;
 
   constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey, timeout: DEFAULT_TIMEOUT_MS });
+    this.client = new Anthropic({ apiKey, timeout: DEFAULT_TIMEOUT_MS, maxRetries: 2 });
   }
 
   async *chat(request: ChatRequest): AsyncGenerator<StreamEvent> {

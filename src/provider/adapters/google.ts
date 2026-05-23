@@ -22,74 +22,83 @@ export class GoogleProvider implements Provider {
 
   async *chat(request: ChatRequest): AsyncGenerator<StreamEvent> {
     this.aborted = false;
+    const maxAttempts = 2;
 
-    try {
-      const model = this.genAI.getGenerativeModel({
-        model: request.model || DEFAULT_MODEL,
-        systemInstruction: request.system,
-        tools: this.convertTools(request.tools),
-      });
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const model = this.genAI.getGenerativeModel({
+          model: request.model || DEFAULT_MODEL,
+          systemInstruction: request.system,
+          tools: this.convertTools(request.tools),
+        });
 
-      const contents = this.convertMessages(request.messages);
-      const result = await model.generateContentStream(
-        { contents },
-        { timeout: DEFAULT_TIMEOUT_MS },
-      );
+        const contents = this.convertMessages(request.messages);
+        const result = await model.generateContentStream(
+          { contents },
+          { timeout: DEFAULT_TIMEOUT_MS },
+        );
 
-      let textOffset = 0;
-      let fnCallCount = 0;
+        let textOffset = 0;
+        let fnCallCount = 0;
 
-      for await (const chunk of result.stream) {
-        if (this.aborted) return;
+        for await (const chunk of result.stream) {
+          if (this.aborted) return;
 
-        // Yield new text
-        const fullText = chunk.text();
-        if (fullText && fullText.length > textOffset) {
-          const delta = fullText.slice(textOffset);
-          textOffset = fullText.length;
-          if (delta) {
-            yield { type: "text", content: delta };
+          // Yield new text
+          const fullText = chunk.text();
+          if (fullText && fullText.length > textOffset) {
+            const delta = fullText.slice(textOffset);
+            textOffset = fullText.length;
+            if (delta) {
+              yield { type: "text", content: delta };
+            }
+          }
+
+          // Yield new function calls
+          const fnCalls = chunk.functionCalls?.();
+          if (fnCalls) {
+            for (let i = fnCallCount; i < fnCalls.length; i++) {
+              const fc = fnCalls[i];
+              yield {
+                type: "tool_call",
+                id: `${fc.name}_${i}`,
+                name: fc.name,
+                args: JSON.stringify(fc.args),
+              };
+            }
+            fnCallCount = fnCalls.length;
           }
         }
 
-        // Yield new function calls
-        const fnCalls = chunk.functionCalls?.();
-        if (fnCalls) {
-          for (let i = fnCallCount; i < fnCalls.length; i++) {
-            const fc = fnCalls[i];
-            yield {
-              type: "tool_call",
-              id: `${fc.name}_${i}`,
-              name: fc.name,
-              args: JSON.stringify(fc.args),
+        // Try to get usage metadata from the completed response
+        let usage = { input: 0, output: 0 };
+        try {
+          const response = await result.response;
+          const metadata = response.usageMetadata;
+          if (metadata) {
+            usage = {
+              input: metadata.promptTokenCount ?? 0,
+              output: metadata.candidatesTokenCount ?? 0,
             };
           }
-          fnCallCount = fnCalls.length;
+        } catch {
+          // usageMetadata may not be available in all SDK versions
         }
-      }
 
-      // Try to get usage metadata from the completed response
-      let usage = { input: 0, output: 0 };
-      try {
-        const response = await result.response;
-        const metadata = response.usageMetadata;
-        if (metadata) {
-          usage = {
-            input: metadata.promptTokenCount ?? 0,
-            output: metadata.candidatesTokenCount ?? 0,
-          };
+        yield { type: "done", usage };
+        return; // success — exit retry loop
+      } catch (error) {
+        if (this.aborted) return;
+        if (attempt < maxAttempts - 1 && isRetryableError(error)) {
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
         }
-      } catch {
-        // usageMetadata may not be available in all SDK versions
+        yield {
+          type: "error",
+          message: error instanceof Error ? error.message : String(error),
+        };
+        return;
       }
-
-      yield { type: "done", usage };
-    } catch (error) {
-      if (this.aborted) return;
-      yield {
-        type: "error",
-        message: error instanceof Error ? error.message : String(error),
-      };
     }
   }
 
@@ -184,4 +193,11 @@ function findToolCall(messages: Message[], toolCallId?: string): ToolCall | unde
     }
   }
   return undefined;
+}
+
+function isRetryableError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.name === "TypeError" && error.message.includes("fetch")) return true;
+  const msg = error.message;
+  return /(429|500|502|503|504)/.test(msg);
 }

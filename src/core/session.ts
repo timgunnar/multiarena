@@ -45,7 +45,7 @@ export class Session {
           buffer: "",
           isStreaming: false,
           usage: { input: 0, output: 0 },
-          contextLimit: contextLimitForModel(mc?.model ?? ""),
+          contextLimit: contextLimitForModel(mc?.model ?? "", mc?.context_limit),
         };
       });
 
@@ -171,7 +171,8 @@ export class Session {
   }
 }
 
-function contextLimitForModel(model: string): number {
+function contextLimitForModel(model: string, explicit?: number): number {
+  if (explicit && explicit > 0) return explicit;
   if (model.includes("claude")) return 200000;
   if (model.includes("gpt-4")) return 128000;
   if (model.includes("gpt-3.5")) return 16384;
