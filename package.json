@@ -8,7 +8,7 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "multiarena": "./dist/index.js"
+    "multiarena": "dist/index.js"
   },
   "files": [
     "dist/"
