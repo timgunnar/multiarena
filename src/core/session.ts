@@ -2,6 +2,20 @@ import { Message } from "../provider/types.js";
 import { ModelState, TargetMode } from "./types.js";
 import { ArenaConfig } from "../config/types.js";
 
+export interface SessionSnapshot {
+  models: Array<{
+    name: string;
+    provider: string;
+    messages: Message[];
+    muted: boolean;
+    buffer: string;
+    usage: { input: number; output: number };
+    contextLimit: number;
+  }>;
+  targetMode: TargetMode;
+  worktreeBase: string;
+}
+
 export class Session {
   private state: {
     models: ModelState[];
@@ -9,26 +23,38 @@ export class Session {
     worktreeBase: string;
   };
 
-  constructor(config: ArenaConfig, worktreeBase: string) {
-    const models: ModelState[] = (config.defaults.active ?? []).map((name) => {
-      const mc = config.models[name];
-      return {
-        name,
-        provider: mc?.provider ?? "unknown",
-        messages: [],
-        muted: false,
-        buffer: "",
-        isStreaming: false,
-        usage: { input: 0, output: 0 },
-        contextLimit: contextLimitForModel(mc?.model ?? ""),
+  constructor(config: ArenaConfig, worktreeBase: string, snapshot?: SessionSnapshot) {
+    if (snapshot) {
+      this.state = {
+        models: snapshot.models.map((m) => ({
+          ...m,
+          isStreaming: false,
+          buffer: "",
+        })),
+        targetMode: snapshot.targetMode,
+        worktreeBase: snapshot.worktreeBase,
       };
-    });
+    } else {
+      const models: ModelState[] = (config.defaults.active ?? []).map((name) => {
+        const mc = config.models[name];
+        return {
+          name,
+          provider: mc?.provider ?? "unknown",
+          messages: [],
+          muted: false,
+          buffer: "",
+          isStreaming: false,
+          usage: { input: 0, output: 0 },
+          contextLimit: contextLimitForModel(mc?.model ?? ""),
+        };
+      });
 
-    this.state = {
-      models,
-      targetMode: { type: "broadcast" },
-      worktreeBase,
-    };
+      this.state = {
+        models,
+        targetMode: { type: "broadcast" },
+        worktreeBase,
+      };
+    }
   }
 
   get models(): ModelState[] {
@@ -122,6 +148,22 @@ export class Session {
     if (!m || m.contextLimit <= 0) return 0;
     const totalTokens = m.usage.input + m.usage.output;
     return Math.min(1, totalTokens / m.contextLimit);
+  }
+
+  toJSON(): SessionSnapshot {
+    return {
+      models: this.state.models.map((m) => ({
+        name: m.name,
+        provider: m.provider,
+        messages: [...m.messages],
+        muted: m.muted,
+        buffer: m.buffer,
+        usage: { ...m.usage },
+        contextLimit: m.contextLimit,
+      })),
+      targetMode: this.state.targetMode,
+      worktreeBase: this.state.worktreeBase,
+    };
   }
 
   private findModel(name: string): ModelState | undefined {

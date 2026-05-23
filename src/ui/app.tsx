@@ -1,15 +1,16 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Box, Text, useInput } from "ink";
+import { Box, Text, useInput, useApp } from "ink";
 import { StatusBar } from "./components/StatusBar.js";
 import { OutputArea } from "./components/OutputArea.js";
 import { InputBar } from "./components/InputBar.js";
-import { Session } from "../core/session.js";
+import { Session, type SessionSnapshot } from "../core/session.js";
 import { loadConfig } from "../config/loader.js";
 import type { ModelState } from "../core/types.js";
 import { createDefaultRegistry } from "../tools/registry.js";
 import { PermissionManager } from "../tools/permission.js";
 import { runTurn } from "../core/turn.js";
 import { WorktreeManager } from "../isolation/worktree.js";
+import { saveSession, loadSession } from "../persistence/session.js";
 
 const SYSTEM_PROMPT = "You are a helpful AI coding assistant. Be concise.";
 
@@ -18,9 +19,39 @@ const SYSTEM_PROMPT = "You are a helpful AI coding assistant. Be concise.";
 const toolRegistry = createDefaultRegistry();
 const permissionManager = new PermissionManager();
 
-export const App: React.FC = () => {
+export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessionId }) => {
   const config = loadConfig();
-  const [session] = useState(() => new Session(config, process.cwd()));
+  const { exit } = useApp();
+
+  // Generate or reuse session ID
+  const [sessionId] = useState(() => initialSessionId ?? Date.now().toString(36));
+
+  // Load saved session or create fresh one
+  const [session] = useState(() => {
+    if (initialSessionId) {
+      const saved = loadSession(initialSessionId);
+      if (saved) {
+        const snapshot: SessionSnapshot = {
+          models: saved.models.map((m) => ({
+            name: m.name,
+            provider: config.models[m.name]?.provider ?? "unknown",
+            messages: m.messages as any,
+            muted: false,
+            buffer: "",
+            usage: { input: 0, output: 0 },
+            contextLimit: 128000,
+          })),
+          targetMode:
+            saved.lastTarget === "broadcast"
+              ? { type: "broadcast" }
+              : { type: "directed", modelName: saved.lastTarget },
+          worktreeBase: process.cwd(),
+        };
+        return new Session(config, process.cwd(), snapshot);
+      }
+    }
+    return new Session(config, process.cwd());
+  });
   const [input, setInput] = useState("");
   const [scrollOffset, setScrollOffset] = useState(0);
   const [modelStates, setModelStates] = useState<ModelState[]>(() => session.models);
@@ -195,8 +226,28 @@ export const App: React.FC = () => {
 
       // ── Worktree cleanup (keep none by default) ─────────────────
       await worktreeManager.cleanup(taskId);
+
+      // ── Auto-save session ─────────────────────────────────────
+      const lastTarget =
+        session.targetMode.type === "broadcast"
+          ? "broadcast"
+          : session.targetMode.modelName;
+      saveSession({
+        id: sessionId,
+        timestamp: new Date().toISOString(),
+        models: session.models.map((m) => ({
+          name: m.name,
+          messages: m.messages.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+            tool_call_id: msg.tool_call_id,
+          })),
+          buffer: m.buffer,
+        })),
+        lastTarget,
+      });
     },
-    [session, config],
+    [session, config, sessionId],
   );
 
   const terminalWidth = process.stdout.columns ?? 80;
