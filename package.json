@@ -1,5 +1,5 @@
 {
-  "name": "arena-cli",
+  "name": "multiarena",
   "version": "0.1.0",
   "description": "Terminal-native multi-model AI coding assistant — chat with multiple LLMs side by side",
   "type": "module",
