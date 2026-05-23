@@ -134,6 +134,12 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     };
   }, [saveCurrentSession]);
 
+  // Clean up orphaned worktrees from prior crashes on startup
+  useEffect(() => {
+    const wm = new WorktreeManager(process.cwd());
+    wm.sweepOrphans().catch(() => {});
+  }, []);
+
   // Clear the input bar whenever a shortcut was handled (runs after the render
   // batch so it overrides any concurrent setInput from ink-text-input).
   useEffect(() => {

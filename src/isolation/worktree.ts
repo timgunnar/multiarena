@@ -11,6 +11,62 @@ export class WorktreeManager {
     this.git = simpleGit(repoPath);
   }
 
+  /** Clean up orphaned arena branches and worktree directories from prior crashes. */
+  async sweepOrphans(): Promise<number> {
+    let cleaned = 0;
+
+    // Parse registered worktrees from `git worktree list --porcelain`
+    const registeredPaths = new Set<string>();
+    const registeredBranches = new Set<string>();
+    try {
+      const raw = await this.git.raw(["worktree", "list", "--porcelain"]);
+      let currentPath: string | null = null;
+      for (const line of raw.split("\n")) {
+        if (line.startsWith("worktree ")) {
+          currentPath = line.slice("worktree ".length);
+          registeredPaths.add(currentPath);
+        } else if (line.startsWith("branch ") && currentPath) {
+          // branch line looks like "branch refs/heads/arena/..."
+          const ref = line.slice("branch ".length);
+          const branchName = ref.replace("refs/heads/", "");
+          registeredBranches.add(branchName);
+        }
+      }
+    } catch {
+      return cleaned;
+    }
+
+    // Remove orphaned arena branches (branch exists but no worktree)
+    const branches = await this.git.branchLocal();
+    for (const branch of branches.all) {
+      if (!branch.startsWith("arena/")) continue;
+      if (!registeredBranches.has(branch)) {
+        await this.git.deleteLocalBranch(branch, true).catch(() => {});
+        cleaned++;
+      }
+    }
+
+    // Remove orphaned worktree directories (dir exists but not registered)
+    const arenaDir = path.join(os.tmpdir(), "arena-worktrees");
+    if (fs.existsSync(arenaDir)) {
+      let entries: string[] = [];
+      try { entries = fs.readdirSync(arenaDir); } catch { /* ignore */ }
+      for (const entry of entries) {
+        const fullPath = path.join(arenaDir, entry);
+        if (!registeredPaths.has(fullPath)) {
+          try {
+            // Try git worktree remove first, then force delete
+            await this.git.raw(["worktree", "remove", fullPath, "--force"]).catch(() => {});
+            fs.rmSync(fullPath, { recursive: true, force: true });
+            cleaned++;
+          } catch { /* best effort */ }
+        }
+      }
+    }
+
+    return cleaned;
+  }
+
   async setup(taskId: string, modelNames: string[]): Promise<Map<string, string>> {
     const baseName = `arena/${taskId}`;
 
