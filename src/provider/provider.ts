@@ -2,6 +2,7 @@ import { ChatRequest, StreamEvent } from "./types.js";
 import { AnthropicProvider } from "./adapters/anthropic.js";
 import { OpenAIProvider } from "./adapters/openai.js";
 import { GoogleProvider } from "./adapters/google.js";
+import { OllamaProvider } from "./adapters/ollama.js";
 import { ModelConfig } from "../config/types.js";
 
 export interface Provider {
@@ -19,9 +20,11 @@ export function createProvider(config: ModelConfig): Provider {
       return new OpenAIProvider(key, config.endpoint);
     case "google":
       return new GoogleProvider(key);
-    case "ollama":
-      return new OpenAIProvider("ollama", config.endpoint ?? "http://localhost:11434/v1");
+    case "ollama": {
+      const baseURL = config.endpoint?.replace(/\/v1\/?$/, "") ?? "http://localhost:11434";
+      return new OllamaProvider(baseURL);
+    }
     default:
-      throw new Error(`Unknown provider: ${(config as any).provider}`);
+      throw new Error(`Unknown provider: ${config.provider}`);
   }
 }

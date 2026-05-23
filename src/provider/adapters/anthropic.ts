@@ -5,13 +5,14 @@ import { ChatRequest, StreamEvent, Message, ToolDef } from "../types.js";
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 const DEFAULT_MAX_TOKENS = 4096;
+const DEFAULT_TIMEOUT_MS = 120_000;
 
 export class AnthropicProvider implements Provider {
   private client: Anthropic;
   private activeController: AbortController | null = null;
 
   constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey });
+    this.client = new Anthropic({ apiKey, timeout: DEFAULT_TIMEOUT_MS });
   }
 
   async *chat(request: ChatRequest): AsyncGenerator<StreamEvent> {

@@ -10,6 +10,7 @@ import { Provider } from "../provider.js";
 import { ChatRequest, StreamEvent, Message, ToolDef, ToolCall } from "../types.js";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_TIMEOUT_MS = 120_000;
 
 export class GoogleProvider implements Provider {
   private genAI: GoogleGenerativeAI;
@@ -30,7 +31,10 @@ export class GoogleProvider implements Provider {
       });
 
       const contents = this.convertMessages(request.messages);
-      const result = await model.generateContentStream({ contents });
+      const result = await model.generateContentStream(
+        { contents },
+        { timeout: DEFAULT_TIMEOUT_MS },
+      );
 
       let textOffset = 0;
       let fnCallCount = 0;

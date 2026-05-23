@@ -4,6 +4,7 @@ import { Provider } from "../provider.js";
 import { ChatRequest, StreamEvent, Message, ToolDef } from "../types.js";
 
 const DEFAULT_MODEL = "gpt-4o";
+const DEFAULT_TIMEOUT_MS = 120_000;
 
 interface PendingToolCall {
   id: string;
@@ -16,7 +17,7 @@ export class OpenAIProvider implements Provider {
   private activeController: AbortController | null = null;
 
   constructor(apiKey: string, baseURL?: string) {
-    this.client = new OpenAI({ apiKey, baseURL });
+    this.client = new OpenAI({ apiKey, baseURL, timeout: DEFAULT_TIMEOUT_MS });
   }
 
   async *chat(request: ChatRequest): AsyncGenerator<StreamEvent> {
