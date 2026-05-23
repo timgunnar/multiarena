@@ -64,10 +64,22 @@ export class GoogleProvider implements Provider {
         }
       }
 
-      yield {
-        type: "done",
-        usage: { input: 0, output: 0 },
-      };
+      // Try to get usage metadata from the completed response
+      let usage = { input: 0, output: 0 };
+      try {
+        const response = await result.response;
+        const metadata = response.usageMetadata;
+        if (metadata) {
+          usage = {
+            input: metadata.promptTokenCount ?? 0,
+            output: metadata.candidatesTokenCount ?? 0,
+          };
+        }
+      } catch {
+        // usageMetadata may not be available in all SDK versions
+      }
+
+      yield { type: "done", usage };
     } catch (error) {
       if (this.aborted) return;
       yield {
