@@ -1,26 +1,80 @@
 #!/usr/bin/env node
 import React from "react";
 import { render } from "ink";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { App } from "./ui/app.js";
-import { loadSession, listSessions } from "./persistence/session.js";
+import { listSessions } from "./persistence/session.js";
 
-function parseArgs(): { sessionId?: string; listOnly: boolean } {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const PKG_VERSION = (() => {
+  try {
+    const pkgPath = path.join(__dirname, "..", "package.json");
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+    return pkg.version ?? "0.1.0";
+  } catch {
+    return "0.1.0";
+  }
+})();
+
+const HELP = `Arena — Multi-Model AI Coding Assistant
+
+Usage:
+  arena [options]
+
+Options:
+  --new              Start a new session (default)
+  --resume <id>      Resume a saved session
+  --list             List saved sessions
+  --help             Show this help
+  --version          Show version`;
+
+function parseArgs(): {
+  sessionId?: string;
+  listOnly: boolean;
+  showHelp: boolean;
+  showVersion: boolean;
+} {
   const args = process.argv.slice(2);
+
+  if (args.includes("--help") || args.includes("-h")) {
+    return { listOnly: false, showHelp: true, showVersion: false };
+  }
+
+  if (args.includes("--version") || args.includes("-v")) {
+    return { listOnly: false, showHelp: false, showVersion: true };
+  }
 
   const resumeIdx = args.indexOf("--resume");
   if (resumeIdx >= 0 && args[resumeIdx + 1]) {
-    return { sessionId: args[resumeIdx + 1], listOnly: false };
+    return {
+      sessionId: args[resumeIdx + 1],
+      listOnly: false,
+      showHelp: false,
+      showVersion: false,
+    };
   }
 
   if (args.includes("--list") || args.includes("--list-sessions")) {
-    return { listOnly: true };
+    return { listOnly: true, showHelp: false, showVersion: false };
   }
 
-  // --new is the default (no saved state)
-  return { listOnly: false };
+  return { listOnly: false, showHelp: false, showVersion: false };
 }
 
-const { sessionId, listOnly } = parseArgs();
+const { sessionId, listOnly, showHelp, showVersion } = parseArgs();
+
+if (showHelp) {
+  console.log(HELP);
+  process.exit(0);
+}
+
+if (showVersion) {
+  console.log(`arena v${PKG_VERSION}`);
+  process.exit(0);
+}
 
 if (listOnly) {
   const sessions = listSessions();
