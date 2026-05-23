@@ -27,7 +27,7 @@ describe("GoogleProvider", () => {
 
     const mockStream = (async function* () {
       yield { text: () => "Hello" };
-      yield { text: () => " world" };
+      yield { text: () => "Hello world" }; // text() accumulates in real SDK
     })();
 
     const mockModel = {
@@ -78,7 +78,7 @@ describe("GoogleProvider", () => {
     expect(events[0]).toEqual({ type: "error", message: "API error" });
   });
 
-  it("filters out tool messages from history", async () => {
+  it("converts tool messages to function response parts", async () => {
     const provider = new GoogleProvider("test-key");
 
     let capturedContents: any = null;
@@ -106,6 +106,7 @@ describe("GoogleProvider", () => {
         {
           role: "assistant",
           content: "I'll help",
+          tool_calls: [{ id: "tc1", name: "readFile", arguments: '{"filePath":"a.txt"}' }],
         },
         { role: "tool", content: "file contents", tool_call_id: "tc1" },
         { role: "user", content: "thanks" },
@@ -114,17 +115,19 @@ describe("GoogleProvider", () => {
       events.push(event);
     }
 
-    // Tool messages should be filtered out
-    expect(capturedContents).toHaveLength(3);
+    // Tool messages are now converted to functionResponse parts (not filtered)
+    expect(capturedContents).toHaveLength(4);
     expect(capturedContents[0]).toEqual({
       role: "user",
       parts: [{ text: "hi" }],
     });
-    expect(capturedContents[1]).toEqual({
-      role: "model",
-      parts: [{ text: "I'll help" }],
-    });
-    expect(capturedContents[2]).toEqual({
+    // Assistant with tool call
+    expect(capturedContents[1].role).toBe("model");
+    expect(capturedContents[1].parts.length).toBe(2); // text + functionCall
+    // Tool result as function response
+    expect(capturedContents[2].role).toBe("tool");
+    expect(capturedContents[2].parts[0].functionResponse.name).toBe("readFile");
+    expect(capturedContents[3]).toEqual({
       role: "user",
       parts: [{ text: "thanks" }],
     });
@@ -174,6 +177,41 @@ describe("GoogleProvider", () => {
     expect(
       capturedTools[0].functionDeclarations[0].description,
     ).toBe("Read a file");
+  });
+
+  it("yields tool_call events for function calls in stream", async () => {
+    const provider = new GoogleProvider("test-key");
+
+    const mockStream = (async function* () {
+      yield {
+        text: () => "Let me check that.",
+        functionCalls: () => [{ name: "readFile", args: { filePath: "test.ts" } }],
+      };
+    })();
+
+    const mockModel = {
+      generateContentStream: vi.fn().mockResolvedValue({ stream: mockStream }),
+    };
+
+    (provider as any).genAI.getGenerativeModel = vi
+      .fn()
+      .mockReturnValue(mockModel);
+
+    const events: any[] = [];
+    for await (const event of provider.chat({
+      messages: [{ role: "user", content: "read test.ts" }],
+    })) {
+      events.push(event);
+    }
+
+    expect(events).toHaveLength(3);
+    expect(events[0]).toEqual({ type: "text", content: "Let me check that." });
+    expect(events[1].type).toBe("tool_call");
+    expect(events[1].name).toBe("readFile");
+    expect(events[2]).toEqual({
+      type: "done",
+      usage: { input: 0, output: 0 },
+    });
   });
 
   it("passes system instruction to model params", async () => {

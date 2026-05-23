@@ -1,7 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { Content, Tool, FunctionDeclarationSchema } from "@google/generative-ai";
+import type {
+  Content,
+  Tool,
+  FunctionDeclarationSchema,
+  FunctionCallPart,
+  FunctionResponsePart,
+} from "@google/generative-ai";
 import { Provider } from "../provider.js";
-import { ChatRequest, StreamEvent, Message, ToolDef } from "../types.js";
+import { ChatRequest, StreamEvent, Message, ToolDef, ToolCall } from "../types.js";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
@@ -26,12 +32,35 @@ export class GoogleProvider implements Provider {
       const contents = this.convertMessages(request.messages);
       const result = await model.generateContentStream({ contents });
 
+      let textOffset = 0;
+      let fnCallCount = 0;
+
       for await (const chunk of result.stream) {
         if (this.aborted) return;
 
-        const text = chunk.text();
-        if (text) {
-          yield { type: "text", content: text };
+        // Yield new text
+        const fullText = chunk.text();
+        if (fullText && fullText.length > textOffset) {
+          const delta = fullText.slice(textOffset);
+          textOffset = fullText.length;
+          if (delta) {
+            yield { type: "text", content: delta };
+          }
+        }
+
+        // Yield new function calls
+        const fnCalls = chunk.functionCalls?.();
+        if (fnCalls) {
+          for (let i = fnCallCount; i < fnCalls.length; i++) {
+            const fc = fnCalls[i];
+            yield {
+              type: "tool_call",
+              id: `${fc.name}_${i}`,
+              name: fc.name,
+              args: JSON.stringify(fc.args),
+            };
+          }
+          fnCallCount = fnCalls.length;
         }
       }
 
@@ -58,16 +87,49 @@ export class GoogleProvider implements Provider {
     const result: Content[] = [];
 
     for (const msg of messages) {
-      // Skip tool messages — Gemini doesn't support tool_result in the
-      // same way; they are typically filtered from history.
-      if (msg.role === "tool") continue;
+      switch (msg.role) {
+        case "user":
+          result.push({
+            role: "user",
+            parts: [{ text: msg.content }],
+          });
+          break;
 
-      const content: Content = {
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      };
+        case "assistant": {
+          const parts: Content["parts"] = [];
+          if (msg.content) {
+            parts.push({ text: msg.content });
+          }
+          if (msg.tool_calls) {
+            for (const tc of msg.tool_calls) {
+              parts.push({
+                functionCall: {
+                  name: tc.name,
+                  args: safeJsonParse(tc.arguments),
+                },
+              } as FunctionCallPart);
+            }
+          }
+          result.push({ role: "model", parts });
+          break;
+        }
 
-      result.push(content);
+        case "tool": {
+          const toolCall = findToolCall(messages, msg.tool_call_id);
+          result.push({
+            role: "tool",
+            parts: [
+              {
+                functionResponse: {
+                  name: toolCall?.name ?? "",
+                  response: { content: msg.content },
+                },
+              } as FunctionResponsePart,
+            ],
+          });
+          break;
+        }
+      }
     }
 
     return result;
@@ -82,11 +144,28 @@ export class GoogleProvider implements Provider {
         functionDeclarations: tools.map((t) => ({
           name: t.name,
           description: t.description,
-          // Google's FunctionDeclarationSchema is stricter than our
-          // free-form JSON Schema; cast through unknown.
           parameters: t.parameters as unknown as FunctionDeclarationSchema,
         })),
       },
     ];
   }
+}
+
+function safeJsonParse(raw: string): object {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function findToolCall(messages: Message[], toolCallId?: string): ToolCall | undefined {
+  if (!toolCallId) return undefined;
+  for (const msg of messages) {
+    if (msg.tool_calls) {
+      const found = msg.tool_calls.find((tc) => tc.id === toolCallId);
+      if (found) return found;
+    }
+  }
+  return undefined;
 }
