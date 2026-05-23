@@ -47,7 +47,7 @@ export class AnthropicProvider implements Provider {
           case "content_block_stop": {
             // The type definition for RawContentBlockStopEvent is incomplete in SDK v0.30.0;
             // the actual API response includes a `content_block` field.
-            const block = (event as Record<string, unknown>).content_block as
+            const block = (event as unknown as Record<string, unknown>).content_block as
               | { type: string; id: string; name: string; input: unknown }
               | undefined;
             if (block?.type === "tool_use") {
