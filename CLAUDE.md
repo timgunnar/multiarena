@@ -4,7 +4,7 @@
 
 ## 项目
 
-一个终端原生的多模型 AI 编程助手。用户同时与多个大模型对话，对比回答，选择最佳方案来编辑文件和执行命令。
+**Arena** — 一个终端原生的多模型 AI 编程助手。用户同时与多个大模型对话，对比回答，选择最佳方案来编辑文件和执行命令。
 
 **核心差异化：** 不绑定单一供应商。每轮对话同时跑 N 个模型。
 
@@ -35,12 +35,13 @@ UI 层（Ink/React） → Core 层（会话 / 流调度 / 任务） → Provider
 
 ## 设计文档
 
-`docs/superpowers/specs/2026-05-22-multi-model-cli-design.md` — 完整设计说明。当前处于设计阶段，尚未开始编码。
+`docs/superpowers/specs/2026-05-22-multi-model-cli-design.md` — 完整设计说明。设计阶段已完结，待开始编码。
 
-## 待讨论
+## 已定案
 
-- Provider 统一接口设计（流式输出、工具调用归一化）
-- 工具执行模式（各模型共享结果还是各自调用）
-- 配置文件格式和会话持久化方案
-- 权限系统粒度
-- 产品名称
+- Provider 统一接口：`Provider` 接口 + AsyncGenerator + Adapter 模式
+- 工具执行：各模型在各自 worktree 中独立调用
+- 配置文件：TOML（`.multillmrc`），支持 `${ENV}`
+- 会话持久化：JSON 文件（`~/.arena/sessions/`）
+- 权限：会话记忆，跨模型共享授权，硬编码安全底线
+- 产品名称：Arena

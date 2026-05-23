@@ -1,7 +1,7 @@
 # 多模型 CLI AI 编程助手 — 设计说明（进行中）
 
 **日期：** 2026-05-22  
-**状态：** 进行中（已完成：项目愿景、技术栈、展示模式、架构、文件隔离）
+**状态：** 设计阶段已完结，待开始编码
 
 ---
 
@@ -217,12 +217,61 @@ Provider 层（统一接口 → 各适配器）
 
 ---
 
-## 待讨论事项（下次继续）
+## Provider 统一接口
 
-- Provider 统一接口设计（流式输出、工具调用如何归一化）
+### 设计原则
+
+Core 层只跟统一接口打交道，不关心后面是哪个供应商。每个 Adapter 负责请求转换和流式事件归一化。
+
+### 供应商差异（需归一化）
+
+| | Anthropic | OpenAI | Google Gemini |
+|---|---|---|---|
+| 消息格式 | `role: user/assistant` | `role: user/assistant` | `role: user/model` |
+| 流式事件 | `content_block_delta` | `choices[0].delta.content` | `candidates[0].content.parts` |
+| 工具定义 | `input_schema` | `parameters` | `parameters` (OpenAPI) |
+| 工具调用 | `tool_use` block | `tool_calls` array | `functionCall` |
+| System Prompt | 顶层 `system` 字段 | `role: system` | `systemInstruction` |
+
+### 统一类型
+
+```typescript
+// 请求
+interface ChatRequest {
+  messages: Message[];
+  tools?: ToolDef[];
+  system?: string;
+  model?: string;
+}
+
+// 流式事件
+type StreamEvent =
+  | { type: "text"; content: string }
+  | { type: "tool_call"; id: string; name: string; args: string }
+  | { type: "tool_result"; id: string; result: string }
+  | { type: "done"; usage: TokenUsage }
+  | { type: "error"; message: string };
+
+// Provider 接口
+interface Provider {
+  chat(request: ChatRequest): AsyncGenerator<StreamEvent>;
+  abort(): void;
+}
+```
+
+### Adapter 职责
+
+1. **请求转换** — `ChatRequest` → 供应商原生格式
+2. **流式转换** — 供应商 SSE/stream 事件 → 统一 `StreamEvent`
+
+---
+
+## 待讨论事项
+
+- ~~Provider 统一接口设计~~ → 已确定：统一 `Provider` 接口 + AsyncGenerator + Adapter 模式
 - ~~对话历史：各模型共享还是各自独立~~ → 已确定：各自独立，广播时同步追加
-- 工具执行模式：所有模型共享一次执行结果还是各模型各自调用工具
-- 配置文件格式（.multillmrc 或类似）
-- 会话持久化方案
-- 权限系统粒度
-- 产品名称
+- ~~工具执行模式~~ → 已确定：各模型在各自 worktree 中独立调用工具，完全隔离
+- 配置文件格式 → 已确定：TOML（`.multillmrc`），项目根 / `~/.multillmrc`，支持 `${ENV}` 环境变量引用
+- 会话持久化方案 → 已确定：JSON 文件（`~/.multillm/sessions/{id}.json`），v1 简单位先跑
+- 权限系统粒度 → 已确定：会话记忆模式，权限跨模型共享（给工具授权而非给模型授权），硬编码安全底线
+- 产品名称 → 已确定：**Arena**（角斗场，多模型同台竞技，用户裁决）
