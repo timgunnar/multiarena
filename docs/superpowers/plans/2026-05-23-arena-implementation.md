@@ -1,54 +1,54 @@
-# Arena Implementation Plan
+# Arena 实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向自动化执行者：** 使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 按任务逐步实施本计划。步骤使用 checkbox（`- [ ]`）语法进行跟踪。
 
-**Goal:** Build Arena — a terminal-native multi-model AI coding assistant where users chat with N LLMs simultaneously, compare answers via Tab-driven UI, and execute tools in isolated git worktrees.
+**目标：** 构建 Arena — 一个终端原生的多模型 AI 编程助手，用户可同时与 N 个 LLM 对话，通过 Tab 切换对比回答，在隔离的 git worktree 中执行工具。
 
-**Architecture:** Four-layer stack: UI (Ink/React) → Core (Session/Stream/Router) → Provider (unified interface + adapters) → Tool Runtime. Each model maintains independent conversation history. File operations run in per-model git worktrees with a shared permission model.
+**架构：** 四层结构 — UI (Ink/React) → Core (Session/Stream/Router) → Provider (统一接口 + 适配器) → Tool Runtime。每个模型维护独立的对话历史。文件操作在各自模型的 git worktree 中运行，权限模型跨模型共享。
 
-**Tech Stack:** TypeScript, Node.js, Ink (React for terminal), TOML config, Anthropic/OpenAI/Google SDKs
+**技术栈：** TypeScript、Node.js、Ink（React 终端渲染）、TOML 配置、Anthropic/OpenAI/Google SDK
 
 ---
 
-## File Structure
+## 文件结构
 
 ```
 arena/
 ├── package.json
 ├── tsconfig.json
 ├── src/
-│   ├── index.ts                  # CLI entry, mounts Ink app
+│   ├── index.ts                  # CLI 入口，挂载 Ink 应用
 │   ├── config/
-│   │   ├── types.ts              # Config type definitions
-│   │   └── loader.ts             # TOML config loading (.arenarc)
+│   │   ├── types.ts              # 配置类型定义
+│   │   └── loader.ts             # TOML 配置加载 (.arenarc)
 │   ├── provider/
 │   │   ├── types.ts              # ChatRequest, StreamEvent, ToolDef, Message
-│   │   ├── provider.ts           # Provider interface
+│   │   ├── provider.ts           # Provider 接口
 │   │   └── adapters/
-│   │       ├── anthropic.ts      # Anthropic adapter
-│   │       ├── openai.ts         # OpenAI adapter
-│   │       └── google.ts         # Google Gemini adapter
+│   │       ├── anthropic.ts      # Anthropic 适配器
+│   │       ├── openai.ts         # OpenAI 适配器
+│   │       └── google.ts         # Google Gemini 适配器
 │   ├── core/
 │   │   ├── types.ts              # ModelState, Session, TargetMode
-│   │   ├── session.ts            # Session manager (per-model history)
-│   │   ├── stream.ts             # Stream manager (concurrent dispatch)
-│   │   └── router.ts             # Message router (broadcast vs directed)
+│   │   ├── session.ts            # 会话管理器（每个模型独立历史）
+│   │   ├── stream.ts             # 流调度器（并发分发）
+│   │   └── router.ts             # 消息路由器（广播 vs 定向）
 │   ├── ui/
-│   │   ├── app.tsx               # Main Ink app (state + layout)
+│   │   ├── app.tsx               # 主 Ink 应用（状态 + 布局）
 │   │   ├── hooks/
-│   │   │   ├── useInput.ts       # Input handling, Tab cycling
-│   │   │   └── useStreams.ts     # Multi-stream state management
+│   │   │   ├── useInput.ts       # 输入处理、Tab 循环
+│   │   │   └── useStreams.ts     # 多流状态管理
 │   │   └── components/
-│   │       ├── StatusBar.tsx      # Top fixed status bar
-│   │       ├── OutputArea.tsx     # Scrollable output area
-│   │       ├── InputBar.tsx       # Bottom fixed input bar
-│   │       ├── ModelDetail.tsx    # Single model full-width detail view
-│   │       └── BroadcastSummary.tsx # Multi-column summary view
+│   │       ├── StatusBar.tsx      # 顶部固定状态条
+│   │       ├── OutputArea.tsx     # 可滚动输出区
+│   │       ├── InputBar.tsx       # 底部固定输入栏
+│   │       ├── ModelDetail.tsx    # 单模型全宽详情视图
+│   │       └── BroadcastSummary.tsx # 多栏摘要视图
 │   ├── tools/
-│   │   ├── types.ts              # Tool definitions
-│   │   ├── registry.ts           # Tool registry
-│   │   ├── executor.ts           # Execute tool, apply permission check
-│   │   ├── permission.ts         # Session-memory permission manager
+│   │   ├── types.ts              # 工具定义
+│   │   ├── registry.ts           # 工具注册表
+│   │   ├── executor.ts           # 执行工具、权限检查
+│   │   ├── permission.ts         # 会话记忆权限管理器
 │   │   └── builtin/
 │   │       ├── readFile.ts
 │   │       ├── grep.ts
@@ -57,7 +57,7 @@ arena/
 │   │       ├── writeFile.ts
 │   │       └── editFile.ts
 │   └── isolation/
-│       └── worktree.ts           # Git worktree lifecycle
+│       └── worktree.ts           # Git worktree 生命周期
 └── test/
     ├── config/
     │   └── loader.test.ts
@@ -78,16 +78,16 @@ arena/
 
 ---
 
-## Phase 1: Project Foundation
+## 第一阶段：项目基础
 
-### Task 1: Initialize project
+### 任务 1：初始化项目
 
-**Files:**
-- Create: `package.json`
-- Create: `tsconfig.json`
-- Create: `src/index.ts`
+**涉及文件：**
+- 创建：`package.json`
+- 创建：`tsconfig.json`
+- 创建：`src/index.ts`
 
-- [ ] **Step 1: Create package.json**
+- [ ] **步骤 1：创建 package.json**
 
 ```bash
 mkdir -p arena && cd arena
@@ -130,7 +130,7 @@ mkdir -p arena && cd arena
 }
 ```
 
-- [ ] **Step 2: Create tsconfig.json**
+- [ ] **步骤 2：创建 tsconfig.json**
 
 ```json
 {
@@ -154,7 +154,7 @@ mkdir -p arena && cd arena
 }
 ```
 
-- [ ] **Step 3: Create minimal entry point**
+- [ ] **步骤 3：创建最小入口文件**
 
 ```typescript
 // src/index.ts
@@ -165,7 +165,7 @@ const main = () => {
 main();
 ```
 
-- [ ] **Step 4: Install dependencies and verify**
+- [ ] **步骤 4：安装依赖并验证**
 
 ```bash
 npm install
@@ -173,9 +173,9 @@ npm run build
 npm start
 ```
 
-Expected: prints "Arena — multi-model AI coding assistant"
+预期输出：打印 "Arena — multi-model AI coding assistant"
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add package.json tsconfig.json src/index.ts package-lock.json
@@ -184,13 +184,13 @@ git commit -m "feat: project scaffolding"
 
 ---
 
-### Task 2: Config system — types and loader
+### 任务 2：配置系统 — 类型和加载器
 
-**Files:**
-- Create: `src/config/types.ts`
-- Create: `src/config/loader.ts`
+**涉及文件：**
+- 创建：`src/config/types.ts`
+- 创建：`src/config/loader.ts`
 
-- [ ] **Step 1: Define config types**
+- [ ] **步骤 1：定义配置类型**
 
 ```typescript
 // src/config/types.ts
@@ -217,7 +217,7 @@ export const DEFAULT_CONFIG: Partial<ArenaConfig> = {
 };
 ```
 
-- [ ] **Step 2: Write config loader**
+- [ ] **步骤 2：编写配置加载器**
 
 ```typescript
 // src/config/loader.ts
@@ -232,7 +232,7 @@ function resolveEnvVars(value: string): string {
 }
 
 function resolveConfig(raw: Record<string, any>): ArenaConfig {
-  // Deep-walk the config resolving ${ENV_VAR} in string values
+  // 深度遍历配置，解析字符串中的 ${ENV_VAR}
   const walk = (obj: any): any => {
     if (typeof obj === "string") return resolveEnvVars(obj);
     if (Array.isArray(obj)) return obj.map(walk);
@@ -261,12 +261,12 @@ export function loadConfig(): ArenaConfig {
     }
   }
 
-  // No config found — return empty default
+  // 未找到配置文件 — 返回空默认值
   return { models: {}, defaults: { active: [], broadcast: true } };
 }
 ```
 
-- [ ] **Step 3: Write tests**
+- [ ] **步骤 3：编写测试**
 
 ```typescript
 // test/config/loader.test.ts
@@ -275,23 +275,23 @@ import { describe, it, expect } from "vitest";
 describe("config loader", () => {
   it("resolves env vars in strings", () => {
     process.env.TEST_KEY = "secret123";
-    // This tests the resolveEnvVars utility
-    // Actual test would import and call the helper
+    // 测试 resolveEnvVars 工具函数
+    // 实际测试应导入并调用该辅助函数
   });
 
   it("returns default config when no file found", () => {
-    // Test loadConfig with tmp dir that has no .arenarc
+    // 在临时目录中测试，确保没有 .arenarc
   });
 });
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **步骤 4：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add src/config/ test/config/
@@ -300,15 +300,15 @@ git commit -m "feat: config types and TOML loader with env var resolution"
 
 ---
 
-## Phase 2: Provider Layer
+## 第二阶段：Provider 层
 
-### Task 3: Provider types and interface
+### 任务 3：Provider 类型和接口
 
-**Files:**
-- Create: `src/provider/types.ts`
-- Create: `src/provider/provider.ts`
+**涉及文件：**
+- 创建：`src/provider/types.ts`
+- 创建：`src/provider/provider.ts`
 
-- [ ] **Step 1: Define provider types**
+- [ ] **步骤 1：定义 Provider 类型**
 
 ```typescript
 // src/provider/types.ts
@@ -350,7 +350,7 @@ export interface ChatRequest {
 }
 ```
 
-- [ ] **Step 2: Define Provider interface**
+- [ ] **步骤 2：定义 Provider 接口**
 
 ```typescript
 // src/provider/provider.ts
@@ -362,7 +362,7 @@ export interface Provider {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add src/provider/types.ts src/provider/provider.ts
@@ -371,12 +371,12 @@ git commit -m "feat: provider unified types and interface"
 
 ---
 
-### Task 4: Anthropic adapter
+### 任务 4：Anthropic 适配器
 
-**Files:**
-- Create: `src/provider/adapters/anthropic.ts`
+**涉及文件：**
+- 创建：`src/provider/adapters/anthropic.ts`
 
-- [ ] **Step 1: Write Anthropic adapter**
+- [ ] **步骤 1：编写 Anthropic 适配器**
 
 ```typescript
 // src/provider/adapters/anthropic.ts
@@ -434,7 +434,7 @@ export class AnthropicProvider implements Provider {
           if (event.delta.type === "text_delta") {
             yield { type: "text", content: event.delta.text };
           } else if (event.delta.type === "input_json_delta") {
-            // Handled through content_block_stop for accumulated args
+            // 通过 content_block_stop 处理累积的参数
           }
         } else if (event.type === "content_block_stop") {
           if (event.content_block.type === "tool_use") {
@@ -448,7 +448,7 @@ export class AnthropicProvider implements Provider {
         } else if (event.type === "message_stop") {
           yield {
             type: "done",
-            usage: { input: 0, output: 0 }, // Anthropic stream doesn't give usage in message_stop
+            usage: { input: 0, output: 0 }, // Anthropic 流不在 message_stop 中返回 usage
           };
         } else if (event.type === "error") {
           yield { type: "error", message: event.error.message };
@@ -465,7 +465,7 @@ export class AnthropicProvider implements Provider {
 }
 ```
 
-- [ ] **Step 2: Write adapter test (mock Anthropic SDK)**
+- [ ] **步骤 2：编写适配器测试（模拟 Anthropic SDK）**
 
 ```typescript
 // test/provider/adapters/anthropic.test.ts
@@ -473,26 +473,26 @@ import { describe, it, expect, vi } from "vitest";
 
 describe("AnthropicProvider", () => {
   it("constructs with API key", () => {
-    // Test construction
+    // 测试构造
   });
 
   it("yields text events from stream", async () => {
-    // Mock the SDK's messages.stream to yield events
+    // 模拟 SDK 的 messages.stream 产生事件
   });
 
   it("yields tool_call events", async () => {
-    // Mock tool_use content blocks
+    // 模拟 tool_use content blocks
   });
 });
 ```
 
-- [ ] **Step 3: Run tests**
+- [ ] **步骤 3：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：提交**
 
 ```bash
 git add src/provider/adapters/anthropic.ts test/provider/adapters/anthropic.test.ts
@@ -501,13 +501,13 @@ git commit -m "feat: Anthropic provider adapter"
 
 ---
 
-### Task 5: OpenAI and Google adapters
+### 任务 5：OpenAI 和 Google 适配器
 
-**Files:**
-- Create: `src/provider/adapters/openai.ts`
-- Create: `src/provider/adapters/google.ts`
+**涉及文件：**
+- 创建：`src/provider/adapters/openai.ts`
+- 创建：`src/provider/adapters/google.ts`
 
-- [ ] **Step 1: Write OpenAI adapter**
+- [ ] **步骤 1：编写 OpenAI 适配器**
 
 ```typescript
 // src/provider/adapters/openai.ts
@@ -599,7 +599,7 @@ export class OpenAIProvider implements Provider {
 }
 ```
 
-- [ ] **Step 2: Write Google adapter**
+- [ ] **步骤 2：编写 Google 适配器**
 
 ```typescript
 // src/provider/adapters/google.ts
@@ -623,7 +623,7 @@ export class GoogleProvider implements Provider {
       systemInstruction: request.system,
     });
 
-    // Build Gemini contents from messages
+    // 将消息转换为 Gemini contents 格式
     const contents = request.messages
       .filter((m) => m.role !== "tool")
       .map((m) => ({
@@ -656,9 +656,9 @@ export class GoogleProvider implements Provider {
 }
 ```
 
-- [ ] **Step 3: Write provider factory**
+- [ ] **步骤 3：编写 Provider 工厂函数**
 
-Add to `src/provider/provider.ts`:
+添加到 `src/provider/provider.ts`：
 
 ```typescript
 import { AnthropicProvider } from "./adapters/anthropic";
@@ -684,13 +684,13 @@ export function createProvider(config: ModelConfig): Provider {
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **步骤 4：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add src/provider/
@@ -699,15 +699,15 @@ git commit -m "feat: OpenAI, Google adapters and provider factory"
 
 ---
 
-## Phase 3: Core Layer
+## 第三阶段：Core 层
 
-### Task 6: Session manager (per-model conversation history)
+### 任务 6：会话管理器（每个模型独立对话历史）
 
-**Files:**
-- Create: `src/core/types.ts`
-- Create: `src/core/session.ts`
+**涉及文件：**
+- 创建：`src/core/types.ts`
+- 创建：`src/core/session.ts`
 
-- [ ] **Step 1: Define core types**
+- [ ] **步骤 1：定义 Core 类型**
 
 ```typescript
 // src/core/types.ts
@@ -722,20 +722,20 @@ export interface ModelState {
   provider: string;
   messages: Message[];
   muted: boolean;
-  buffer: string;          // Accumulated streaming output
+  buffer: string;          // 累积的流式输出
   isStreaming: boolean;
   usage: { input: number; output: number };
-  contextLimit: number;    // Model's context window size
+  contextLimit: number;    // 模型的上下文窗口大小
 }
 
 export interface SessionState {
   models: ModelState[];
   targetMode: TargetMode;
-  worktreeBase: string;    // Path to original repo
+  worktreeBase: string;    // 原始仓库路径
 }
 ```
 
-- [ ] **Step 2: Implement Session class**
+- [ ] **步骤 2：实现 Session 类**
 
 ```typescript
 // src/core/session.ts
@@ -776,7 +776,7 @@ export class Session {
     return this.state.targetMode;
   }
 
-  /** Add a user message to one or all models */
+  /** 向一个或所有模型添加用户消息 */
   addUserMessage(content: string): ModelState[] {
     if (this.state.targetMode.type === "broadcast") {
       for (const m of this.state.models) {
@@ -794,7 +794,7 @@ export class Session {
     }
   }
 
-  /** Append assistant response to a model */
+  /** 将助手回复追加到模型历史 */
   addAssistantMessage(modelName: string, content: string): void {
     const m = this.findModel(modelName);
     if (m) {
@@ -802,7 +802,7 @@ export class Session {
     }
   }
 
-  /** Append tool result to a model */
+  /** 将工具结果追加到模型历史 */
   addToolResult(modelName: string, toolCallId: string, result: string): void {
     const m = this.findModel(modelName);
     if (m) {
@@ -863,7 +863,7 @@ export class Session {
 }
 
 function contextLimitForModel(model: string): number {
-  // Conservative defaults for known models
+  // 已知模型的保守默认值
   if (model.includes("claude")) return 200000;
   if (model.includes("gpt-4")) return 128000;
   if (model.includes("gpt-3.5")) return 16384;
@@ -873,7 +873,7 @@ function contextLimitForModel(model: string): number {
 }
 ```
 
-- [ ] **Step 3: Write tests**
+- [ ] **步骤 3：编写测试**
 
 ```typescript
 // test/core/session.test.ts
@@ -935,13 +935,13 @@ describe("Session", () => {
 });
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **步骤 4：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add src/core/ test/core/
@@ -950,12 +950,12 @@ git commit -m "feat: session manager with per-model history and Tab cycling"
 
 ---
 
-### Task 7: Stream manager (concurrent multi-model streaming)
+### 任务 7：流调度器（并发多模型流式输出）
 
-**Files:**
-- Create: `src/core/stream.ts`
+**涉及文件：**
+- 创建：`src/core/stream.ts`
 
-- [ ] **Step 1: Implement StreamManager**
+- [ ] **步骤 1：实现 StreamManager**
 
 ```typescript
 // src/core/stream.ts
@@ -971,7 +971,7 @@ export interface StreamResult {
   provider: Provider;
 }
 
-/** Launch concurrent streams for all target models */
+/** 为所有目标模型启动并发流 */
 export function launchStreams(
   session: Session,
   config: ArenaConfig,
@@ -1003,7 +1003,7 @@ export function launchStreams(
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [ ] **步骤 2：编写测试**
 
 ```typescript
 // test/core/stream.test.ts
@@ -1030,13 +1030,13 @@ describe("launchStreams", () => {
 });
 ```
 
-- [ ] **Step 3: Run tests**
+- [ ] **步骤 3：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：提交**
 
 ```bash
 git add src/core/stream.ts test/core/stream.test.ts
@@ -1045,18 +1045,18 @@ git commit -m "feat: concurrent stream manager for multi-model dispatch"
 
 ---
 
-## Phase 4: Terminal UI
+## 第四阶段：终端 UI
 
-### Task 8: Ink app shell with three-zone layout
+### 任务 8：Ink 应用框架 — 三区布局
 
-**Files:**
-- Create: `src/ui/app.tsx`
-- Create: `src/ui/components/StatusBar.tsx`
-- Create: `src/ui/components/OutputArea.tsx`
-- Create: `src/ui/components/InputBar.tsx`
-- Modify: `src/index.ts`
+**涉及文件：**
+- 创建：`src/ui/app.tsx`
+- 创建：`src/ui/components/StatusBar.tsx`
+- 创建：`src/ui/components/OutputArea.tsx`
+- 创建：`src/ui/components/InputBar.tsx`
+- 修改：`src/index.ts`
 
-- [ ] **Step 1: Create StatusBar component**
+- [ ] **步骤 1：创建 StatusBar 组件**
 
 ```typescript
 // src/ui/components/StatusBar.tsx
@@ -1066,7 +1066,7 @@ import { ModelState } from "../../core/types";
 
 interface Props {
   models: ModelState[];
-  activeModelName: string | null; // null = broadcast
+  activeModelName: string | null; // null = 广播模式
 }
 
 export const StatusBar: React.FC<Props> = ({ models, activeModelName }) => (
@@ -1089,7 +1089,7 @@ export const StatusBar: React.FC<Props> = ({ models, activeModelName }) => (
 );
 ```
 
-- [ ] **Step 2: Create OutputArea component**
+- [ ] **步骤 2：创建 OutputArea 组件**
 
 ```typescript
 // src/ui/components/OutputArea.tsx
@@ -1114,7 +1114,7 @@ export const OutputArea: React.FC<Props> = ({ models, targetMode, scrollOffset }
   if (!activeModel) {
     return (
       <Box flexGrow={1}>
-        <Text>No model selected</Text>
+        <Text>未选择模型</Text>
       </Box>
     );
   }
@@ -1123,7 +1123,7 @@ export const OutputArea: React.FC<Props> = ({ models, targetMode, scrollOffset }
 };
 ```
 
-- [ ] **Step 3: Create BroadcastSummary**
+- [ ] **步骤 3：创建 BroadcastSummary**
 
 ```typescript
 // src/ui/components/BroadcastSummary.tsx
@@ -1159,10 +1159,10 @@ export const BroadcastSummary: React.FC<Props> = ({ models }) => {
               </Text>
             ))}
             {lines.length === 0 && (
-              <Text dimColor>Waiting...</Text>
+              <Text dimColor>等待中...</Text>
             )}
             <Text dimColor>
-              {m.buffer.split("\n").length} lines · {m.isStreaming ? "streaming..." : "done"}
+              {m.buffer.split("\n").length} 行 · {m.isStreaming ? "输出中..." : "完成"}
             </Text>
           </Box>
         );
@@ -1172,7 +1172,7 @@ export const BroadcastSummary: React.FC<Props> = ({ models }) => {
 };
 ```
 
-- [ ] **Step 4: Create ModelDetail**
+- [ ] **步骤 4：创建 ModelDetail**
 
 ```typescript
 // src/ui/components/ModelDetail.tsx
@@ -1196,14 +1196,14 @@ export const ModelDetail: React.FC<Props> = ({ model, scrollOffset }) => {
       ))}
       {model.isStreaming && <Text color="gray">▋</Text>}
       {allLines.length === 0 && !model.isStreaming && (
-        <Text dimColor>No output yet</Text>
+        <Text dimColor>暂无输出</Text>
       )}
     </Box>
   );
 };
 ```
 
-- [ ] **Step 5: Create InputBar**
+- [ ] **步骤 5：创建 InputBar**
 
 ```typescript
 // src/ui/components/InputBar.tsx
@@ -1229,7 +1229,7 @@ export const InputBar: React.FC<Props> = ({ prefix, value, onChange, onSubmit })
 );
 ```
 
-- [ ] **Step 6: Create App**
+- [ ] **步骤 6：创建 App**
 
 ```typescript
 // src/ui/app.tsx
@@ -1263,12 +1263,12 @@ export const App: React.FC = () => {
       ? null
       : session.targetMode.modelName;
 
-  // Tab to cycle target
+  // Tab 切换对话目标
   useInput((input, key) => {
     if (key.tab) {
       session.cycleTarget();
       setScrollOffset(0);
-      // Force re-render by updating state copy
+      // 通过更新 state 副本触发重新渲染
       setModelStates([...session.models]);
       return;
     }
@@ -1280,7 +1280,7 @@ export const App: React.FC = () => {
       return;
     }
 
-    // Ctrl+1/2/3 to jump to model
+    // Ctrl+1/2/3 快速跳转到对应模型
     for (let i = 0; i < session.models.length; i++) {
       if (input === `\x010${i + 1}`) {
         session.jumpToModel(session.models[i].name);
@@ -1306,17 +1306,17 @@ export const App: React.FC = () => {
       const targets = session.addUserMessage(value);
       setModelStates([...session.models]);
 
-      // Mark targets as streaming
+      // 标记目标模型为流式输出中
       for (const t of targets) {
         t.isStreaming = true;
         t.buffer = "";
       }
       setModelStates([...session.models]);
 
-      // Launch concurrent streams
+      // 启动并发流
       const streams = launchStreams(session, config, SYSTEM_PROMPT, []);
 
-      // Process all streams concurrently
+      // 并发处理所有流
       await Promise.all(
         streams.map(async ({ modelName, events }) => {
           const m = session.models.find((mm) => mm.name === modelName);
@@ -1328,7 +1328,7 @@ export const App: React.FC = () => {
             } else if (event.type === "done") {
               m.isStreaming = false;
             } else if (event.type === "error") {
-              m.buffer += `\n[Error: ${event.message}]`;
+              m.buffer += `\n[错误: ${event.message}]`;
               m.isStreaming = false;
             }
             setModelStates([...session.models]);
@@ -1336,7 +1336,7 @@ export const App: React.FC = () => {
         }),
       );
 
-      // Save assistant responses to history
+      // 将助手回复保存到历史
       for (const { modelName } of streams) {
         const m = session.models.find((mm) => mm.name === modelName);
         if (m && m.buffer) {
@@ -1349,27 +1349,27 @@ export const App: React.FC = () => {
 
   return (
     <Box flexDirection="column" width="100%" height="100%">
-      {/* Top: fixed status bar */}
+      {/* 顶部：固定状态条 */}
       <StatusBar models={modelStates} activeModelName={activeModelName} />
 
-      {/* Divider */}
+      {/* 分隔线 */}
       <Box height={0}>
         <Text>{"─".repeat(process.stdout.columns ?? 80)}</Text>
       </Box>
 
-      {/* Middle: scrollable output */}
+      {/* 中间：可滚动输出区 */}
       <OutputArea
         models={modelStates}
         targetMode={session.targetMode}
         scrollOffset={scrollOffset}
       />
 
-      {/* Divider */}
+      {/* 分隔线 */}
       <Box height={0}>
         <Text>{"─".repeat(process.stdout.columns ?? 80)}</Text>
       </Box>
 
-      {/* Bottom: fixed input bar */}
+      {/* 底部：固定输入栏 */}
       <InputBar
         prefix={targetPrefix}
         value={input}
@@ -1381,7 +1381,7 @@ export const App: React.FC = () => {
 };
 ```
 
-- [ ] **Step 7: Update entry point**
+- [ ] **步骤 7：更新入口文件**
 
 ```typescript
 // src/index.ts
@@ -1392,15 +1392,15 @@ import { App } from "./ui/app";
 render(React.createElement(App));
 ```
 
-- [ ] **Step 8: Test visually**
+- [ ] **步骤 8：视觉测试**
 
 ```bash
 npx tsx src/index.ts
 ```
 
-Expected: Terminal shows three-zone layout. Type a message and hit Enter to test streaming. Tab to cycle between models. You'll need valid API keys in `.arenarc` or env vars.
+预期效果：终端显示三区布局。输入消息并按回车测试流式输出。按 Tab 在模型间切换。需要在 `.arenarc` 中配置有效的 API key 或设置环境变量。
 
-- [ ] **Step 9: Commit**
+- [ ] **步骤 9：提交**
 
 ```bash
 git add src/ui/ src/index.ts
@@ -1409,16 +1409,16 @@ git commit -m "feat: Ink UI with three-zone layout and Tab-driven interaction"
 
 ---
 
-## Phase 5: Tools & Permissions
+## 第五阶段：工具与权限
 
-### Task 9: Tool registry and permission manager
+### 任务 9：工具注册表和权限管理器
 
-**Files:**
-- Create: `src/tools/types.ts`
-- Create: `src/tools/registry.ts`
-- Create: `src/tools/permission.ts`
+**涉及文件：**
+- 创建：`src/tools/types.ts`
+- 创建：`src/tools/registry.ts`
+- 创建：`src/tools/permission.ts`
 
-- [ ] **Step 1: Define tool types**
+- [ ] **步骤 1：定义工具类型**
 
 ```typescript
 // src/tools/types.ts
@@ -1438,7 +1438,7 @@ export interface PermissionEntry {
 }
 ```
 
-- [ ] **Step 2: Implement permission manager**
+- [ ] **步骤 2：实现权限管理器**
 
 ```typescript
 // src/tools/permission.ts
@@ -1448,7 +1448,7 @@ export class PermissionManager {
   private entries: PermissionEntry[] = [];
 
   check(toolName: string, args: Record<string, unknown>): PermissionDecision {
-    // Check hard-coded safety rules first
+    // 首先检查硬编码的安全规则
     if (toolName === "bash") {
       const cmd = String(args.command ?? "");
       if (cmd.includes("rm -rf /") || cmd.includes("sudo ")) {
@@ -1463,14 +1463,14 @@ export class PermissionManager {
       }
     }
 
-    // Check session memory
+    // 检查会话记忆
     for (const entry of this.entries) {
       if (entry.toolName === toolName) {
         return entry.decision;
       }
     }
 
-    // Unknown — needs user input
+    // 未知 — 默认允许
     return "allow";
   }
 
@@ -1488,7 +1488,7 @@ export class PermissionManager {
 }
 ```
 
-- [ ] **Step 3: Implement tool registry**
+- [ ] **步骤 3：实现工具注册表**
 
 ```typescript
 // src/tools/registry.ts
@@ -1513,24 +1513,24 @@ export class ToolRegistry {
   ): Promise<string> {
     const handler = this.tools.get(name);
     if (!handler) {
-      return `Error: unknown tool "${name}"`;
+      return `错误: 未知工具 "${name}"`;
     }
     try {
       return await handler.execute(args, worktreePath);
     } catch (err: any) {
-      return `Error executing ${name}: ${err.message}`;
+      return `执行 ${name} 出错: ${err.message}`;
     }
   }
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **步骤 4：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add src/tools/
@@ -1539,14 +1539,14 @@ git commit -m "feat: tool registry and permission manager"
 
 ---
 
-### Task 10: Built-in tools (read-only)
+### 任务 10：内置工具（只读）
 
-**Files:**
-- Create: `src/tools/builtin/readFile.ts`
-- Create: `src/tools/builtin/grep.ts`
-- Create: `src/tools/builtin/bash.ts`
+**涉及文件：**
+- 创建：`src/tools/builtin/readFile.ts`
+- 创建：`src/tools/builtin/grep.ts`
+- 创建：`src/tools/builtin/bash.ts`
 
-- [ ] **Step 1: Implement ReadFile**
+- [ ] **步骤 1：实现 ReadFile**
 
 ```typescript
 // src/tools/builtin/readFile.ts
@@ -1557,20 +1557,20 @@ import { ToolHandler } from "../types";
 export const readFileTool: ToolHandler = {
   definition: {
     name: "readFile",
-    description: "Read the contents of a file",
+    description: "读取文件内容",
     parameters: {
       type: "object",
       properties: {
-        filePath: { type: "string", description: "Path to the file" },
-        offset: { type: "number", description: "Line offset to start reading" },
-        limit: { type: "number", description: "Max lines to read" },
+        filePath: { type: "string", description: "文件路径" },
+        offset: { type: "number", description: "起始行偏移" },
+        limit: { type: "number", description: "最大读取行数" },
       },
       required: ["filePath"],
     },
   },
   async execute(args, worktreePath) {
     const filePath = path.resolve(worktreePath, args.filePath as string);
-    if (!fs.existsSync(filePath)) return `File not found: ${args.filePath}`;
+    if (!fs.existsSync(filePath)) return `文件未找到: ${args.filePath}`;
 
     const content = fs.readFileSync(filePath, "utf-8");
     const lines = content.split("\n");
@@ -1581,7 +1581,7 @@ export const readFileTool: ToolHandler = {
 };
 ```
 
-- [ ] **Step 2: Implement Grep**
+- [ ] **步骤 2：实现 Grep**
 
 ```typescript
 // src/tools/builtin/grep.ts
@@ -1591,13 +1591,13 @@ import { ToolHandler } from "../types";
 export const grepTool: ToolHandler = {
   definition: {
     name: "grep",
-    description: "Search for a pattern in files using regex",
+    description: "在文件中使用正则表达式搜索",
     parameters: {
       type: "object",
       properties: {
-        pattern: { type: "string", description: "Regex pattern to search for" },
-        path: { type: "string", description: "Directory or file to search in" },
-        include: { type: "string", description: "File glob pattern to include" },
+        pattern: { type: "string", description: "正则表达式模式" },
+        path: { type: "string", description: "搜索目录或文件" },
+        include: { type: "string", description: "文件 glob 过滤" },
       },
       required: ["pattern"],
     },
@@ -1613,14 +1613,14 @@ export const grepTool: ToolHandler = {
         maxBuffer: 10 * 1024 * 1024,
       });
     } catch (err: any) {
-      if (err.status === 1) return "No matches found";
+      if (err.status === 1) return "未找到匹配项";
       throw err;
     }
   },
 };
 ```
 
-- [ ] **Step 3: Implement Bash (safe subset)**
+- [ ] **步骤 3：实现 Bash（安全子集）**
 
 ```typescript
 // src/tools/builtin/bash.ts
@@ -1631,11 +1631,11 @@ import { ToolHandler } from "../types";
 export const bashTool: ToolHandler = {
   definition: {
     name: "bash",
-    description: "Execute a shell command",
+    description: "执行 shell 命令",
     parameters: {
       type: "object",
       properties: {
-        command: { type: "string", description: "Shell command to execute" },
+        command: { type: "string", description: "要执行的 shell 命令" },
       },
       required: ["command"],
     },
@@ -1643,10 +1643,10 @@ export const bashTool: ToolHandler = {
   async execute(args, worktreePath) {
     const command = args.command as string;
 
-    // Safety check
+    // 安全检查
     const dangerous = ["rm -rf /", "sudo ", "mkfs.", "dd if=", "> /dev/sda"];
     for (const d of dangerous) {
-      if (command.includes(d)) return `Blocked: dangerous command pattern "${d}"`;
+      if (command.includes(d)) return `已阻止: 危险命令模式 "${d}"`;
     }
 
     try {
@@ -1658,15 +1658,15 @@ export const bashTool: ToolHandler = {
       });
       return output;
     } catch (err: any) {
-      return `Command failed (exit ${err.status}): ${err.stderr ?? err.message}`;
+      return `命令失败 (exit ${err.status}): ${err.stderr ?? err.message}`;
     }
   },
 };
 ```
 
-- [ ] **Step 4: Register built-in tools**
+- [ ] **步骤 4：注册内置工具**
 
-Add to `src/tools/registry.ts`:
+添加到 `src/tools/registry.ts`：
 
 ```typescript
 import { readFileTool } from "./builtin/readFile";
@@ -1682,13 +1682,13 @@ export function createDefaultRegistry(): ToolRegistry {
 }
 ```
 
-- [ ] **Step 5: Run tests**
+- [ ] **步骤 5：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **步骤 6：提交**
 
 ```bash
 git add src/tools/builtin/
@@ -1697,14 +1697,14 @@ git commit -m "feat: built-in tools (readFile, grep, bash)"
 
 ---
 
-## Phase 6: Git Worktree Isolation
+## 第六阶段：Git Worktree 隔离
 
-### Task 11: Worktree lifecycle management
+### 任务 11：Worktree 生命周期管理
 
-**Files:**
-- Create: `src/isolation/worktree.ts`
+**涉及文件：**
+- 创建：`src/isolation/worktree.ts`
 
-- [ ] **Step 1: Implement WorktreeManager**
+- [ ] **步骤 1：实现 WorktreeManager**
 
 ```typescript
 // src/isolation/worktree.ts
@@ -1715,7 +1715,7 @@ import * as fs from "fs";
 
 export class WorktreeManager {
   private git: SimpleGit;
-  private worktrees: Map<string, string> = new Map(); // modelName → worktree path
+  private worktrees: Map<string, string> = new Map(); // modelName → worktree 路径
 
   constructor(repoPath: string) {
     this.git = simpleGit(repoPath);
@@ -1731,13 +1731,13 @@ export class WorktreeManager {
       fs.mkdirSync(worktreePath, { recursive: true });
 
       try {
-        // Delete existing branch if leftover
+        // 删除可能残留的旧分支
         await this.git.deleteLocalBranch(branchName, true).catch(() => {});
         await this.git.branch([branchName]);
         await this.git.raw(["worktree", "add", worktreePath, branchName]);
         this.worktrees.set(name, worktreePath);
       } catch (err) {
-        // If worktree already exists, just reuse it
+        // worktree 已存在则直接复用
         this.worktrees.set(name, worktreePath);
       }
     }
@@ -1764,7 +1764,7 @@ export class WorktreeManager {
       try {
         await this.git.raw(["worktree", "remove", wtPath, "--force"]);
       } catch {
-        // Best effort cleanup
+        // 尽力清理
         fs.rmSync(wtPath, { recursive: true, force: true });
       }
       await this.git.deleteLocalBranch(`arena/${taskId}-${modelName}`, true).catch(() => {});
@@ -1774,7 +1774,7 @@ export class WorktreeManager {
 }
 ```
 
-- [ ] **Step 2: Write tests**
+- [ ] **步骤 2：编写测试**
 
 ```typescript
 // test/isolation/worktree.test.ts
@@ -1816,13 +1816,13 @@ describe("WorktreeManager", () => {
 });
 ```
 
-- [ ] **Step 3: Run tests**
+- [ ] **步骤 3：运行测试**
 
 ```bash
 npx vitest run
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：提交**
 
 ```bash
 git add src/isolation/ test/isolation/
@@ -1831,15 +1831,15 @@ git commit -m "feat: git worktree isolation manager"
 
 ---
 
-## Phase 7: Integration & Polish
+## 第七阶段：集成与打磨
 
-### Task 12: Wire tools into the UI stream loop
+### 任务 12：将工具连接到 UI 流循环中
 
-**Files:**
-- Modify: `src/ui/app.tsx`
-- Create: `src/tools/executor.ts`
+**涉及文件：**
+- 修改：`src/ui/app.tsx`
+- 创建：`src/tools/executor.ts`
 
-- [ ] **Step 1: Implement tool executor**
+- [ ] **步骤 1：实现工具执行器**
 
 ```typescript
 // src/tools/executor.ts
@@ -1862,7 +1862,7 @@ export async function* executeToolCalls(
         yield {
           type: "tool_result" as any,
           id: event.id,
-          result: `Permission denied for tool: ${event.name}`,
+          result: `权限被拒绝: ${event.name}`,
         };
         continue;
       }
@@ -1880,22 +1880,22 @@ export async function* executeToolCalls(
 }
 ```
 
-- [ ] **Step 2: Update App to use tool executor and worktrees**
+- [ ] **步骤 2：更新 App 以使用工具执行器和 worktree**
 
-Modify `src/ui/app.tsx` handleSubmit:
+修改 `src/ui/app.tsx` 中的 handleSubmit：
 
 ```typescript
-// Inside handleSubmit:
+// handleSubmit 内部：
 const taskId = Date.now().toString(36);
 const worktree = new WorktreeManager(process.cwd());
 const toolRegistry = createDefaultRegistry();
 const permission = new PermissionManager();
 
-// Setup worktrees for all active models
+// 为所有活跃模型设置 worktree
 const modelNames = session.models.map((m) => m.name);
 await worktree.setup(taskId, modelNames);
 
-// Launch concurrent streams with tool execution
+// 启动带工具执行的并发流
 const streams = launchStreams(session, config, SYSTEM_PROMPT, toolRegistry.getDefinitions());
 
 await Promise.all(
@@ -1910,12 +1910,12 @@ await Promise.all(
       if (event.type === "text") {
         m.buffer += event.content;
       } else if (event.type === "tool_result") {
-        m.buffer += `\n[tool: ${event.id}] ${event.result}`;
+        m.buffer += `\n[工具: ${event.id}] ${event.result}`;
         session.addToolResult(modelName, event.id, event.result);
       } else if (event.type === "done") {
         m.isStreaming = false;
       } else if (event.type === "error") {
-        m.buffer += `\n[Error: ${event.message}]`;
+        m.buffer += `\n[错误: ${event.message}]`;
         m.isStreaming = false;
       }
       setModelStates([...session.models]);
@@ -1923,11 +1923,11 @@ await Promise.all(
   }),
 );
 
-// Cleanup worktrees (keep none by default, user can choose to keep)
+// 清理 worktree（默认不保留，用户可选择保留）
 await worktree.cleanup(taskId);
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add src/tools/executor.ts src/ui/app.tsx
@@ -1936,12 +1936,12 @@ git commit -m "feat: integrate tools with UI stream loop and worktree isolation"
 
 ---
 
-### Task 13: Session persistence (JSON save/load)
+### 任务 13：会话持久化（JSON 保存/加载）
 
-**Files:**
-- Create: `src/persistence/session.ts`
+**涉及文件：**
+- 创建：`src/persistence/session.ts`
 
-- [ ] **Step 1: Implement session persistence**
+- [ ] **步骤 1：实现会话持久化**
 
 ```typescript
 // src/persistence/session.ts
@@ -1987,7 +1987,7 @@ export function listSessions(): SavedSession[] {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：提交**
 
 ```bash
 git add src/persistence/
@@ -1996,14 +1996,14 @@ git commit -m "feat: JSON session persistence (save/load/list)"
 
 ---
 
-## Summary of Implementation Order
+## 实施顺序总结
 
-| Phase | Tasks | What You Can Test |
-|-------|-------|-------------------|
-| 1. Foundation | 1-2 | `npm start` prints banner |
-| 2. Provider | 3-5 | Unit tests calling mock LLM APIs |
-| 3. Core | 6-7 | Session/stream unit tests |
-| 4. UI | 8 | Full terminal app with three-zone layout + Tab |
-| 5. Tools | 9-10 | Tool execution unit tests |
-| 6. Worktree | 11 | Worktree creation/diff unit tests |
-| 7. Integration | 12-13 | End-to-end: chat with models, tools, worktree |
+| 阶段 | 任务 | 可测试内容 |
+|------|------|-----------|
+| 1. 基础 | 1-2 | `npm start` 打印 banner |
+| 2. Provider | 3-5 | 模拟 LLM API 的单元测试 |
+| 3. Core | 6-7 | 会话/流单元测试 |
+| 4. UI | 8 | 三区布局 + Tab 交互的完整终端应用 |
+| 5. 工具 | 9-10 | 工具执行单元测试 |
+| 6. Worktree | 11 | worktree 创建/diff 单元测试 |
+| 7. 集成 | 12-13 | 端到端：对话、工具调用、worktree 全流程 |
