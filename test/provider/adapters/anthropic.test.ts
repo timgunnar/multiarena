@@ -282,6 +282,61 @@ describe("AnthropicProvider", () => {
     expect(capturedParams.system).toBe("You are a helpful assistant");
   });
 
+  it("abort() terminates the generator cleanly without yielding an error event", async () => {
+    const provider = new AnthropicProvider("test-key");
+
+    let abortTriggered = false;
+
+    // Mock stream: yields events between message_start and message_stop,
+    // then checks the abort flag. When set, throws AbortError to simulate
+    // the SDK cancelling the underlying request on signal abort.
+    const mockStream = (async function* () {
+      yield {
+        type: "message_start",
+        message: { usage: { input_tokens: 5, output_tokens: 0 } },
+      } as any;
+      yield {
+        type: "content_block_delta",
+        delta: { type: "text_delta", text: "partial" },
+      } as any;
+
+      if (abortTriggered) {
+        const err = new Error("The operation was aborted");
+        err.name = "AbortError";
+        throw err;
+      }
+
+      yield { type: "message_stop" } as any;
+    })();
+
+    (provider as any).client.messages.stream = vi
+      .fn()
+      .mockReturnValue(mockStream);
+
+    const gen = provider.chat({
+      messages: [{ role: "user", content: "hi" }],
+    });
+
+    // Consume the first text event.
+    const result1 = await gen.next();
+    expect(result1.done).toBe(false);
+    expect(result1.value).toEqual({ type: "text", content: "partial" });
+
+    // Trigger abort (flag + controller).
+    abortTriggered = true;
+    provider.abort();
+
+    // Verify the abort controller was set up and signalled.
+    const ctrl = (provider as any).abortController;
+    expect(ctrl).not.toBeNull();
+    expect(ctrl.signal.aborted).toBe(true);
+
+    // Generator should terminate cleanly — no error event, no done event.
+    const result2 = await gen.next();
+    expect(result2.done).toBe(true);
+    expect(result2.value).toBeUndefined();
+  });
+
   it("returns undefined for empty tools array", async () => {
     const provider = new AnthropicProvider("test-key");
 
