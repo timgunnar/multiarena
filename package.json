@@ -1,10 +1,33 @@
 {
-  "name": "arena",
+  "name": "arena-cli",
   "version": "0.1.0",
-  "description": "Multi-model AI coding assistant for the terminal",
+  "description": "Terminal-native multi-model AI coding assistant — chat with multiple LLMs side by side",
   "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "bin": {
     "arena": "./dist/index.js"
+  },
+  "files": [
+    "dist/"
+  ],
+  "keywords": [
+    "ai",
+    "llm",
+    "coding-assistant",
+    "terminal",
+    "cli",
+    "claude",
+    "gpt",
+    "gemini",
+    "ollama",
+    "multi-model"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/timgunnar/arena"
   },
   "scripts": {
     "build": "tsc",
