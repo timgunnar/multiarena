@@ -208,10 +208,44 @@ export const App: React.FC = () => {
 
   const terminalWidth = process.stdout.columns ?? 80;
 
+  const contextUsages: Record<string, number> = {};
+  for (const m of modelStates) {
+    contextUsages[m.name] = session.getContextUsage(m.name);
+  }
+
+  // ── No models configured: show startup guide ──────────────────
+  if (modelStates.length === 0) {
+    const example = `[models.claude]
+provider = "anthropic"
+model = "claude-sonnet-4-6"
+api_key = "\${ANTHROPIC_API_KEY}"
+
+[models.gpt]
+provider = "openai"
+model = "gpt-4o"
+api_key = "\${OPENAI_API_KEY}"
+
+[defaults]
+active = ["claude", "gpt"]
+broadcast = true`;
+
+    return (
+      <Box flexDirection="column" padding={1}>
+        <Text bold color="cyan">Arena — Multi-Model AI Coding Assistant</Text>
+        <Text> </Text>
+        <Text>No models configured. Create a <Text color="yellow">.arenarc</Text> file in your project root or home directory:</Text>
+        <Text> </Text>
+        <Text color="gray">{example}</Text>
+        <Text> </Text>
+        <Text dimColor>Supported providers: anthropic, openai, google, ollama</Text>
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="column" width="100%">
       {/* Top: fixed status bar */}
-      <StatusBar models={modelStates} activeModelName={activeModelName} />
+      <StatusBar models={modelStates} activeModelName={activeModelName} contextUsages={contextUsages} />
 
       {/* Divider */}
       <Text>{"─".repeat(terminalWidth)}</Text>
