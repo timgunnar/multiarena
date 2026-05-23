@@ -24,6 +24,8 @@ export function createProvider(config: ModelConfig): Provider {
       const baseURL = config.endpoint?.replace(/\/v1\/?$/, "") ?? "http://localhost:11434";
       return new OllamaProvider(baseURL);
     }
+    case "deepseek":
+      return new OpenAIProvider(key, config.endpoint ?? "https://api.deepseek.com/v1");
     default:
       throw new Error(`Unknown provider: ${config.provider}`);
   }

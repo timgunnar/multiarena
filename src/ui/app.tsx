@@ -358,6 +358,11 @@ provider = "openai"
 model = "gpt-4o"
 api_key = "\${OPENAI_API_KEY}"
 
+[models.deepseek]
+provider = "deepseek"
+model = "deepseek-chat"
+api_key = "\${DEEPSEEK_API_KEY}"
+
 [defaults]
 active = ["claude", "gpt"]
 broadcast = true`;
@@ -370,7 +375,7 @@ broadcast = true`;
         <Text> </Text>
         <Text color="gray">{example}</Text>
         <Text> </Text>
-        <Text dimColor>Supported providers: anthropic, openai, google, ollama</Text>
+        <Text dimColor>Supported providers: anthropic, openai, google, ollama, deepseek</Text>
       </Box>
     );
   }

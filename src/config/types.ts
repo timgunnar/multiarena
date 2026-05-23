@@ -1,5 +1,5 @@
 export interface ModelConfig {
-  provider: "anthropic" | "openai" | "google" | "ollama";
+  provider: "anthropic" | "openai" | "google" | "ollama" | "deepseek";
   model: string;
   api_key?: string;
   endpoint?: string;
