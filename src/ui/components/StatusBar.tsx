@@ -65,5 +65,11 @@ export const StatusBar: React.FC<Props> = ({ models, activeModelName, contextUsa
         );
       })}
     </Box>
+    {/* Row 3: keyboard hints */}
+    <Box height={1} flexDirection="row">
+      <Text dimColor>
+        Tab:switch  d:compare  m:mute  r:reset  q:quit  ↑↓:scroll/history  Esc:cancel
+      </Text>
+    </Box>
   </Box>
 );

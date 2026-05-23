@@ -16,9 +16,14 @@ export const ModelDetail: React.FC<Props> = ({ model, scrollOffset }) => {
       {visibleLines.length === 0 && !model.isStreaming && (
         <Text dimColor>No output yet</Text>
       )}
-      {visibleLines.map((line, i) => (
-        <Text key={scrollOffset + i}>{line || " "}</Text>
-      ))}
+      {visibleLines.map((line, i) => {
+        const isError = /^\[?(?:Error|error)[:\]]/.test(line);
+        return (
+          <Text key={scrollOffset + i} color={isError ? "red" : undefined}>
+            {line || " "}
+          </Text>
+        );
+      })}
       {model.isStreaming && <Text color="gray">▋</Text>}
     </Box>
   );
