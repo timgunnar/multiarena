@@ -5,7 +5,19 @@
       "Bash(mkdir -p docs/superpowers/specs)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm start *)",
+      "Bash(npx eslint *)",
+      "Bash(npx tsc *)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"import\\('./dist/index.js'\\).then\\(\\(\\) => console.log\\('ESM import OK'\\)\\)\")",
+      "Bash(npx vitest *)",
+      "Bash(rm -rf /c/Users/Tim/AppData/Local/Temp/arena-worktrees/)",
+      "Bash(rm -rf /c/Users/Tim/AppData/Local/Temp/arena-test-repo-*)",
+      "Bash(node -e \"const sg = require\\('simple-git'\\); console.log\\(typeof sg, typeof sg.default, typeof sg.simpleGit\\)\")",
+      "Bash(node -e \"const sg = require\\('simple-git'\\); console.log\\(Object.keys\\(sg\\)\\)\")"
     ]
   }
 }

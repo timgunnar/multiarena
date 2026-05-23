@@ -125,7 +125,7 @@ describe("GoogleProvider", () => {
     expect(capturedContents[1].role).toBe("model");
     expect(capturedContents[1].parts.length).toBe(2); // text + functionCall
     // Tool result as function response
-    expect(capturedContents[2].role).toBe("tool");
+    expect(capturedContents[2].role).toBe("function");
     expect(capturedContents[2].parts[0].functionResponse.name).toBe("readFile");
     expect(capturedContents[3]).toEqual({
       role: "user",

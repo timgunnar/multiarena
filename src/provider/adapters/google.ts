@@ -117,7 +117,7 @@ export class GoogleProvider implements Provider {
         case "tool": {
           const toolCall = findToolCall(messages, msg.tool_call_id);
           result.push({
-            role: "tool",
+            role: "function",
             parts: [
               {
                 functionResponse: {
