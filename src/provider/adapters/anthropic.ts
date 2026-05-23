@@ -8,14 +8,15 @@ const DEFAULT_MAX_TOKENS = 4096;
 
 export class AnthropicProvider implements Provider {
   private client: Anthropic;
-  private abortController: AbortController | null = null;
+  private activeController: AbortController | null = null;
 
   constructor(apiKey: string) {
     this.client = new Anthropic({ apiKey });
   }
 
   async *chat(request: ChatRequest): AsyncGenerator<StreamEvent> {
-    this.abortController = new AbortController();
+    const abortController = new AbortController();
+    this.activeController = abortController;
     let inputTokens = 0;
     let outputTokens = 0;
 
@@ -28,7 +29,7 @@ export class AnthropicProvider implements Provider {
           messages: this.convertMessages(request.messages),
           tools: this.convertTools(request.tools),
         },
-        { signal: this.abortController.signal },
+        { signal: abortController.signal },
       );
 
       for await (const event of stream) {
@@ -83,11 +84,13 @@ export class AnthropicProvider implements Provider {
         type: "error",
         message: error instanceof Error ? error.message : String(error),
       };
+    } finally {
+      this.activeController = null;
     }
   }
 
   abort(): void {
-    this.abortController?.abort();
+    this.activeController?.abort();
   }
 
   // ── Message conversion ──────────────────────────────────────────────

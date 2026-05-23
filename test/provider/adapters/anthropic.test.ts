@@ -327,7 +327,7 @@ describe("AnthropicProvider", () => {
     provider.abort();
 
     // Verify the abort controller was set up and signalled.
-    const ctrl = (provider as any).abortController;
+    const ctrl = (provider as any).activeController;
     expect(ctrl).not.toBeNull();
     expect(ctrl.signal.aborted).toBe(true);
 
