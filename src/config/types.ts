@@ -1,0 +1,21 @@
+export interface ModelConfig {
+  provider: "anthropic" | "openai" | "google" | "ollama";
+  model: string;
+  api_key?: string;
+  endpoint?: string;
+}
+
+export interface ArenaConfig {
+  models: Record<string, ModelConfig>;
+  defaults: {
+    active: string[];
+    broadcast: boolean;
+  };
+}
+
+export const DEFAULT_CONFIG: Partial<ArenaConfig> = {
+  defaults: {
+    active: [],
+    broadcast: true,
+  },
+};
