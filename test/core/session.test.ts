@@ -128,6 +128,50 @@ describe("Session", () => {
     s.setTarget({ type: "broadcast" });
     expect(s.targetMode).toEqual({ type: "broadcast" });
   });
+
+  describe("cycleTarget with muted models", () => {
+    it("skips muted models when cycling", () => {
+      const s = new Session(mockConfig(["a", "b", "c"]), "/tmp/test");
+      s.toggleMute("b"); // mute the second model
+      // broadcast → a (skip b since muted)
+      expect(s.cycleTarget()).toEqual({ type: "directed", modelName: "a" });
+      // a → c (skip b)
+      expect(s.cycleTarget()).toEqual({ type: "directed", modelName: "c" });
+      // c → broadcast
+      expect(s.cycleTarget()).toEqual({ type: "broadcast" });
+    });
+
+    it("stays in broadcast when all models are muted", () => {
+      const s = new Session(mockConfig(["a", "b"]), "/tmp/test");
+      s.toggleMute("a");
+      s.toggleMute("b");
+      const result = s.cycleTarget();
+      expect(result).toEqual({ type: "broadcast" });
+    });
+
+    it("stays in broadcast when there are no unmuted models", () => {
+      const s = new Session(mockConfig([]), "/tmp/test");
+      const result = s.cycleTarget();
+      expect(result).toEqual({ type: "broadcast" });
+    });
+
+    it("from directed with muted model ahead: skips to next unmuted", () => {
+      const s = new Session(mockConfig(["a", "b", "c"]), "/tmp/test");
+      s.jumpToModel("a");
+      s.toggleMute("b"); // mute b so Tab from a goes to c
+      expect(s.cycleTarget()).toEqual({ type: "directed", modelName: "c" });
+    });
+  });
+
+  describe("addUserMessage edge cases", () => {
+    it("returns empty array when all models are muted in broadcast", () => {
+      const s = new Session(mockConfig(["a", "b"]), "/tmp/test");
+      s.toggleMute("a");
+      s.toggleMute("b");
+      const targets = s.addUserMessage("hello");
+      expect(targets).toHaveLength(0);
+    });
+  });
 });
 
 describe("contextLimitForModel", () => {

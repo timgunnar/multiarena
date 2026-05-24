@@ -16,6 +16,7 @@ interface Props {
   deliberationDocument?: string;
   deliberationRounds?: RoundSummary[];
   teamMode?: boolean;
+  deliberationScrollOffset?: number;
 }
 
 export const OutputArea: React.FC<Props> = ({
@@ -28,6 +29,7 @@ export const OutputArea: React.FC<Props> = ({
   deliberationDocument,
   deliberationRounds,
   teamMode,
+  deliberationScrollOffset = 0,
 }) => {
   // ── Team mode ──────────────────────────────────────────────────
   if (teamMode) {
@@ -41,6 +43,7 @@ export const OutputArea: React.FC<Props> = ({
       return (
         <DeliberationView
           progress={deliberationProgress}
+          scrollOffset={deliberationScrollOffset}
           document={deliberationDocument ?? ""}
           rounds={deliberationRounds ?? []}
         />
@@ -55,6 +58,7 @@ export const OutputArea: React.FC<Props> = ({
             progress={deliberationProgress}
             document={deliberationDocument ?? ""}
             rounds={deliberationRounds ?? []}
+            scrollOffset={deliberationScrollOffset}
           />
         );
       }

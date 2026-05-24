@@ -8,21 +8,37 @@
 - **团队私聊** — 审议完成后可 Tab 切换到任一模型继续对话，模型自动获得审议结果上下文
 - **镜像轮次审议** — 多模型从正向到反向接力（ABCBA），最终轮自动清理过程标注产出干净文档
 - **审议流程摘要** — 每轮显示修改处数和代表性修改内容，类似 git 提交记录
+- **审议继续修改** — 审议完成后在团队总览输入新要求即可启动新一轮修改
+- **对比模式退出修复** — 按 `d` 不会错误对比相同模型，支持 wrap-around 选择下一个不同模型
 
 ### 关键 Bug 修复
 
-- Tab 循环跳过静音模型，不再"迷失"在不可见模型上
+- **Esc 键在 Windows Terminal 不生效** — 绕过 Ink 的 `useInput`，使用原始 `process.stdin` 监听 `\x1b` 字节，35ms 超时区分独立 Esc 和转义序列
+- **Shift+Tab 只从概览生效** — 从定向模式按 Shift+Tab 不再意外切换，必须先 Esc 回概览
+- Tab 循环跳过静音模型，不会"卡"在不可见模型上
 - 审议完成后 Tab 发送消息不再错误启动新一轮审议
+- 广播模式 divider 渲染残留修复 — 移除冗余分隔线
+- 审议视图文字过暗修复 — 去除双重灰色叠加，添加滚动支持
+- 审议视图内容无法滚动 — 新增 `deliberationScrollOffset`，滚轮浏览审议历史
+- npm pack 缺少 `dist/` — 创建 `.npmignore` 覆盖 `.gitignore` 的 `dist/` 排除
 - 删除残留的 `StatusBar.js` / `.d.ts` 编译产物，新增 `prebuild` 清理步骤
-- 修复 Windows 终端多余文本框残留问题（减少不必要的 `setModelStates` 调用）
 - 最终文档不再包含 `[修订:]` / `[补充:]` 过程标注
 - DeepSeek 不再将创意写作误判为编程任务（优化系统提示词）
+- Think-tag 过滤逻辑提取为可测试纯函数
 
 ### 测试
 
-- 新增 35 个模式转换测试用例（`reduceTab`、`reduceShiftTab`、`reduceEscape`、`reduceKeyD`、`reduceSubmitInTeam` + 用户旅程）
-- 更新 deliberation 测试以匹配镜像轮次模式
-- 全部 25 个测试文件、199 个测试用例通过
+- 模式转换测试：48 个用例（含 `buildModeState`、error 状态、用户旅程）
+- Session 测试：28 个用例（含静音模型跳过、全静音边界）
+- 新增 CLI 参数解析测试：11 个用例
+- 新增 Provider 工厂测试：12 个用例
+- 新增 DeliberationView 组件测试：13 个用例
+- 新增 Think-tag 过滤器测试：17 个用例
+- 新增跨模块集成测试：19 个用例
+- Ollama adapter 测试从 4 个扩展到 15 个
+- Permission 测试新增 `deny_always`、`.git-credentials`、`grep .env` 覆盖
+- Registry 测试新增 `execute()` 成功路径和异常处理
+- 全部 30 个测试文件、311 个测试用例通过
 
 ---
 

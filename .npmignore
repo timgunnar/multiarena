@@ -1,16 +1,12 @@
-# Development only — not published
-docs/
-test/
-src/
-node/
+# .npmignore — overrides .gitignore for npm pack/publish
+# dist/ must be included (it's in the "files" whitelist in package.json)
+node_modules/
+.env
+.multiarenarc
 .idea/
 .claude/
-*.tsbuildinfo
-
-# Config / env
-.multiarenarc
-.env
-
-# Git
-.git
-.gitignore
+docs/
+CLAUDE.md
+eslint.config.js
+src/
+test/

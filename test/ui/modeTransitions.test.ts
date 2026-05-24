@@ -20,6 +20,7 @@ import {
   reduceEscape,
   reduceKeyD,
   reduceSubmitInTeam,
+  buildModeState,
   type ModeState,
 } from "../../src/ui/modeTransitions.js";
 
@@ -52,6 +53,58 @@ function teamDirected(): ModeState {
 function teamDirectedDone(): ModeState {
   return { teamMode: true, deliberationStatus: "done", comparisonModel: null, comparisonFromBroadcast: false };
 }
+
+function teamOverviewError(): ModeState {
+  return { teamMode: true, deliberationStatus: "error", comparisonModel: null, comparisonFromBroadcast: false };
+}
+
+function broadcastDeliberationError(): ModeState {
+  return { teamMode: false, deliberationStatus: "error", comparisonModel: null, comparisonFromBroadcast: false };
+}
+
+function broadcastDeliberationDone(): ModeState {
+  return { teamMode: false, deliberationStatus: "done", comparisonModel: null, comparisonFromBroadcast: false };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// buildModeState
+// ═══════════════════════════════════════════════════════════════
+
+describe("buildModeState", () => {
+  const base = { teamMode: false, deliberationProgress: null, comparisonModel: null, comparisonFromBroadcast: false };
+
+  it("returns broadcast idle with no deliberation", () => {
+    const s = buildModeState(base);
+    expect(s.teamMode).toBe(false);
+    expect(s.deliberationStatus).toBe("idle");
+    expect(s.comparisonModel).toBeNull();
+  });
+
+  it("detects team mode", () => {
+    expect(buildModeState({ ...base, teamMode: true }).teamMode).toBe(true);
+  });
+
+  it("maps deliberation running", () => {
+    const s = buildModeState({ ...base, deliberationProgress: { type: "round_start" } });
+    expect(s.deliberationStatus).toBe("running");
+  });
+
+  it("maps deliberation done", () => {
+    const s = buildModeState({ ...base, deliberationProgress: { type: "done" } });
+    expect(s.deliberationStatus).toBe("done");
+  });
+
+  it("maps deliberation error", () => {
+    const s = buildModeState({ ...base, deliberationProgress: { type: "error" } });
+    expect(s.deliberationStatus).toBe("error");
+  });
+
+  it("passes through comparison model", () => {
+    const s = buildModeState({ ...base, comparisonModel: "gpt", comparisonFromBroadcast: true });
+    expect(s.comparisonModel).toBe("gpt");
+    expect(s.comparisonFromBroadcast).toBe(true);
+  });
+});
 
 // ═══════════════════════════════════════════════════════════════
 // Tab
@@ -96,36 +149,43 @@ describe("reduceTab", () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe("reduceShiftTab", () => {
-  it("toggles from broadcast to team mode", () => {
-    const r = reduceShiftTab(broadcastOverview());
-    expect(r.teamMode).toBe(true);
-    expect(r.goToOverview).toBe(true);
+  describe("from overview (isOverview = true)", () => {
+    it("toggles from broadcast to team mode", () => {
+      const r = reduceShiftTab(broadcastOverview(), true);
+      expect(r).not.toBeNull();
+      expect(r!.teamMode).toBe(true);
+      expect(r!.goToOverview).toBe(true);
+    });
+
+    it("toggles from team to broadcast mode", () => {
+      const r = reduceShiftTab(teamOverviewIdle(), true);
+      expect(r).not.toBeNull();
+      expect(r!.teamMode).toBe(false);
+      expect(r!.goToOverview).toBe(true);
+    });
+
+    it("resets deliberation when entering team mode", () => {
+      const r = reduceShiftTab(broadcastOverview(), true);
+      expect(r!.resetDeliberation).toBe(true);
+    });
+
+    it("does not reset deliberation when exiting team mode", () => {
+      const r = reduceShiftTab(teamOverviewDone(), true);
+      expect(r!.resetDeliberation).toBe(false);
+    });
+
+    it("clears comparison when toggling", () => {
+      const r = reduceShiftTab({ ...broadcastOverview(), comparisonModel: "B" }, true);
+      expect(r!.clearComparison).toBe(true);
+    });
   });
 
-  it("toggles from team to broadcast mode", () => {
-    const r = reduceShiftTab(teamOverviewIdle());
-    expect(r.teamMode).toBe(false);
-    expect(r.goToOverview).toBe(true);
-  });
-
-  it("always returns to overview", () => {
-    const r = reduceShiftTab(broadcastDirected());
-    expect(r.goToOverview).toBe(true);
-  });
-
-  it("resets deliberation when entering team mode", () => {
-    const r = reduceShiftTab(broadcastOverview());
-    expect(r.resetDeliberation).toBe(true);
-  });
-
-  it("does not reset deliberation when exiting team mode", () => {
-    const r = reduceShiftTab(teamOverviewDone());
-    expect(r.resetDeliberation).toBe(false);
-  });
-
-  it("clears comparison when toggling", () => {
-    const r = reduceShiftTab({ ...broadcastOverview(), comparisonModel: "B" });
-    expect(r.clearComparison).toBe(true);
+  describe("from directed (isOverview = false)", () => {
+    it("returns null — Shift+Tab only works from overview", () => {
+      expect(reduceShiftTab(broadcastDirected(), false)).toBeNull();
+      expect(reduceShiftTab(teamDirected(), false)).toBeNull();
+      expect(reduceShiftTab(teamDirectedDone(), false)).toBeNull();
+    });
   });
 });
 
@@ -181,6 +241,33 @@ describe("reduceEscape", () => {
     });
   });
 
+  describe("team mode — deliberation error", () => {
+    it("returns to team overview without abort (already stopped)", () => {
+      const r = reduceEscape(teamOverviewError(), false);
+      expect(r.teamMode).toBe(true);
+      expect(r.goToOverview).toBe(true);
+      expect(r.abortDeliberation).toBe(false);
+      expect(r.resetDeliberation).toBe(false);
+    });
+  });
+
+  describe("broadcast mode — standalone deliberation (merge)", () => {
+    it("aborts running deliberation and returns to broadcast overview", () => {
+      const r = reduceEscape(broadcastDeliberationError(), true);
+      expect(r.teamMode).toBe(false);
+      expect(r.goToOverview).toBe(true);
+      expect(r.abortDeliberation).toBe(true);
+      expect(r.resetDeliberation).toBe(true);
+    });
+
+    it("returns to broadcast overview after deliberation done", () => {
+      const r = reduceEscape(broadcastDeliberationDone(), false);
+      expect(r.teamMode).toBe(false);
+      expect(r.goToOverview).toBe(true);
+      expect(r.resetDeliberation).toBe(true);
+    });
+  });
+
   describe("broadcast overview", () => {
     it("is a no-op (already at overview)", () => {
       const r = reduceEscape(broadcastOverview(), false);
@@ -197,27 +284,45 @@ describe("reduceEscape", () => {
 // ═══════════════════════════════════════════════════════════════
 
 describe("reduceKeyD", () => {
-  it("enters comparison from broadcast overview", () => {
-    const r = reduceKeyD(broadcastOverview(), "A", "B", null);
-    expect(r.comparisonModel).toBe("B");
-    expect(r.comparisonFromBroadcast).toBe(true);
-    expect(r.setDirectedTarget).toBe("A");
+  describe("from broadcast overview", () => {
+    it("enters comparison: targets first, compares with second", () => {
+      const r = reduceKeyD(broadcastOverview(), ["A", "B"], null);
+      expect(r.comparisonModel).toBe("B");
+      expect(r.comparisonFromBroadcast).toBe(true);
+      expect(r.setDirectedTarget).toBe("A");
+    });
+
+    it("does nothing with < 2 unmuted models", () => {
+      const r = reduceKeyD(broadcastOverview(), ["A"], null);
+      expect(r.comparisonModel).toBeNull();
+    });
   });
 
-  it("enters comparison from directed mode", () => {
-    const r = reduceKeyD(broadcastDirected(), "A", "B", "A");
-    expect(r.comparisonModel).toBe("B");
-    expect(r.comparisonFromBroadcast).toBe(false);
+  describe("from directed mode", () => {
+    it("compares current model with next unmuted model", () => {
+      const r = reduceKeyD(broadcastDirected(), ["A", "B"], "A");
+      expect(r.comparisonModel).toBe("B");
+      expect(r.comparisonFromBroadcast).toBe(false);
+    });
+
+    it("wraps around when targeting the last unmuted model", () => {
+      // Targeting "C" with models [A, B, C] → compare with A (wrap)
+      const r = reduceKeyD(broadcastDirected(), ["A", "B", "C"], "C");
+      expect(r.comparisonModel).toBe("A");
+      expect(r.comparisonFromBroadcast).toBe(false);
+    });
+
+    it("compares with first model when targeting second (bug fix)", () => {
+      // Targeting "B" with models [A, B] → compare with A, not B
+      const r = reduceKeyD(broadcastDirected(), ["A", "B"], "B");
+      expect(r.comparisonModel).toBe("A");
+      expect(r.comparisonFromBroadcast).toBe(false);
+    });
   });
 
   it("exits comparison on second press", () => {
     const state: ModeState = { teamMode: false, deliberationStatus: "idle", comparisonModel: "B", comparisonFromBroadcast: true };
-    const r = reduceKeyD(state, "A", "B", null);
-    expect(r.comparisonModel).toBeNull();
-  });
-
-  it("does nothing with < 2 unmuted models", () => {
-    const r = reduceKeyD(broadcastOverview(), "A", null, null);
+    const r = reduceKeyD(state, ["A", "B"], null);
     expect(r.comparisonModel).toBeNull();
   });
 });
@@ -237,9 +342,9 @@ describe("reduceSubmitInTeam", () => {
     expect(r.action).toBe("block");
   });
 
-  it("overview + done → route normally (follow-up chat)", () => {
+  it("overview + done → deliberate (continue modifying result)", () => {
     const r = reduceSubmitInTeam(teamOverviewDone(), true);
-    expect(r.action).toBe("route_normally");
+    expect(r.action).toBe("deliberate");
   });
 
   it("directed + idle → route normally (chat with model)", () => {
@@ -259,10 +364,15 @@ describe("reduceSubmitInTeam", () => {
     );
     expect(r.action).toBe("block");
   });
-});
 
-// ═══════════════════════════════════════════════════════════════
-// User journey tests
+  it("directed + error -> route normally (fallback to chat)", () => {
+    const r = reduceSubmitInTeam(
+      { teamMode: true, deliberationStatus: "error", comparisonModel: null, comparisonFromBroadcast: false },
+      false,
+    );
+    expect(r.action).toBe("route_normally");
+  });
+});
 // ═══════════════════════════════════════════════════════════════
 
 describe("user journeys", () => {
@@ -281,13 +391,20 @@ describe("user journeys", () => {
   });
 
   it("broadcast overview → Shift+Tab → team overview → Shift+Tab → broadcast overview", () => {
-    const toTeam = reduceShiftTab(broadcastOverview());
-    expect(toTeam.teamMode).toBe(true);
-    expect(toTeam.goToOverview).toBe(true);
+    const toTeam = reduceShiftTab(broadcastOverview(), true);
+    expect(toTeam).not.toBeNull();
+    expect(toTeam!.teamMode).toBe(true);
+    expect(toTeam!.goToOverview).toBe(true);
 
-    const toBroadcast = reduceShiftTab(teamOverviewIdle());
-    expect(toBroadcast.teamMode).toBe(false);
-    expect(toBroadcast.goToOverview).toBe(true);
+    const toBroadcast = reduceShiftTab(teamOverviewIdle(), true);
+    expect(toBroadcast).not.toBeNull();
+    expect(toBroadcast!.teamMode).toBe(false);
+    expect(toBroadcast!.goToOverview).toBe(true);
+  });
+
+  it("shift+tab from directed is a no-op", () => {
+    expect(reduceShiftTab(broadcastDirected(), false)).toBeNull();
+    expect(reduceShiftTab(teamDirected(), false)).toBeNull();
   });
 
   it("team directed → Esc → team overview (stay in team)", () => {

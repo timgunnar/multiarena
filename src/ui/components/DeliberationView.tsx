@@ -27,16 +27,18 @@ interface Props {
   progress: DeliberationProgress;
   document: string;
   rounds: RoundSummary[];
+  scrollOffset?: number;
 }
 
-export const DeliberationView: React.FC<Props> = ({ progress, document, rounds }) => {
+export const DeliberationView: React.FC<Props> = ({ progress, document, rounds, scrollOffset = 0 }) => {
   const role = progress.role ?? "draft";
   const roleColor = ROLE_COLORS[role];
   const isActive = progress.type !== "done" && progress.type !== "error";
   const isDone = progress.type === "done";
   const spin = spinner(Date.now() % 10);
 
-  const lines = document ? document.split("\n") : [];
+  const allLines = document ? document.split("\n") : [];
+  const lines = allLines.slice(scrollOffset);
 
   // Count total changes across all rounds
   const totalChanges = rounds.reduce((sum, r) => sum + (r.changeCount ?? 0), 0);
@@ -113,7 +115,7 @@ export const DeliberationView: React.FC<Props> = ({ progress, document, rounds }
                 {r.changeSamples && r.changeSamples.length > 0 && (
                   <Box flexDirection="column" marginLeft={2}>
                     {r.changeSamples.map((s, j) => (
-                      <Text key={j} color="gray" dimColor>
+                      <Text key={j} dimColor>
                         {`  ${s}`}
                       </Text>
                     ))}

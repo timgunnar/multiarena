@@ -25,6 +25,7 @@ import {
   reduceEscape,
   reduceKeyD,
   reduceSubmitInTeam,
+  buildModeState,
   type ModeState,
 } from "./modeTransitions.js";
 
@@ -87,14 +88,25 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     useState<DeliberationProgress | null>(null);
   const [deliberationDocument, setDeliberationDocument] = useState("");
   const [deliberationRounds, setDeliberationRounds] = useState<Array<{ round: number; modelName: string; role: "draft" | "revise" | "polish" | "review"; changeCount?: number; changeSamples?: string[] }>>([]);
+  const [deliberationScrollOffset, setDeliberationScrollOffset] = useState(0);
   const deliberatingRef = useRef(false);
   const deliberationAbortRef = useRef<AbortController | null>(null);
+
+  // Ref mirroring currentModeState() so the raw stdin Esc listener
+  // always reads fresh mode state without re-subscribing on every render.
+  const modeStateRef = useRef(currentModeState());
+  modeStateRef.current = currentModeState();
 
   const activeScrollModel =
     session.targetMode.type === "directed" ? session.targetMode.modelName : null;
 
   const adjustScroll = useCallback(
     (delta: number) => {
+      // Team overview with deliberation content → scroll the deliberation view
+      if (teamMode && isOverview() && deliberationProgress) {
+        setDeliberationScrollOffset((prev) => Math.max(0, prev + delta));
+        return;
+      }
       const modelName = activeScrollModel;
       if (!modelName) return;
       setScrollOffsets((prev) => ({
@@ -102,7 +114,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         [modelName]: Math.max(0, (prev[modelName] ?? 0) + delta),
       }));
     },
-    [activeScrollModel],
+    [activeScrollModel, teamMode, deliberationProgress],
   );
 
   // Input history
@@ -175,6 +187,61 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     wm.sweepOrphans().catch(() => {});
   }, []);
 
+  // Raw stdin listener for Escape key.
+  // Ink's useInput key.escape is unreliable on some terminal setups
+  // (Windows Terminal + bash in particular). We listen for the raw
+  // \x1b byte directly and use a brief timeout to distinguish
+  // standalone Esc from escape sequences (arrow keys, etc.).
+  useEffect(() => {
+    let escTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleEsc = () => {
+      const state = modeStateRef.current;
+      const r = reduceEscape(state, deliberatingRef.current);
+      if (r.teamMode !== state.teamMode) setTeamMode(r.teamMode);
+      if (r.abortDeliberation) {
+        deliberationAbortRef.current?.abort();
+        deliberatingRef.current = false;
+      }
+      if (r.resetDeliberation) {
+        setDeliberationProgress(null);
+        setDeliberationDocument("");
+        setDeliberationRounds([]);
+      }
+      setComparisonModel(r.comparisonModel);
+      comparisonFromBroadcastRef.current = r.comparisonFromBroadcast;
+      if (r.goToOverview) {
+        session.setTarget({ type: "broadcast" });
+        setTargetVersion((v) => v + 1);
+      }
+      if (r.restoreBroadcast) {
+        session.setTarget({ type: "broadcast" });
+        comparisonFromBroadcastRef.current = false;
+        setModelStates([...session.models]);
+      }
+      shortcutHandledRef.current = true;
+    };
+
+    const onData = (data: Buffer) => {
+      // A single 0x1b byte might be standalone Esc or the start of
+      // an escape sequence (\x1b[A for Up, etc.). Wait briefly to
+      // see if more bytes follow.
+      if (data.length === 1 && data[0] === 0x1b) {
+        if (escTimer) clearTimeout(escTimer);
+        escTimer = setTimeout(() => { handleEsc(); escTimer = null; }, 35);
+        return;
+      }
+      // Any other input — cancel pending Esc (it was part of a sequence)
+      if (escTimer) { clearTimeout(escTimer); escTimer = null; }
+    };
+
+    process.stdin.on("data", onData);
+    return () => {
+      process.stdin.removeListener("data", onData);
+      if (escTimer) clearTimeout(escTimer);
+    };
+  }, []);
+
   // Clear the input bar whenever a shortcut was handled (runs after the render
   // batch so it overrides any concurrent setInput from ink-text-input).
   useEffect(() => {
@@ -187,18 +254,12 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   // Build a ModeState snapshot from current React state so the pure
   // decision functions in modeTransitions.ts can drive the keyboard handler.
   function currentModeState(): ModeState {
-    let ds: ModeState["deliberationStatus"] = "idle";
-    if (deliberationProgress) {
-      if (deliberationProgress.type === "done") ds = "done";
-      else if (deliberationProgress.type === "error") ds = "error";
-      else ds = "running";
-    }
-    return {
+    return buildModeState({
       teamMode,
-      deliberationStatus: ds,
+      deliberationProgress,
       comparisonModel,
       comparisonFromBroadcast: comparisonFromBroadcastRef.current,
-    };
+    });
   }
 
   /** True when the current target is the mode overview (broadcast target). */
@@ -225,7 +286,8 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
     // ── Shift+Tab: toggle between broadcast ↔ team ──────────────
     if (key.tab && key.shift) {
-      const r = reduceShiftTab(currentModeState());
+      const r = reduceShiftTab(currentModeState(), isOverview());
+      if (!r) return;
       setTeamMode(r.teamMode);
       setComparisonModel(null);
       if (r.goToOverview) {
@@ -307,13 +369,11 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
     // 'd' — toggle comparison mode (current model vs next unmuted model)
     if (inputValue === "d") {
-      const unmuted = session.models.filter((m) => !m.muted);
-      const firstUnmuted = unmuted[0]?.name ?? "";
-      const secondUnmuted = unmuted[1]?.name ?? null;
+      const unmutedNames = session.models.filter((m) => !m.muted).map((m) => m.name);
       const currentTarget =
         session.targetMode.type === "directed" ? session.targetMode.modelName : null;
 
-      const r = reduceKeyD(currentModeState(), firstUnmuted, secondUnmuted, currentTarget);
+      const r = reduceKeyD(currentModeState(), unmutedNames, currentTarget);
 
       // Exiting comparison — restore broadcast if we entered from there
       if (comparisonModel && !r.comparisonModel && comparisonFromBroadcastRef.current) {
@@ -429,6 +489,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
       setDeliberationDocument("");
       setDeliberationRounds([]);
+      setDeliberationScrollOffset(0);
       let doc = "";
 
       const stream = runDeliberation(task, roundConfigs, constraint);
@@ -533,6 +594,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
     setDeliberationDocument("");
     setDeliberationRounds([]);
+    setDeliberationScrollOffset(0);
     let doc = "";
 
     const stream = runMerge(task, outputs, mergerConfig, mergerName);
@@ -751,10 +813,8 @@ broadcast = true`;
         </Box>
       )}
 
-      {/* Divider */}
-      <Text>{"─".repeat(terminalWidth)}</Text>
-
       {/* Middle: scrollable output */}
+      <Box flexGrow={1}>
       <OutputArea
         models={modelStates}
         targetMode={session.targetMode}
@@ -765,10 +825,9 @@ broadcast = true`;
         deliberationDocument={deliberationDocument}
         deliberationRounds={deliberationRounds}
         teamMode={teamMode}
+        deliberationScrollOffset={deliberationScrollOffset}
       />
-
-      {/* Divider */}
-      <Text>{"─".repeat(terminalWidth)}</Text>
+      </Box>
 
       {/* Bottom: model indicators + shortcuts + input */}
       <InputBar

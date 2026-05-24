@@ -47,8 +47,9 @@ export interface ShiftTabResult {
   resetDeliberation: boolean;
 }
 
-/** Toggle team/broadcast. Entering a mode always lands on its overview. */
-export function reduceShiftTab(state: ModeState): ShiftTabResult {
+/** Toggle team/broadcast. Only works from overview. Entering a mode always lands on its overview. */
+export function reduceShiftTab(state: ModeState, isOverview: boolean): ShiftTabResult | null {
+  if (!isOverview) return null;
   const next = !state.teamMode;
   return {
     teamMode: next,
@@ -165,20 +166,64 @@ export interface KeyDResult {
 
 export function reduceKeyD(
   state: ModeState,
-  firstUnmuted: string,
-  secondUnmuted: string | null,
+  unmutedNames: string[],
   currentDirectedTarget: string | null,
 ): KeyDResult {
+  // Exiting comparison mode
   if (state.comparisonModel !== null) {
     return { comparisonModel: null, comparisonFromBroadcast: false, setDirectedTarget: null };
   }
-  if (!secondUnmuted) {
+  // Need at least 2 unmuted models
+  if (unmutedNames.length < 2) {
     return { comparisonModel: null, comparisonFromBroadcast: false, setDirectedTarget: null };
   }
+
   if (currentDirectedTarget === null) {
-    return { comparisonModel: secondUnmuted, comparisonFromBroadcast: true, setDirectedTarget: firstUnmuted };
+    // From broadcast overview: target first, compare with second
+    return {
+      comparisonModel: unmutedNames[1],
+      comparisonFromBroadcast: true,
+      setDirectedTarget: unmutedNames[0],
+    };
   }
-  return { comparisonModel: secondUnmuted, comparisonFromBroadcast: false, setDirectedTarget: null };
+
+  // From directed mode: pick a different model to compare with
+  const idx = unmutedNames.indexOf(currentDirectedTarget);
+  if (idx === -1) {
+    return { comparisonModel: null, comparisonFromBroadcast: false, setDirectedTarget: null };
+  }
+  // Next model, wrapping around
+  const compareIdx = (idx + 1) % unmutedNames.length;
+  return {
+    comparisonModel: unmutedNames[compareIdx],
+    comparisonFromBroadcast: false,
+    setDirectedTarget: null,
+  };
+}
+
+// ── ModeState builder (extracted from app.tsx for testability) ──
+
+/** Build a ModeState snapshot from UI state so the pure decision
+ *  functions can drive the keyboard handler. */
+export function buildModeState(params: {
+  teamMode: boolean;
+  deliberationProgress: { type: string } | null;
+  comparisonModel: string | null;
+  comparisonFromBroadcast: boolean;
+}): ModeState {
+  let deliberationStatus: ModeState["deliberationStatus"] = "idle";
+  if (params.deliberationProgress) {
+    const t = params.deliberationProgress.type;
+    if (t === "done") deliberationStatus = "done";
+    else if (t === "error") deliberationStatus = "error";
+    else deliberationStatus = "running";
+  }
+  return {
+    teamMode: params.teamMode,
+    deliberationStatus,
+    comparisonModel: params.comparisonModel,
+    comparisonFromBroadcast: params.comparisonFromBroadcast,
+  };
 }
 
 // ── Submit in team mode ──────────────────────────────────────────
@@ -186,10 +231,9 @@ export function reduceKeyD(
 export type SubmitInTeamAction = "deliberate" | "route_normally" | "block";
 
 /**
- * In team overview: submit starts deliberation.
+ * In team overview: submit starts deliberation (idle or after a previous one).
  * In team directed (Tab-ed to a model): submit routes as a directed message.
  * Running deliberation: block.
- * Deliberation done/error: route normally (model chat).
  */
 export function reduceSubmitInTeam(
   state: ModeState,
@@ -198,10 +242,10 @@ export function reduceSubmitInTeam(
   if (state.deliberationStatus === "running") {
     return { action: "block" };
   }
-  // Overview + idle → start new deliberation
-  if (isOverview && state.deliberationStatus === "idle") {
+  // Overview + idle/done → start (or restart) deliberation
+  if (isOverview && state.deliberationStatus !== "error") {
     return { action: "deliberate" };
   }
-  // Directed chat, or overview with done/error → normal routing
+  // Directed chat, or overview with error → normal routing
   return { action: "route_normally" };
 }

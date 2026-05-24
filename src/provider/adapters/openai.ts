@@ -6,6 +6,69 @@ import { ChatRequest, StreamEvent, Message, ToolDef } from "../types.js";
 const DEFAULT_MODEL = "gpt-4o";
 const DEFAULT_TIMEOUT_MS = 120_000;
 
+// ── Think-tag filter state machine ──────────────────────────────
+
+export interface ThinkFilterState {
+  inThink: boolean;
+  buf: string;
+}
+
+/**
+ * Filter think blocks from reasoning model output (DeepSeek-R1, MiniMax).
+ * Returns the text that should be yielded to the user, and updates state.
+ * Callers yield the returned text and replace their state with the returned state.
+ */
+export function filterThinkText(
+  deltaText: string,
+  state: ThinkFilterState,
+): { text: string; state: ThinkFilterState } {
+  let text = deltaText;
+  let { inThink, buf } = state;
+
+  if (inThink) {
+    buf += text;
+    const endIdx = buf.indexOf("</think>");
+    if (endIdx !== -1) {
+      inThink = false;
+      text = buf.slice(endIdx + "</think>".length);
+      buf = "";
+      if (!text) return { text: "", state: { inThink, buf } };
+    } else {
+      return { text: "", state: { inThink: true, buf } };
+    }
+  }
+
+  // Check for <think> opening tag
+  const startIdx = text.indexOf("<think>");
+  if (startIdx !== -1) {
+    const before = text.slice(0, startIdx);
+    const rest = text.slice(startIdx + "<think>".length);
+    const endIdx = rest.indexOf("</think>");
+    if (endIdx !== -1) {
+      // Complete think block in this chunk
+      const after = rest.slice(endIdx + "</think>".length);
+      text = before + after;
+      if (!text) return { text: "", state: { inThink, buf } };
+    } else {
+      // Think block spans chunks
+      if (before) return { text: before, state: { inThink: true, buf: rest } };
+      return { text: "", state: { inThink: true, buf: rest } };
+    }
+  }
+
+  return { text, state: { inThink, buf } };
+}
+
+/** Called when the stream ends (finish_reason = stop). Flush any buffered think content. */
+export function flushThinkBuf(state: ThinkFilterState): string {
+  if (!state.inThink || !state.buf) return "";
+  const endIdx = state.buf.indexOf("</think>");
+  if (endIdx !== -1) {
+    return state.buf.slice(endIdx + "</think>".length);
+  }
+  return "";
+}
+
 interface PendingToolCall {
   id: string;
   name: string;
@@ -42,8 +105,7 @@ export class OpenAIProvider implements Provider {
       let doneYielded = false;
 
       // Stateful think-tag filter for reasoning models (e.g. MiniMax, DeepSeek-R1)
-      let inThink = false;
-      let thinkBuf = "";
+      let thinkState: ThinkFilterState = { inThink: false, buf: "" };
 
       for await (const chunk of stream) {
         if (chunk.usage) {
@@ -76,42 +138,11 @@ export class OpenAIProvider implements Provider {
 
         // Text delta with think-tag filtering (for reasoning models)
         if (delta.content) {
-          let text = delta.content;
-
-          if (inThink) {
-            thinkBuf += text;
-            const endIdx = thinkBuf.indexOf("</think>");
-            if (endIdx !== -1) {
-              inThink = false;
-              text = thinkBuf.slice(endIdx + "</think>".length);
-              thinkBuf = "";
-              if (!text) continue;
-            } else {
-              continue;
-            }
+          const result = filterThinkText(delta.content, thinkState);
+          thinkState = result.state;
+          if (result.text) {
+            yield { type: "text", content: result.text };
           }
-
-          // Check for <think> opening tag
-          const startIdx = text.indexOf("<think>");
-          if (startIdx !== -1) {
-            const before = text.slice(0, startIdx);
-            const rest = text.slice(startIdx + "<think>".length);
-            const endIdx = rest.indexOf("</think>");
-            if (endIdx !== -1) {
-              // Complete think block in this chunk
-              const after = rest.slice(endIdx + "</think>".length);
-              text = before + after;
-              if (!text) continue;
-            } else {
-              // Think block spans chunks
-              if (before) yield { type: "text", content: before };
-              inThink = true;
-              thinkBuf = rest;
-              continue;
-            }
-          }
-
-          yield { type: "text", content: text };
         }
 
         if (choice.finish_reason === "tool_calls") {
@@ -133,15 +164,9 @@ export class OpenAIProvider implements Provider {
 
         if (choice.finish_reason === "stop") {
           // Flush any remaining think buffer
-          if (inThink && thinkBuf) {
-            const endIdx = thinkBuf.indexOf("</think>");
-            if (endIdx !== -1) {
-              const after = thinkBuf.slice(endIdx + "</think>".length);
-              if (after) yield { type: "text", content: after };
-            }
-            inThink = false;
-            thinkBuf = "";
-          }
+          const flushed = flushThinkBuf(thinkState);
+          if (flushed) yield { type: "text", content: flushed };
+          thinkState = { inThink: false, buf: "" };
           yield {
             type: "done",
             usage: { input: inputTokens, output: outputTokens },
