@@ -176,6 +176,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   // don't interfere with message typing.
   useInput((inputValue, key) => {
     if (key.tab) {
+      process.stderr.write(`[DEBUG] Tab pressed: shift=${key.shift} meta=${key.meta} ctrl=${key.ctrl}\n`);
       if (key.shift) {
         // Shift+Tab: toggle team / broadcast mode
         setTeamMode((prev) => !prev);
