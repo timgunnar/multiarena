@@ -15,6 +15,9 @@ export const bashTool: ToolHandler = {
   },
   async execute(args, worktreePath) {
     const command = args.command as string;
+    if (!command || command.trim() === "") {
+      return "Error: no command provided";
+    }
     const dangerous = ["rm -rf /", "sudo ", "mkfs.", "dd if=", "> /dev/sda"];
     for (const d of dangerous) {
       if (command.includes(d)) return `Blocked: dangerous command pattern "${d}"`;
