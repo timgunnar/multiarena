@@ -11,15 +11,17 @@
 消息发给所有模型，并排查看回复：
 
 ```
-┌─ claude ───────────────┐ ┌─ gpt ──────────────────┐
-│ claude                  │ │ gpt                    │
-│ 可以使用 ls 命令列出当前  │ │ 你可以用 ls 或 dir 命令  │
-│ 目录下的文件：           │ │ 来查看目录内容：         │
-│                         │ │                        │
-│ 4 lines · 1K/200K · done│ │ 4 lines · 1K/128K · done│
-└────────────────────────┘ └────────────────────────┘
-claude ●  gpt ●  — Tab:switch d:compare m:mute r:reset q:quit ↑↓:scroll/history Esc:cancel
-[all] > _
+┌─ claude ──────────────────────┐ ┌─ gpt ─────────────────────────┐
+│                               │ │                               │
+│  可以使用 ls 列出当前目录文件： │ │  你可以用 ls 或 dir 命令查看目 │
+│  $ ls -la                     │ │  录内容：                      │
+│  total 48                     │ │  $ ls                          │
+│  drwxr-xr-x  12 user  staff   │ │  src/  test/  package.json     │
+│                               │ │                               │
+│  3 lines · 1K/200K · done     │ │  3 lines · 1K/128K · done     │
+└───────────────────────────────┘ └───────────────────────────────┘
+ claude ●  gpt ●   Tab:switch  d:compare  m:mute  r:reset  q:quit
+[all] > ▊
 ```
 
 ### 定向模式（Tab 切换）
@@ -27,22 +29,22 @@ claude ●  gpt ●  — Tab:switch d:compare m:mute r:reset q:quit ↑↓:scrol
 消息只发给一个模型，全宽详情视图：
 
 ```
-┌─ claude ───────────────────────────────────────────────┐
-│ claude                                                  │
-│ 我来详细分析这个方案的优缺点：                              │
-│                                                          │
-│ **优点：**                                                │
-│ 1. 抽象层分离，代码可维护性高                               │
-│ 2. Provider 扩展只需实现接口                               │
-│                                                          │
-│ **改进建议：**                                            │
-│ 1. 考虑添加请求重试机制                                    │
-│ 2. 工具调用可增加超时控制                                  │
-│                                                          │
-│ 2K/200K · 15 lines · done                                │
-└──────────────────────────────────────────────────────────┘
-claude ●  gpt  — Tab:switch d:compare m:mute r:reset q:quit ↑↓:scroll/history Esc:cancel
-[claude] > _
+┌─ claude ───────────────────────────────────────────────────────────────┐
+│                                                                        │
+│  我来详细分析这个方案的优缺点：                                            │
+│                                                                        │
+│  **优点：**                                                              │
+│  1. 四层架构清晰，每层职责单一，易于测试和维护                               │
+│  2. Provider 接口设计简洁，新增模型只需实现 `chat()` 方法                    │
+│                                                                        │
+│  **改进建议：**                                                          │
+│  1. 添加请求重试和降级策略，提高可用性                                     │
+│  2. 工具调用可增加超时控制和并发限制                                        │
+│                                                                        │
+│  2K/200K · 15 lines · done                                             │
+└────────────────────────────────────────────────────────────────────────┘
+ claude ●  gpt    Tab:switch  d:compare  m:mute  r:reset  q:quit
+[claude] > ▊
 ```
 
 ### 对比模式（按 `d` 键）
@@ -50,15 +52,16 @@ claude ●  gpt  — Tab:switch d:compare m:mute r:reset q:quit ↑↓:scroll/hi
 两个模型并排对比，差异一目了然：
 
 ```
-┌─ claude ──────────────────┐ ┌─ gpt ──────────────────────┐
-│ claude                     │ │ gpt                         │
-│ 推荐使用策略模式重构这段代码  │ │ 建议用工厂模式 + 依赖注入来解 │
-│ 。                          │ │ 耦。                         │
-│                            │ │                             │
-│ 2K/200K · 12 lines · done │ │ 1K/128K · 14 lines · done  │
-└───────────────────────────┘ └─────────────────────────────┘
-claude ●  gpt ●  — Tab:switch d:compare m:mute r:reset q:quit ↑↓:scroll/history Esc:cancel
-[claude] > _
+┌─ claude ──────────────────────┐ ┌─ gpt ─────────────────────────┐
+│                               │ │                               │
+│  推荐使用策略模式，将每种算法封 │ │  建议用工厂模式配合依赖注入来解 │
+│  装为独立的策略类。这样新增算法 │ │  耦。定义抽象工厂接口，每个模  │
+│  只需添加新类，无需修改现有代码 │ │  型提供具体实现。              │
+│                               │ │                               │
+│  2K/200K · 12 lines · done    │ │  1K/128K · 14 lines · done   │
+└───────────────────────────────┘ └───────────────────────────────┘
+ claude ●  gpt ●   Tab:switch  d:compare  m:mute  r:reset  q:quit
+[claude] > ▊
 ```
 
 ## 安装
