@@ -38,12 +38,14 @@ export class OpenAIProvider implements Provider {
         { signal: abortController.signal },
       );
 
-      // Track pending tool calls across stream chunks
       const pendingToolCalls = new Map<number, PendingToolCall>();
       let doneYielded = false;
 
+      // Stateful think-tag filter for reasoning models (e.g. MiniMax, DeepSeek-R1)
+      let inThink = false;
+      let thinkBuf = "";
+
       for await (const chunk of stream) {
-        // Token usage chunk (when stream_options.include_usage is true)
         if (chunk.usage) {
           inputTokens = chunk.usage.prompt_tokens;
           outputTokens = chunk.usage.completion_tokens;
@@ -55,7 +57,6 @@ export class OpenAIProvider implements Provider {
 
         const delta = choice.delta;
 
-        // Accumulate tool call deltas
         if (delta.tool_calls) {
           for (const tc of delta.tool_calls) {
             const idx = tc.index;
@@ -73,12 +74,46 @@ export class OpenAIProvider implements Provider {
           }
         }
 
-        // Text delta
+        // Text delta with think-tag filtering (for reasoning models)
         if (delta.content) {
-          yield { type: "text", content: delta.content };
+          let text = delta.content;
+
+          if (inThink) {
+            thinkBuf += text;
+            const endIdx = thinkBuf.indexOf("</think>");
+            if (endIdx !== -1) {
+              inThink = false;
+              text = thinkBuf.slice(endIdx + "</think>".length);
+              thinkBuf = "";
+              if (!text) continue;
+            } else {
+              continue;
+            }
+          }
+
+          // Check for <think> opening tag
+          const startIdx = text.indexOf("<think>");
+          if (startIdx !== -1) {
+            const before = text.slice(0, startIdx);
+            const rest = text.slice(startIdx + "<think>".length);
+            const endIdx = rest.indexOf("</think>");
+            if (endIdx !== -1) {
+              // Complete think block in this chunk
+              const after = rest.slice(endIdx + "</think>".length);
+              text = before + after;
+              if (!text) continue;
+            } else {
+              // Think block spans chunks
+              if (before) yield { type: "text", content: before };
+              inThink = true;
+              thinkBuf = rest;
+              continue;
+            }
+          }
+
+          yield { type: "text", content: text };
         }
 
-        // On finish_reason === "tool_calls", emit all pending tool_calls
         if (choice.finish_reason === "tool_calls") {
           for (const [, tc] of pendingToolCalls) {
             yield {
@@ -96,8 +131,17 @@ export class OpenAIProvider implements Provider {
           doneYielded = true;
         }
 
-        // handle stop
         if (choice.finish_reason === "stop") {
+          // Flush any remaining think buffer
+          if (inThink && thinkBuf) {
+            const endIdx = thinkBuf.indexOf("</think>");
+            if (endIdx !== -1) {
+              const after = thinkBuf.slice(endIdx + "</think>".length);
+              if (after) yield { type: "text", content: after };
+            }
+            inThink = false;
+            thinkBuf = "";
+          }
           yield {
             type: "done",
             usage: { input: inputTokens, output: outputTokens },
@@ -106,7 +150,6 @@ export class OpenAIProvider implements Provider {
         }
       }
 
-      // Ensure done is always yielded (e.g. when stream ends on usage chunk)
       if (!doneYielded) {
         yield {
           type: "done",

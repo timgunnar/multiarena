@@ -99,15 +99,23 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
 
       // Execute tools and feed results back
       for (const tc of pendingToolCalls) {
-        const toolLabel = `\n[Tool: ${tc.name}]\n`;
+        const toolLabel = `\n[Tool: ${tc.name || "(unknown)"}]\n`;
         allText.push(toolLabel);
         yield { type: "text", content: toolLabel } as StreamEvent;
 
+        if (!tc.name || tc.name.trim() === "") {
+          const errMsg = "Tool call with empty name — skipped";
+          ctx.messages.push({ role: "tool", content: errMsg, tool_call_id: tc.id });
+          allText.push(errMsg + "\n");
+          yield { type: "text", content: errMsg + "\n" } as StreamEvent;
+          continue;
+        }
+
         let args: Record<string, unknown>;
         try {
-          args = JSON.parse(tc.arguments);
+          args = JSON.parse(tc.arguments || "{}");
         } catch {
-          const errMsg = `Failed to parse tool arguments: ${tc.arguments}`;
+          const errMsg = `Failed to parse tool arguments: ${tc.arguments || "(empty)"}`;
           ctx.messages.push({ role: "tool", content: errMsg, tool_call_id: tc.id });
           allText.push(errMsg + "\n");
           yield { type: "text", content: errMsg + "\n" } as StreamEvent;
