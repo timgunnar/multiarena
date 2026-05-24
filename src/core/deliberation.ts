@@ -266,3 +266,122 @@ export function autoAssignRounds(
 export function roundLabel(role: RoundRole): string {
   return ROLE_LABELS[role];
 }
+
+export interface MergeInput {
+  modelName: string;
+  content: string;
+}
+
+/**
+ * Synthesize existing model outputs into one final document.
+ * Single-turn: one model acts as the merger, combining all outputs
+ * into a coherent document with source annotations and conflict notes.
+ */
+export async function* runMerge(
+  task: string,
+  outputs: MergeInput[],
+  mergerConfig: ModelConfig,
+  mergerName: string,
+): AsyncGenerator<DeliberationProgress> {
+  const outputBlock = outputs
+    .map((o) => `### ${o.modelName}\n\n${o.content}`)
+    .join("\n\n---\n\n");
+
+  const systemPrompt = `你正在执行多模型输出的合并合成任务。
+
+## 原始任务
+${task}
+
+## 各模型的输出
+${outputBlock}
+
+## 合并要求
+
+1. **识别共识** — 找出所有模型中一致或高度相似的论点、事实、建议，合并后作为 [共识] 部分
+2. **保留独有贡献** — 每个模型独有的观点、细节、角度，标注 [来源: 模型名]
+3. **标注分歧** — 如果模型之间对某个问题有不同意见，客观列出各方观点，标注 [分歧]
+4. **去重合并** — 相似内容合并而不是重复
+5. **保持完整** — 不要遗漏任何模型的任何实质内容
+6. **语言流畅** — 最终输出应读起来像一篇连贯的文档，而不是拼凑
+
+## 输出格式
+直接输出合并后的完整文档。每个段落/章节末尾用 [] 标注来源。
+禁止输出前言或后记。`;
+
+  yield {
+    type: "round_start",
+    round: 1,
+    totalRounds: 1,
+    modelName: mergerName,
+    role: "draft",
+  };
+
+  const messages: Message[] = [
+    { role: "user", content: "请根据各模型的输出，合并生成一份最终文档。" },
+  ];
+
+  let buffer = "";
+
+  try {
+    const stream = runTurn({
+      modelName: mergerName,
+      config: mergerConfig,
+      messages,
+      systemPrompt,
+      tools: [],
+      registry: new ToolRegistry(),
+      permission: new PermissionManager(),
+      worktreePath: process.cwd(),
+    });
+
+    for await (const event of stream) {
+      if (event.type === "text") {
+        buffer += event.content;
+        yield {
+          type: "text",
+          round: 1,
+          totalRounds: 1,
+          modelName: mergerName,
+          role: "draft",
+          content: event.content,
+        };
+      } else if (event.type === "error") {
+        buffer += `\n[错误: ${event.message}]`;
+        yield {
+          type: "text",
+          round: 1,
+          totalRounds: 1,
+          modelName: mergerName,
+          role: "draft",
+          content: `\n[错误: ${event.message}]`,
+        };
+        break;
+      }
+    }
+  } catch (err: any) {
+    yield {
+      type: "error",
+      round: 1,
+      totalRounds: 1,
+      modelName: mergerName,
+      error: err.message,
+    };
+    return;
+  }
+
+  yield {
+    type: "round_end",
+    round: 1,
+    totalRounds: 1,
+    modelName: mergerName,
+    role: "draft",
+    document: buffer,
+  };
+
+  yield {
+    type: "done",
+    round: 1,
+    totalRounds: 1,
+    document: buffer,
+  };
+}

@@ -14,8 +14,10 @@ import { WorktreeManager } from "../isolation/worktree.js";
 import { saveSession, loadSession } from "../persistence/session.js";
 import {
   runDeliberation,
+  runMerge,
   autoAssignRounds,
   type DeliberationProgress,
+  type MergeInput,
 } from "../core/deliberation.js";
 
 function makeSystemPrompt(modelName: string, provider: string): string {
@@ -242,6 +244,13 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       return;
     }
 
+    // Ctrl+S — merge/synthesize last model outputs
+    if (key.ctrl && inputValue === "s") {
+      setInput("");
+      runMergePipeline();
+      return;
+    }
+
     // Single-key shortcuts — only active when the input bar is empty
     // so they don't collide with normal message typing.
     if (input.length > 0) return;
@@ -399,6 +408,75 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     [session.models, config],
   );
 
+  // ── Merge runner ──────────────────────────────────────────────
+  const runMergePipeline = useCallback(async () => {
+    if (deliberatingRef.current) return;
+    deliberatingRef.current = true;
+
+    // Collect the last assistant response from each non-muted model
+    const outputs: MergeInput[] = [];
+    for (const m of session.models) {
+      if (m.muted) continue;
+      // Find the last assistant message
+      const lastAssistant = [...m.messages].reverse().find((msg) => msg.role === "assistant");
+      if (lastAssistant?.content) {
+        outputs.push({ modelName: m.name, content: lastAssistant.content });
+      }
+    }
+
+    if (outputs.length < 2) {
+      setDeliberationProgress({
+        type: "error",
+        round: 0,
+        totalRounds: 0,
+        error: "需要至少 2 个模型有回复才能合并。",
+      });
+      deliberatingRef.current = false;
+      return;
+    }
+
+    // Find the last user message as the task
+    const firstModel = session.models.find((m) => !m.muted);
+    const lastUserMsg = firstModel?.messages
+      ? [...firstModel.messages].reverse().find((m) => m.role === "user")
+      : null;
+    const task = lastUserMsg?.content ?? "合并以下模型输出";
+
+    // Use the first non-muted model as the merger
+    const mergerName = session.models.find((m) => !m.muted)!.name;
+    const mergerConfig = config.models[mergerName];
+    if (!mergerConfig) {
+      setDeliberationProgress({
+        type: "error",
+        round: 0,
+        totalRounds: 0,
+        error: `未找到模型 "${mergerName}" 的配置。`,
+      });
+      deliberatingRef.current = false;
+      return;
+    }
+
+    setDeliberationDocument("");
+    let doc = "";
+
+    const stream = runMerge(task, outputs, mergerConfig, mergerName);
+
+    for await (const event of stream) {
+      setDeliberationProgress(event);
+      if (event.type === "text" && event.content) {
+        doc += event.content;
+        setDeliberationDocument(doc);
+      } else if (event.type === "done") {
+        setDeliberationDocument(event.document ?? doc);
+      } else if (event.type === "error") {
+        deliberatingRef.current = false;
+        return;
+      }
+    }
+
+    deliberatingRef.current = false;
+  }, [session.models, config]);
+
   const handleSubmit = useCallback(
     async (value: string) => {
       const trimmed = value.trim();
@@ -415,6 +493,16 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
           setDeliberationDocument("");
           runDeliberationPipeline(task);
         }
+        return;
+      }
+
+      // ── Merge command: synthesize last outputs ───────────────
+      if (trimmed === "/merge" || trimmed === "/m") {
+        inputHistoryRef.current.push(trimmed);
+        historyIdxRef.current = -1;
+        setInput("");
+        setDeliberationDocument("");
+        runMergePipeline();
         return;
       }
 
