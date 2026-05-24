@@ -19,9 +19,17 @@ import {
   type DeliberationProgress,
   type MergeInput,
 } from "../core/deliberation.js";
+import {
+  reduceTab,
+  reduceShiftTab,
+  reduceEscape,
+  reduceKeyD,
+  reduceSubmitInTeam,
+  type ModeState,
+} from "./modeTransitions.js";
 
 function makeSystemPrompt(modelName: string, provider: string): string {
-  return `You are a helpful AI coding assistant. You are the "${modelName}" model (provider: ${provider}). Be concise.`;
+  return `You are a helpful AI assistant. You can help with coding, writing, analysis, and creative tasks. You are the "${modelName}" model (provider: ${provider}). Respond directly to the user's request — if asked to write content, just write it; only use tools when the task genuinely requires file or command operations.`;
 }
 
 // App-level (module-scoped) tool registry and permission manager.
@@ -68,6 +76,8 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const [modelStates, setModelStates] = useState<ModelState[]>(() => session.models);
   const [comparisonModel, setComparisonModel] = useState<string | null>(null);
   const comparisonFromBroadcastRef = useRef(false);
+  // Lightweight trigger for re-renders when only session.targetMode changes (not model data)
+  const [targetVersion, setTargetVersion] = useState(0);
 
   // ── Team / Broadcast mode ──────────────────────────────────────
   const [teamMode, setTeamMode] = useState(false);
@@ -76,6 +86,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const [deliberationProgress, setDeliberationProgress] =
     useState<DeliberationProgress | null>(null);
   const [deliberationDocument, setDeliberationDocument] = useState("");
+  const [deliberationRounds, setDeliberationRounds] = useState<Array<{ round: number; modelName: string; role: "draft" | "revise" | "polish" | "review"; changeCount?: number; changeSamples?: string[] }>>([]);
   const deliberatingRef = useRef(false);
   const deliberationAbortRef = useRef<AbortController | null>(null);
 
@@ -133,7 +144,9 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   }, [session, sessionId]);
 
   const targetPrefix = teamMode
-    ? "team"
+    ? session.targetMode.type === "broadcast"
+      ? "team"
+      : `team:${session.targetMode.modelName}`
     : session.targetMode.type === "broadcast"
       ? "all"
       : session.targetMode.modelName;
@@ -171,58 +184,90 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     }
   });
 
+  // Build a ModeState snapshot from current React state so the pure
+  // decision functions in modeTransitions.ts can drive the keyboard handler.
+  function currentModeState(): ModeState {
+    let ds: ModeState["deliberationStatus"] = "idle";
+    if (deliberationProgress) {
+      if (deliberationProgress.type === "done") ds = "done";
+      else if (deliberationProgress.type === "error") ds = "error";
+      else ds = "running";
+    }
+    return {
+      teamMode,
+      deliberationStatus: ds,
+      comparisonModel,
+      comparisonFromBroadcast: comparisonFromBroadcastRef.current,
+    };
+  }
+
+  /** True when the current target is the mode overview (broadcast target). */
+  function isOverview(): boolean {
+    return session.targetMode.type === "broadcast";
+  }
+
   // Keyboard input: Tab cycling, scrolling, and single-key shortcuts.
-  // Single-key shortcuts (d/m/r) only fire when the input bar is empty so they
-  // don't interfere with message typing.
   useInput((inputValue, key) => {
-    if (key.tab) {
-      process.stderr.write(`[DEBUG] Tab pressed: shift=${key.shift} meta=${key.meta} ctrl=${key.ctrl}\n`);
-      if (key.shift) {
-        // Shift+Tab: toggle team / broadcast mode
-        setTeamMode((prev) => !prev);
-        setDeliberationProgress(null);
-        setDeliberationDocument("");
-        setComparisonModel(null);
-        setModelStates([...session.models]);
-      } else {
-        session.cycleTarget();
+    // ── Tab (no shift): cycle target within current mode ──────────
+    // Tab never changes teamMode. It cycles: overview → model1 → … → overview.
+    if (key.tab && !key.shift) {
+      const r = reduceTab(currentModeState());
+      if (r.clearComparison) {
         setComparisonModel(null);
         comparisonFromBroadcastRef.current = false;
-        setModelStates([...session.models]);
+      }
+      if (r.cycleTarget) {
+        session.cycleTarget();
+        setTargetVersion((v) => v + 1);
       }
       return;
     }
 
-    // Escape dismisses comparison / deliberation / team mode
+    // ── Shift+Tab: toggle between broadcast ↔ team ──────────────
+    if (key.tab && key.shift) {
+      const r = reduceShiftTab(currentModeState());
+      setTeamMode(r.teamMode);
+      setComparisonModel(null);
+      if (r.goToOverview) {
+        session.setTarget({ type: "broadcast" });
+        setTargetVersion((v) => v + 1);
+      }
+      if (r.resetDeliberation) {
+        setDeliberationProgress(null);
+        setDeliberationDocument("");
+        setDeliberationRounds([]);
+      }
+      return;
+    }
+
+    // ── Escape: return to current mode's overview ────────────────
     if (key.escape) {
-      if (teamMode) {
-        setTeamMode(false);
+      const r = reduceEscape(currentModeState(), deliberatingRef.current);
+      // teamMode is preserved — Esc never toggles it
+      if (r.teamMode !== teamMode) setTeamMode(r.teamMode);
+      if (r.abortDeliberation) {
+        deliberationAbortRef.current?.abort();
+        deliberatingRef.current = false;
+      }
+      if (r.resetDeliberation) {
         setDeliberationProgress(null);
         setDeliberationDocument("");
-        shortcutHandledRef.current = true;
-        return;
+        setDeliberationRounds([]);
       }
-      if (deliberationProgress) {
-        // Abort running deliberation
-        if (deliberatingRef.current) {
-          deliberationAbortRef.current?.abort();
-          deliberatingRef.current = false;
-        }
-        setDeliberationProgress(null);
-        setDeliberationDocument("");
-        shortcutHandledRef.current = true;
-        return;
+      setComparisonModel(r.comparisonModel);
+      comparisonFromBroadcastRef.current = r.comparisonFromBroadcast;
+      if (r.goToOverview) {
+        session.setTarget({ type: "broadcast" });
+        setTargetVersion((v) => v + 1);
       }
-      if (comparisonModel) {
-        if (comparisonFromBroadcastRef.current) {
-          session.setTarget({ type: "broadcast" });
-          comparisonFromBroadcastRef.current = false;
-        }
-        setComparisonModel(null);
+      if (r.restoreBroadcast) {
+        // Exiting comparison that entered from broadcast — restore broadcast
+        session.setTarget({ type: "broadcast" });
+        comparisonFromBroadcastRef.current = false;
         setModelStates([...session.models]);
-        shortcutHandledRef.current = true;
-        return;
       }
+      shortcutHandledRef.current = true;
+      return;
     }
 
     if (key.upArrow) {
@@ -262,35 +307,29 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
     // 'd' — toggle comparison mode (current model vs next unmuted model)
     if (inputValue === "d") {
-      if (comparisonModel) {
-        // Exiting comparison: restore broadcast if we entered from there
-        if (comparisonFromBroadcastRef.current) {
-          session.setTarget({ type: "broadcast" });
-          comparisonFromBroadcastRef.current = false;
-        }
-        setComparisonModel(null);
-      } else {
-        const unmuted = session.models.filter((m) => !m.muted);
-        if (unmuted.length < 2) {
-          shortcutHandledRef.current = true;
-          return;
-        }
-        if (session.targetMode.type === "broadcast") {
-          // From broadcast: switch to directed for the first model, compare with second
-          session.setTarget({ type: "directed", modelName: unmuted[0].name });
-          setComparisonModel(unmuted[1].name);
-          comparisonFromBroadcastRef.current = true;
-        } else {
-          // From directed: toggle comparison on/off for the current model
-          const baseName = session.targetMode.modelName;
-          const idx = unmuted.findIndex((m) => m.name === baseName);
-          const next = unmuted[(idx + 1) % unmuted.length];
-          if (next && next.name !== baseName) {
-            setComparisonModel(next.name);
-          }
-        }
+      const unmuted = session.models.filter((m) => !m.muted);
+      const firstUnmuted = unmuted[0]?.name ?? "";
+      const secondUnmuted = unmuted[1]?.name ?? null;
+      const currentTarget =
+        session.targetMode.type === "directed" ? session.targetMode.modelName : null;
+
+      const r = reduceKeyD(currentModeState(), firstUnmuted, secondUnmuted, currentTarget);
+
+      // Exiting comparison — restore broadcast if we entered from there
+      if (comparisonModel && !r.comparisonModel && comparisonFromBroadcastRef.current) {
+        session.setTarget({ type: "broadcast" });
+        comparisonFromBroadcastRef.current = false;
+        setTargetVersion((v) => v + 1);
       }
-      setModelStates([...session.models]);
+
+      setComparisonModel(r.comparisonModel);
+      comparisonFromBroadcastRef.current = r.comparisonFromBroadcast;
+
+      if (r.setDirectedTarget) {
+        session.setTarget({ type: "directed", modelName: r.setDirectedTarget });
+        setTargetVersion((v) => v + 1);
+      }
+
       shortcutHandledRef.current = true;
       return;
     }
@@ -389,15 +428,36 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       }
 
       setDeliberationDocument("");
+      setDeliberationRounds([]);
       let doc = "";
 
       const stream = runDeliberation(task, roundConfigs, constraint);
 
       for await (const event of stream) {
         setDeliberationProgress(event);
-        if (event.type === "text" && event.content) {
+        if (event.type === "round_start") {
+          doc = "";
+          setDeliberationDocument("");
+          setDeliberationRounds((prev) => [
+            ...prev,
+            { round: event.round, modelName: event.modelName!, role: event.role! },
+          ]);
+        } else if (event.type === "text" && event.content) {
           doc += event.content;
           setDeliberationDocument(doc);
+        } else if (event.type === "round_end") {
+          // Update the round entry with change metadata
+          setDeliberationRounds((prev) =>
+            prev.map((r) =>
+              r.round === event.round
+                ? {
+                    ...r,
+                    changeCount: event.changeCount,
+                    changeSamples: event.changeSamples,
+                  }
+                : r,
+            ),
+          );
         } else if (event.type === "done") {
           setDeliberationDocument(event.document ?? doc);
         } else if (event.type === "error") {
@@ -407,6 +467,17 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       }
 
       // Keep the final document visible; user presses Esc to dismiss
+      // Inject the final document into each model's message history
+      // so they can discuss it when the user switches to chat mode.
+      if (doc) {
+        const contextMsg = `[团队审议结果]\n\n以下是你与其他模型协作完成的最终文档。用户可以就此文档与你讨论。\n\n---\n${doc}\n---`;
+        for (const m of session.models) {
+          if (!m.muted) {
+            m.messages.push({ role: "user", content: contextMsg });
+          }
+        }
+      }
+
       deliberatingRef.current = false;
     },
     [session.models, config],
@@ -461,13 +532,20 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     }
 
     setDeliberationDocument("");
+    setDeliberationRounds([]);
     let doc = "";
 
     const stream = runMerge(task, outputs, mergerConfig, mergerName);
 
     for await (const event of stream) {
       setDeliberationProgress(event);
-      if (event.type === "text" && event.content) {
+      if (event.type === "round_start") {
+        doc = "";
+        setDeliberationDocument("");
+        setDeliberationRounds([
+          { round: 1, modelName: mergerName, role: "draft" as const },
+        ]);
+      } else if (event.type === "text" && event.content) {
         doc += event.content;
         setDeliberationDocument(doc);
       } else if (event.type === "done") {
@@ -475,6 +553,17 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       } else if (event.type === "error") {
         deliberatingRef.current = false;
         return;
+      }
+    }
+
+    // Inject the merged document into each model's history so they
+    // can discuss it when the user switches to chat mode.
+    if (doc) {
+      const contextMsg = `[合并结果]\n\n以下是将各模型输出合并后的最终文档。用户可以就此文档与你讨论。\n\n---\n${doc}\n---`;
+      for (const m of session.models) {
+        if (!m.muted) {
+          m.messages.push({ role: "user", content: contextMsg });
+        }
       }
     }
 
@@ -486,14 +575,22 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       const trimmed = value.trim();
       if (!trimmed) return;
 
-      // ── Team mode: submit runs deliberation ───────────────────
+      // ── Team mode: submit runs deliberation or routes to model ──
       if (teamMode) {
-        inputHistoryRef.current.push(trimmed);
-        historyIdxRef.current = -1;
-        setInput("");
-        setDeliberationDocument("");
-        runDeliberationPipeline(trimmed);
-        return;
+        const r = reduceSubmitInTeam(currentModeState(), isOverview());
+        if (r.action === "block") return;
+        if (r.action === "deliberate") {
+          inputHistoryRef.current.push(trimmed);
+          historyIdxRef.current = -1;
+          setInput("");
+          setDeliberationDocument("");
+          // Reset target to overview so OutputArea shows deliberation progress
+          session.setTarget({ type: "broadcast" });
+          setTargetVersion((v) => v + 1);
+          runDeliberationPipeline(trimmed);
+          return;
+        }
+        // r.action === "route_normally" — send as directed/broadcast message
       }
 
       // ── Team mode toggle ────────────────────────────────────
@@ -502,8 +599,12 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         historyIdxRef.current = -1;
         setInput("");
         setTeamMode((prev) => !prev);
+        // Entering a mode always lands on its overview
+        session.setTarget({ type: "broadcast" });
+        setTargetVersion((v) => v + 1);
         setDeliberationProgress(null);
         setDeliberationDocument("");
+        setDeliberationRounds([]);
         setComparisonModel(null);
         shortcutHandledRef.current = true;
         return;
@@ -595,7 +696,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       // ── Auto-save session ─────────────────────────────────────
       saveCurrentSession();
     },
-    [session, config, sessionId, saveCurrentSession, teamMode, runDeliberationPipeline],
+    [session, config, sessionId, saveCurrentSession, teamMode, deliberationProgress, runDeliberationPipeline, setTargetVersion],
   );
 
   const terminalWidth = process.stdout.columns ?? 80;
@@ -662,6 +763,8 @@ broadcast = true`;
         terminalWidth={terminalWidth}
         deliberationProgress={deliberationProgress}
         deliberationDocument={deliberationDocument}
+        deliberationRounds={deliberationRounds}
+        teamMode={teamMode}
       />
 
       {/* Divider */}

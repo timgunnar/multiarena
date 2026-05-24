@@ -39,20 +39,22 @@ function mockTurnText(text: string) {
 }
 
 describe("autoAssignRounds", () => {
-  it("assigns draft/revise/polish for 3 models", () => {
+  it("mirror pattern ABCBA for 3 models", () => {
     const models: Record<string, ModelConfig> = {
       a: makeModelConfig(),
       b: makeModelConfig(),
       c: makeModelConfig(),
     };
     const rounds = autoAssignRounds(["a", "b", "c"], models);
-    expect(rounds).toHaveLength(3);
+    expect(rounds).toHaveLength(5);
     expect(rounds[0]).toMatchObject({ modelName: "a", role: "draft" });
     expect(rounds[1]).toMatchObject({ modelName: "b", role: "revise" });
     expect(rounds[2]).toMatchObject({ modelName: "c", role: "polish" });
+    expect(rounds[3]).toMatchObject({ modelName: "b", role: "revise" });
+    expect(rounds[4]).toMatchObject({ modelName: "a", role: "review" });
   });
 
-  it("adds review role for 4+ models", () => {
+  it("mirror pattern ABCDCBA for 4 models", () => {
     const models: Record<string, ModelConfig> = {
       a: makeModelConfig(),
       b: makeModelConfig(),
@@ -60,25 +62,29 @@ describe("autoAssignRounds", () => {
       d: makeModelConfig(),
     };
     const rounds = autoAssignRounds(["a", "b", "c", "d"], models);
-    expect(rounds).toHaveLength(4);
+    expect(rounds).toHaveLength(7);
     expect(rounds[0]).toMatchObject({ modelName: "a", role: "draft" });
     expect(rounds[1]).toMatchObject({ modelName: "b", role: "revise" });
     expect(rounds[2]).toMatchObject({ modelName: "c", role: "polish" });
     expect(rounds[3]).toMatchObject({ modelName: "d", role: "review" });
+    expect(rounds[4]).toMatchObject({ modelName: "c", role: "revise" });
+    expect(rounds[5]).toMatchObject({ modelName: "b", role: "revise" });
+    expect(rounds[6]).toMatchObject({ modelName: "a", role: "review" });
   });
 
-  it("works with 2 models (draft + revise only)", () => {
+  it("mirror pattern ABA for 2 models", () => {
     const models: Record<string, ModelConfig> = {
       a: makeModelConfig(),
       b: makeModelConfig(),
     };
     const rounds = autoAssignRounds(["a", "b"], models);
-    expect(rounds).toHaveLength(2);
+    expect(rounds).toHaveLength(3);
     expect(rounds[0]).toMatchObject({ modelName: "a", role: "draft" });
     expect(rounds[1]).toMatchObject({ modelName: "b", role: "revise" });
+    expect(rounds[2]).toMatchObject({ modelName: "a", role: "review" });
   });
 
-  it("uses only first N models where N = role count", () => {
+  it("filters missing model configs", () => {
     const models: Record<string, ModelConfig> = {
       a: makeModelConfig(),
       b: makeModelConfig(),
@@ -86,8 +92,10 @@ describe("autoAssignRounds", () => {
       d: makeModelConfig(),
       e: makeModelConfig(),
     };
+    // Only a,b,c,d have configs
     const rounds = autoAssignRounds(["a", "b", "c", "d", "e"], models);
-    expect(rounds).toHaveLength(4); // max 4 roles
+    // 5 model names, all 5 have configs → forward 4, reverse middle 2, final a = 7
+    expect(rounds).toHaveLength(7);
   });
 });
 

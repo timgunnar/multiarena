@@ -21,6 +21,10 @@ export interface DeliberationProgress {
   content?: string;
   document?: string;
   error?: string;
+  /** Number of revision annotations found in this round's output. */
+  changeCount?: number;
+  /** A few representative revision snippets from this round. */
+  changeSamples?: string[];
 }
 
 export interface DeliberationResult {
@@ -42,6 +46,7 @@ const ROLE_LABELS: Record<RoundRole, string> = {
 function buildSystemPrompt(
   role: RoundRole,
   task: string,
+  isFinalRound: boolean,
   constraint?: string,
   previousDocument?: string,
   draftAuthor?: string,
@@ -67,9 +72,17 @@ ${constraintBlock}
 - 后续其他模型会在你的基础上修改，请尽量全面
 - 输出完整的文档内容`;
 
-    case "revise":
-      return `${header}你的角色是**修订者**。
+    case "revise": {
+      const finalRoundBlock = isFinalRound
+        ? `\n## 重要：这是最后一轮
+你是最终输出者。请输出一份面向用户的干净终稿：
+- 直接在你的修订版正文中完成所有修改，不要使用 [修订:] 标注
+- 如果之前文档中有 [修订:] 或 [补充:] 标注，将它们全部清理掉，只保留修改后的干净正文
+- 文档读起来应该像一篇自然的成品，没有任何过程标记`
+        : "";
 
+      return `${header}你的角色是**修订者**。
+${finalRoundBlock}
 ## 原始任务
 ${task}
 ${constraintBlock}
@@ -82,13 +95,22 @@ ${previousDocument}
 - 对照约束文档，逐条检查违规项并修正
 - 补充你发现遗漏的要点
 - 改进表达不清或逻辑不严谨的地方
-- 在修改处用 [修订: 原文片段 → 修改后文本] 标注
-- 禁止笼统赞美，只做实质性修改
-- 输出完整的修订版文档`;
+${isFinalRound
+  ? "- 输出完整的干净终稿，不要包含任何过程标注"
+  : "- 在修改处用 [修订: 原文片段 → 修改后文本] 标注\n- 禁止笼统赞美，只做实质性修改\n- 输出完整的修订版文档"}`;
+    }
 
-    case "polish":
+    case "polish": {
+      const finalRoundBlock = isFinalRound
+        ? `\n## 重要：这是最后一轮
+你是最终输出者。请输出一份面向用户的干净终稿：
+- 如果之前文档中有 [修订:] 或 [补充:] 标注，将它们全部清理掉，只保留修改后的干净正文
+- 你新增的改进直接写入正文，不要使用 [补充:] 标注
+- 文档读起来应该像一篇自然的成品，没有任何过程标记`
+        : "";
+
       return `${header}你的角色是**润色者**。
-
+${finalRoundBlock}
 ## 原始任务
 ${task}
 ${constraintBlock}
@@ -100,25 +122,27 @@ ${previousDocument}
 - 在现有基础上最终润色
 - 再次对照约束文档做合规检查
 - 优化语言流畅度和可读性
-- 补充你独有的见解（标注 [补充: 你的贡献]）
-- 保留所有之前的修订标注
-- 输出最终的完整文档`;
+${isFinalRound
+  ? "- 输出完整的干净终稿，不要包含任何过程标注"
+  : "- 补充你独有的见解（标注 [补充: 你的贡献]）\n- 保留所有之前的修订标注\n- 输出完整的文档"}`;
+    }
 
     case "review":
-      return `${header}你的角色是**终审者**。
+      return `${header}你的角色是**终审者**（最后一轮）。
 
 ## 原始任务
 ${task}
 ${constraintBlock}
 
-## 经过多轮修改的最终版
+## 经过多轮修改的文档
 ${previousDocument}
 
 ## 要求
-- 审查是否有修改偏离了原意，如有标注 [终审: 偏离原意 — 说明]
+- 审查是否有修改偏离了原意
 - 对照约束文档逐条再过一遍
-- 检查修订标注是否合理
-- 确认后输出最终版（可选择接受或回退某处修改，标注 [终审: 回退 — 原因]）
+- 清理所有 [修订:] 和 [补充:] 等过程标注，输出干净的最终版
+- 如果认可某处修改，直接保留正文；如果需要回退，直接改回并保持正文流畅
+- 这是一份面向用户的交付文档，不要包含任何过程标记或审查意见
 - 输出最终确认版`;
 
     default:
@@ -152,6 +176,7 @@ export async function* runDeliberation(
     const systemPrompt = buildSystemPrompt(
       rc.role,
       task,
+      i === roundConfigs.length - 1,
       constraint,
       previousDocument,
       draftAuthor,
@@ -227,6 +252,12 @@ export async function* runDeliberation(
 
     documents.push(buffer);
 
+    // Extract revision annotations for the process summary
+    const revisionMatches = buffer.match(/\[修订:\s*([^\]]+?)\]/g) ?? [];
+    const changeSamples = revisionMatches
+      .map((m) => m.replace(/^\[修订:\s*/, "").replace(/\]$/, ""))
+      .slice(0, 5);
+
     yield {
       type: "round_end",
       round: i + 1,
@@ -234,7 +265,16 @@ export async function* runDeliberation(
       modelName: rc.modelName,
       role: rc.role,
       document: buffer,
+      changeCount: revisionMatches.length,
+      changeSamples: changeSamples.length > 0 ? changeSamples : undefined,
     };
+
+    // Yield to the event loop so React renders the round's output
+    // before the next round_start event arrives, preventing batch
+    // collapse between round_end and round_start.
+    if (i < roundConfigs.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
   }
 
   yield {
@@ -245,21 +285,47 @@ export async function* runDeliberation(
   };
 }
 
-/** Build round configs from model names and configs, auto-assigning roles. */
+/** Build round configs with mirror pattern: A→B→C→B→A. */
 export function autoAssignRounds(
   modelNames: string[],
   models: Record<string, ModelConfig>,
 ): DeliberationRoundConfig[] {
-  const roles: RoundRole[] = ["draft", "revise", "polish"];
-  if (modelNames.length >= 4) {
-    roles.push("review");
+  const active = modelNames.filter((n) => models[n]);
+  if (active.length < 2) return [];
+
+  const forwardRoles: RoundRole[] = ["draft", "revise", "polish"];
+  if (active.length >= 4) forwardRoles.push("review");
+
+  // Forward pass: assign roles to first N models
+  const result: DeliberationRoundConfig[] = [];
+  const fwdCount = Math.min(active.length, forwardRoles.length);
+  for (let i = 0; i < fwdCount; i++) {
+    result.push({
+      modelName: active[i],
+      role: forwardRoles[i],
+      config: models[active[i]],
+    });
   }
 
-  return modelNames.slice(0, roles.length).map((name, i) => ({
-    modelName: name,
-    role: roles[i],
-    config: models[name],
-  }));
+  // Reverse pass: middle models revise again, first model reviews
+  if (active.length >= 2) {
+    // Middle models in reverse (skip first and last of forward pass)
+    for (let i = fwdCount - 2; i >= 1; i--) {
+      result.push({
+        modelName: active[i],
+        role: "revise",
+        config: models[active[i]],
+      });
+    }
+    // First model does final review
+    result.push({
+      modelName: active[0],
+      role: "review",
+      config: models[active[0]],
+    });
+  }
+
+  return result;
 }
 
 /** Human-readable label for a round role. */
@@ -377,6 +443,9 @@ ${outputBlock}
     role: "draft",
     document: buffer,
   };
+
+  // Yield to the event loop so the UI renders before "done"
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
   yield {
     type: "done",

@@ -103,17 +103,18 @@ export class Session {
     this.state.targetMode = target;
   }
 
-  /** Cycle Tab through targets: broadcast → model1 → model2 → ... → broadcast */
+  /** Cycle Tab through unmuted targets: broadcast → model1 → model2 → ... → broadcast */
   cycleTarget(): TargetMode {
     const current = this.state.targetMode;
+    const unmuted = this.state.models.filter((m) => !m.muted);
     if (current.type === "broadcast") {
-      const first = this.state.models[0];
+      const first = unmuted[0];
       this.state.targetMode = first
         ? { type: "directed", modelName: first.name }
         : current;
     } else {
-      const idx = this.state.models.findIndex((m) => m.name === current.modelName);
-      const next = this.state.models[idx + 1];
+      const idx = unmuted.findIndex((m) => m.name === current.modelName);
+      const next = unmuted[idx + 1];
       this.state.targetMode = next
         ? { type: "directed", modelName: next.name }
         : { type: "broadcast" };
