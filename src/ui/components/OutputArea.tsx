@@ -1,8 +1,10 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { ModelState } from "../../core/types.js";
+import type { DeliberationProgress } from "../../core/deliberation.js";
 import { BroadcastSummary } from "./BroadcastSummary.js";
 import { ModelDetail } from "./ModelDetail.js";
+import { DeliberationView } from "./DeliberationView.js";
 
 interface Props {
   models: ModelState[];
@@ -10,6 +12,8 @@ interface Props {
   scrollOffsets: Record<string, number>;
   comparisonModel?: string | null;
   terminalWidth: number;
+  deliberationProgress?: DeliberationProgress | null;
+  deliberationDocument?: string;
 }
 
 export const OutputArea: React.FC<Props> = ({
@@ -18,7 +22,19 @@ export const OutputArea: React.FC<Props> = ({
   scrollOffsets,
   comparisonModel,
   terminalWidth,
+  deliberationProgress,
+  deliberationDocument,
 }) => {
+  // Deliberation mode — show the R2D2 pipeline view
+  if (deliberationProgress) {
+    return (
+      <DeliberationView
+        progress={deliberationProgress}
+        document={deliberationDocument ?? ""}
+      />
+    );
+  }
+
   if (targetMode.type === "broadcast") {
     return <BroadcastSummary models={models} terminalWidth={terminalWidth} />;
   }

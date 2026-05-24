@@ -1,15 +1,22 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Box, Text, useInput, useApp } from "ink";
+import { readFile } from "node:fs/promises";
 import { OutputArea } from "./components/OutputArea.js";
 import { InputBar } from "./components/InputBar.js";
 import { Session, type SessionSnapshot, contextLimitForModel } from "../core/session.js";
 import { loadConfig, validateConfig } from "../config/loader.js";
+import type { ModelConfig } from "../config/types.js";
 import type { ModelState } from "../core/types.js";
 import { createDefaultRegistry } from "../tools/registry.js";
 import { PermissionManager } from "../tools/permission.js";
 import { runTurn } from "../core/turn.js";
 import { WorktreeManager } from "../isolation/worktree.js";
 import { saveSession, loadSession } from "../persistence/session.js";
+import {
+  runDeliberation,
+  autoAssignRounds,
+  type DeliberationProgress,
+} from "../core/deliberation.js";
 
 function makeSystemPrompt(modelName: string, provider: string): string {
   return `You are a helpful AI coding assistant. You are the "${modelName}" model (provider: ${provider}). Be concise.`;
@@ -59,6 +66,13 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const [modelStates, setModelStates] = useState<ModelState[]>(() => session.models);
   const [comparisonModel, setComparisonModel] = useState<string | null>(null);
   const comparisonFromBroadcastRef = useRef(false);
+
+  // ── Deliberation state ─────────────────────────────────────────
+  const [deliberationProgress, setDeliberationProgress] =
+    useState<DeliberationProgress | null>(null);
+  const [deliberationDocument, setDeliberationDocument] = useState("");
+  const deliberatingRef = useRef(false);
+  const deliberationAbortRef = useRef<AbortController | null>(null);
 
   const activeScrollModel =
     session.targetMode.type === "directed" ? session.targetMode.modelName : null;
@@ -163,8 +177,19 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       return;
     }
 
-    // Escape dismisses comparison mode (restore broadcast if entered from there)
+    // Escape dismisses comparison mode or deliberation
     if (key.escape) {
+      if (deliberationProgress) {
+        // Abort running deliberation
+        if (deliberatingRef.current) {
+          deliberationAbortRef.current?.abort();
+          deliberatingRef.current = false;
+        }
+        setDeliberationProgress(null);
+        setDeliberationDocument("");
+        shortcutHandledRef.current = true;
+        return;
+      }
       if (comparisonModel) {
         if (comparisonFromBroadcastRef.current) {
           session.setTarget({ type: "broadcast" });
@@ -203,6 +228,16 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         }
       } else {
         adjustScroll(1);
+      }
+      return;
+    }
+
+    // Ctrl+O — start deliberation with current input as task
+    if (key.ctrl && inputValue === "o") {
+      const task = input.trim();
+      if (task) {
+        setInput("");
+        runDeliberationPipeline(task);
       }
       return;
     }
@@ -277,10 +312,111 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     }
   });
 
+  // ── Deliberation runner ───────────────────────────────────────
+  const runDeliberationPipeline = useCallback(
+    async (task: string) => {
+      if (deliberatingRef.current) return;
+      deliberatingRef.current = true;
+
+      const activeModels = session.models
+        .filter((m) => !m.muted)
+        .map((m) => m.name);
+
+      if (activeModels.length < 2) {
+        // Need at least 2 models for deliberation
+        setDeliberationProgress({
+          type: "error",
+          round: 0,
+          totalRounds: 0,
+          error: "Deliberation requires at least 2 active (non-muted) models.",
+        });
+        deliberatingRef.current = false;
+        return;
+      }
+
+      // Use config deliberation settings or auto-assign
+      const delibConfig = config.deliberation;
+      let roundConfigs: Array<{
+        modelName: string;
+        role: "draft" | "revise" | "polish" | "review";
+        config: ModelConfig;
+      }>;
+
+      if (delibConfig?.rounds && delibConfig.rounds.length > 0) {
+        roundConfigs = delibConfig.rounds
+          .filter((r) => activeModels.includes(r.model) && config.models[r.model])
+          .map((r) => ({
+            modelName: r.model,
+            role: r.role,
+            config: config.models[r.model],
+          }));
+      } else {
+        roundConfigs = autoAssignRounds(activeModels, config.models);
+      }
+
+      if (roundConfigs.length < 2) {
+        setDeliberationProgress({
+          type: "error",
+          round: 0,
+          totalRounds: 0,
+          error: "Not enough configured models for deliberation (need ≥2).",
+        });
+        deliberatingRef.current = false;
+        return;
+      }
+
+      // Load constraint document if configured
+      let constraint: string | undefined;
+      if (delibConfig?.constraint_file) {
+        try {
+          constraint = await readFile(delibConfig.constraint_file, "utf-8");
+        } catch {
+          // Constraint file not found — proceed without it
+        }
+      }
+
+      setDeliberationDocument("");
+      let doc = "";
+
+      const stream = runDeliberation(task, roundConfigs, constraint);
+
+      for await (const event of stream) {
+        setDeliberationProgress(event);
+        if (event.type === "text" && event.content) {
+          doc += event.content;
+          setDeliberationDocument(doc);
+        } else if (event.type === "done") {
+          setDeliberationDocument(event.document ?? doc);
+        } else if (event.type === "error") {
+          deliberatingRef.current = false;
+          return;
+        }
+      }
+
+      // Keep the final document visible; user presses Esc to dismiss
+      deliberatingRef.current = false;
+    },
+    [session.models, config],
+  );
+
   const handleSubmit = useCallback(
     async (value: string) => {
       const trimmed = value.trim();
       if (!trimmed) return;
+
+      // ── Deliberation command ──────────────────────────────────
+      const delibMatch = trimmed.match(/^\/(?:deliberate|d)\s+(.+)$/);
+      if (delibMatch) {
+        const task = delibMatch[1]!.trim();
+        if (task) {
+          inputHistoryRef.current.push(trimmed);
+          historyIdxRef.current = -1;
+          setInput("");
+          setDeliberationDocument("");
+          runDeliberationPipeline(task);
+        }
+        return;
+      }
 
       // Add to input history
       inputHistoryRef.current.push(trimmed);
@@ -423,6 +559,8 @@ broadcast = true`;
         scrollOffsets={scrollOffsets}
         comparisonModel={comparisonModel}
         terminalWidth={terminalWidth}
+        deliberationProgress={deliberationProgress}
+        deliberationDocument={deliberationDocument}
       />
 
       {/* Divider */}

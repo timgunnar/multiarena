@@ -35,7 +35,7 @@ export const InputBar: React.FC<Props> = ({
           </Box>
         );
       })}
-      <Text dimColor> — Tab:switch d:compare m:mute r:reset q:quit ↑↓:scroll/history Esc:cancel</Text>
+      <Text dimColor> — Tab:switch d:compare m:mute r:reset ^O:deliberate q:quit ↑↓:scroll/history Esc:cancel</Text>
     </Box>
     {/* Row 2: input */}
     <Box height={1} flexDirection="row">

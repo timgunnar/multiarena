@@ -1,7 +1,7 @@
 {
   "name": "multiarena",
   "version": "0.1.2",
-  "description": "Terminal-native multi-model AI coding assistant — chat with multiple LLMs side by side",
+  "description": "Terminal-native multi-model content generation — N models collaborate to produce the best document, analysis, script, or strategy",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -18,14 +18,15 @@
   "keywords": [
     "ai",
     "llm",
-    "coding-assistant",
+    "content-generation",
+    "multi-model",
+    "collaboration",
+    "document-generation",
     "terminal",
     "cli",
     "claude",
     "gpt",
-    "gemini",
-    "ollama",
-    "multi-model"
+    "gemini"
   ],
   "repository": {
     "type": "git",
