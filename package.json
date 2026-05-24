@@ -1,6 +1,6 @@
 {
   "name": "multiarena",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Terminal-native multi-model AI coding assistant — chat with multiple LLMs side by side",
   "type": "module",
   "license": "MIT",
@@ -11,7 +11,9 @@
     "multiarena": "dist/index.js"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "README.md",
+    "LICENSE"
   ],
   "keywords": [
     "ai",

@@ -1,0 +1,16 @@
+# Development only — not published
+docs/
+test/
+src/
+node/
+.idea/
+.claude/
+*.tsbuildinfo
+
+# Config / env
+.multiarenarc
+.env
+
+# Git
+.git
+.gitignore
