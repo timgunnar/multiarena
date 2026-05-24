@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Box, Text, useInput, useApp } from "ink";
+import { Box, Text, useInput, useApp, useStdin } from "ink";
 import { readFile } from "node:fs/promises";
 import { OutputArea } from "./components/OutputArea.js";
 import { InputBar } from "./components/InputBar.js";
@@ -106,6 +106,10 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     setInput(value);
   }, []);
 
+  // Track whether Shift+Tab was already handled by the raw stdin listener
+  // (so the useInput handler doesn't toggle twice).
+  const shiftTabHandledRef = useRef(false);
+
   // Track whether a shortcut key was just handled so we can clear the input
   // bar in a post-render effect (avoids ink-text-input re-populating it).
   const shortcutHandledRef = useRef(false);
@@ -171,13 +175,41 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     }
   });
 
+  // ── Raw stdin listener for Shift+Tab ────────────────────────────
+  // useInput's key.shift is reliable on most terminals, but some Windows
+  // terminals don't send the ANSI sequence that Ink uses to detect it.
+  // We listen on the raw event emitter as a fallback that always works
+  // because Ink's own App.handleInput already decodes \x1B[Z as Shift+Tab.
+  const { internal_eventEmitter } = useStdin();
+
+  useEffect(() => {
+    if (!internal_eventEmitter) return;
+    const handler = (chunk: unknown) => {
+      if (typeof chunk === "string" && chunk === "[Z") {
+        shiftTabHandledRef.current = true;
+        setTeamMode((prev) => !prev);
+        setComparisonModel(null);
+        setModelStates([...session.models]);
+      }
+    };
+    internal_eventEmitter.on("input", handler);
+    return () => {
+      internal_eventEmitter.removeListener("input", handler);
+    };
+  }, [internal_eventEmitter, session.models]);
+
   // Keyboard input: Tab cycling, scrolling, and single-key shortcuts.
   // Single-key shortcuts (d/m/r) only fire when the input bar is empty so they
   // don't interfere with message typing.
   useInput((inputValue, key) => {
     if (key.tab) {
-      if (key.shift) {
-        // Shift+Tab: toggle team / broadcast mode
+      if (key.shift || shiftTabHandledRef.current) {
+        // Shift+Tab: toggle team / broadcast mode.
+        // If the raw listener above already toggled it, skip.
+        if (shiftTabHandledRef.current) {
+          shiftTabHandledRef.current = false;
+          return;
+        }
         setTeamMode((prev) => !prev);
         setComparisonModel(null);
         setModelStates([...session.models]);
@@ -249,23 +281,6 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       } else {
         adjustScroll(1);
       }
-      return;
-    }
-
-    // Ctrl+O — start deliberation with current input as task
-    if (key.ctrl && inputValue === "o") {
-      const task = input.trim();
-      if (task) {
-        setInput("");
-        runDeliberationPipeline(task);
-      }
-      return;
-    }
-
-    // Ctrl+S — merge/synthesize last model outputs
-    if (key.ctrl && inputValue === "s") {
-      setInput("");
-      runMergePipeline();
       return;
     }
 

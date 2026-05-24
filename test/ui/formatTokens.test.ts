@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatTokens } from "../../src/ui/components/StatusBar.js";
+import { formatTokens } from "../../src/ui/components/formatTokens.js";
 
 describe("formatTokens", () => {
   it("returns raw number for small values", () => {

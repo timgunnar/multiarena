@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { ModelState } from "../../core/types.js";
-import { formatTokens } from "./StatusBar.js";
+import { formatTokens } from "./formatTokens.js";
 
 interface Props {
   models: ModelState[];
