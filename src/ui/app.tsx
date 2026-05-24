@@ -525,6 +525,19 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         return;
       }
 
+      // ── Team mode toggle ────────────────────────────────────
+      if (trimmed === "/team" || trimmed === "/t") {
+        inputHistoryRef.current.push(trimmed);
+        historyIdxRef.current = -1;
+        setInput("");
+        setTeamMode((prev) => !prev);
+        setDeliberationProgress(null);
+        setDeliberationDocument("");
+        setComparisonModel(null);
+        shortcutHandledRef.current = true;
+        return;
+      }
+
       // ── Merge command: synthesize last outputs ───────────────
       if (trimmed === "/merge" || trimmed === "/m") {
         inputHistoryRef.current.push(trimmed);

@@ -4,21 +4,12 @@
 
 ## 解决了什么问题
 
-| 问题 | 说明 |
-|------|------|
-| **单模型不稳定** | 同一个问题，不同模型回答质量天差地别，靠运气不如都试试 |
-| **被一个厂商绑定** | 换了厂商就要换工具，迁移成本高 |
-| **多模型对比太麻烦** | 开 N 个网页/终端，复制粘贴，手动对齐 |
-| **没有交叉验证** | 一个模型说错了你也不知道，没人帮你检查和质疑 |
-
-## 解决方案
-
-| 能力 | 怎么做 |
-|------|--------|
-| **一个输入，多个回答** | 消息同时发给多个模型，终端内并排查看 |
-| **模型协作打磨** | 多个模型接力：起草 → 修改 → 润色 → 审查，产出一份高质量文档 |
-| **一键对比差异** | 两个模型回答并排展示，差别一目了然 |
-| **不绑定厂商** | 同时支持 Anthropic、OpenAI、Google、DeepSeek、MiniMax、Ollama |
+| 问题 | 解决方案 |
+|------|---------|
+| **单模型不稳定** — 同一个问题，不同模型回答质量天差地别，靠运气不如都试试 | 一键提问，多个模型同时回答，终端内并排查看 |
+| **被一个厂商绑定** — 换了厂商就得换工具，迁移成本高 | 同时支持 6 家厂商，接入新模型零成本 |
+| **多模型对比太麻烦** — 开 N 个网页复制粘贴手动对齐 | 一键对比差异，两个模型回答并排展示 |
+| **没有交叉验证** — 一个模型说错了没人帮你检查和质疑 | 多模型接力协作，起草→修订→润色→审查，多重打磨 |
 
 **适用场景：** 文档写作、代码生成、数据分析、技术方案评审、创意写作等任何需要高质量输出的场景。
 
@@ -52,6 +43,22 @@
 npm install -g multiarena
 ```
 
+## 配置
+
+配置文件 `.multiarenarc`（TOML 格式），放在当前目录或 `~/.multiarenarc`。
+
+```toml
+[models.<名称>]
+provider = "anthropic"       # anthropic | openai | google | deepseek | minimax | ollama
+model = "claude-sonnet-4-6"  # API 模型名
+api_key = "${ENV_VAR}"       # API key，支持环境变量
+endpoint = "..."             # 自定义端点（可选）
+context_limit = 200000       # 上下文窗口大小（可选）
+
+[defaults]
+active = ["claude", "gpt"]   # 启动时加载的模型
+```
+
 ## 快速开始
 
 ```bash
@@ -75,45 +82,29 @@ EOF
 multiarena
 ```
 
-## 快捷键
-
-| 按键 | 功能 |
-|------|------|
-| `Tab` | 切换对话模型（广播 → Claude → GPT → …） |
-| `Shift+Tab` | 广播模式 / 团队模式 切换 |
-| `d` | 对比两个模型的回答 |
-| `m` | 静音/取消静音某个模型 |
-| `r` | 重置模型对话历史 |
-| `q` | 退出 |
-| `↑ ↓` | 滚动输出/历史 |
-| `Esc` | 返回广播模式 |
-
 ## 支持的模型
 
-| 厂商 | 模型 |
-|------|------|
+| 厂商        | 模型                                   |
+|-----------|--------------------------------------|
 | Anthropic | Claude Sonnet 4.6、Opus 4.7、Haiku 4.5 |
-| OpenAI | GPT-4o、GPT-4.1 |
-| Google | Gemini 2.5 Flash、Gemini 2.5 Pro |
-| DeepSeek | DeepSeek-V4、DeepSeek-R1 |
-| MiniMax | MiniMax-M1 |
-| Ollama | 任意本地模型 |
+| OpenAI    | GPT-4o、GPT-4.1                       |
+| Google    | Gemini 2.5 Flash、Gemini 2.5 Pro      |
+| DeepSeek  | DeepSeek-V4、DeepSeek-R1              |
+| MiniMax   | MiniMax-M1                           |
+| Ollama    | 任意本地模型                               |
 
-## 配置
+## 快捷键
 
-配置文件 `.multiarenarc`（TOML 格式），放在当前目录或 `~/.multiarenarc`。
-
-```toml
-[models.<名称>]
-provider = "anthropic"       # anthropic | openai | google | deepseek | minimax | ollama
-model = "claude-sonnet-4-6"  # API 模型名
-api_key = "${ENV_VAR}"       # API key，支持环境变量
-endpoint = "..."             # 自定义端点（可选）
-context_limit = 200000       # 上下文窗口大小（可选）
-
-[defaults]
-active = ["claude", "gpt"]   # 启动时加载的模型
-```
+| 按键          | 功能                            |
+|-------------|-------------------------------|
+| `Tab`       | 切换对话模型（广播 → Claude → GPT → …） |
+| `Shift+Tab` | 广播模式 / 团队模式 切换                |
+| `d`         | 对比两个模型的回答                     |
+| `m`         | 静音/取消静音某个模型                   |
+| `r`         | 重置模型对话历史                      |
+| `q`         | 退出                            |
+| `↑ ↓`       | 滚动输出/历史                       |
+| `Esc`       | 返回广播模式                        |
 
 ## License
 
