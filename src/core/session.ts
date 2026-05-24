@@ -178,5 +178,6 @@ function contextLimitForModel(model: string, explicit?: number): number {
   if (model.includes("gpt-3.5")) return 16384;
   if (model.includes("gemini")) return 1048576;
   if (model.includes("deepseek")) return 128000;
+  if (model.includes("minimax") || model.includes("MiniMax")) return 1048576;
   return 128000;
 }

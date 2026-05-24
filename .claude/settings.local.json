@@ -25,7 +25,8 @@
       "Bash(npm view *)",
       "Bash(npm pack *)",
       "Bash(npm publish *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "WebSearch"
     ]
   }
 }

@@ -363,6 +363,11 @@ provider = "deepseek"
 model = "deepseek-chat"
 api_key = "\${DEEPSEEK_API_KEY}"
 
+[models.minimax]
+provider = "minimax"
+model = "MiniMax-M2.1"
+api_key = "\${MINIMAX_API_KEY}"
+
 [defaults]
 active = ["claude", "gpt"]
 broadcast = true`;
@@ -375,7 +380,7 @@ broadcast = true`;
         <Text> </Text>
         <Text color="gray">{example}</Text>
         <Text> </Text>
-        <Text dimColor>Supported providers: anthropic, openai, google, ollama, deepseek</Text>
+        <Text dimColor>Supported providers: anthropic, openai, google, ollama, deepseek, minimax</Text>
       </Box>
     );
   }

@@ -26,6 +26,8 @@ export function createProvider(config: ModelConfig): Provider {
     }
     case "deepseek":
       return new OpenAIProvider(key, config.endpoint ?? "https://api.deepseek.com/v1");
+    case "minimax":
+      return new OpenAIProvider(key, config.endpoint ?? "https://api.minimax.io/v1");
     default:
       throw new Error(`Unknown provider: ${config.provider}`);
   }
