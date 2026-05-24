@@ -69,6 +69,9 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const [comparisonModel, setComparisonModel] = useState<string | null>(null);
   const comparisonFromBroadcastRef = useRef(false);
 
+  // ── Team / Broadcast mode ──────────────────────────────────────
+  const [teamMode, setTeamMode] = useState(false);
+
   // ── Deliberation state ─────────────────────────────────────────
   const [deliberationProgress, setDeliberationProgress] =
     useState<DeliberationProgress | null>(null);
@@ -129,8 +132,9 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     });
   }, [session, sessionId]);
 
-  const targetPrefix =
-    session.targetMode.type === "broadcast"
+  const targetPrefix = teamMode
+    ? "team"
+    : session.targetMode.type === "broadcast"
       ? "all"
       : session.targetMode.modelName;
 
@@ -172,15 +176,29 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   // don't interfere with message typing.
   useInput((inputValue, key) => {
     if (key.tab) {
-      session.cycleTarget();
-      setComparisonModel(null);
-      comparisonFromBroadcastRef.current = false;
-      setModelStates([...session.models]);
+      if (key.shift) {
+        // Shift+Tab: toggle team / broadcast mode
+        setTeamMode((prev) => !prev);
+        setComparisonModel(null);
+        setModelStates([...session.models]);
+      } else {
+        session.cycleTarget();
+        setComparisonModel(null);
+        comparisonFromBroadcastRef.current = false;
+        setModelStates([...session.models]);
+      }
       return;
     }
 
-    // Escape dismisses comparison mode or deliberation
+    // Escape dismisses comparison / deliberation / team mode
     if (key.escape) {
+      if (teamMode) {
+        setTeamMode(false);
+        setDeliberationProgress(null);
+        setDeliberationDocument("");
+        shortcutHandledRef.current = true;
+        return;
+      }
       if (deliberationProgress) {
         // Abort running deliberation
         if (deliberatingRef.current) {
@@ -482,17 +500,13 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       const trimmed = value.trim();
       if (!trimmed) return;
 
-      // ── Deliberation command ──────────────────────────────────
-      const delibMatch = trimmed.match(/^\/(?:deliberate|d)\s+(.+)$/);
-      if (delibMatch) {
-        const task = delibMatch[1]!.trim();
-        if (task) {
-          inputHistoryRef.current.push(trimmed);
-          historyIdxRef.current = -1;
-          setInput("");
-          setDeliberationDocument("");
-          runDeliberationPipeline(task);
-        }
+      // ── Team mode: submit runs deliberation ───────────────────
+      if (teamMode) {
+        inputHistoryRef.current.push(trimmed);
+        historyIdxRef.current = -1;
+        setInput("");
+        setDeliberationDocument("");
+        runDeliberationPipeline(trimmed);
         return;
       }
 
@@ -582,7 +596,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       // ── Auto-save session ─────────────────────────────────────
       saveCurrentSession();
     },
-    [session, config, sessionId, saveCurrentSession],
+    [session, config, sessionId, saveCurrentSession, teamMode, runDeliberationPipeline],
   );
 
   const terminalWidth = process.stdout.columns ?? 80;

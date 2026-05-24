@@ -118,7 +118,7 @@ describe("InputBar", () => {
       onSubmit: noop,
     });
     const text = flattenText(el);
-    expect(text).toContain("Tab:switch");
+    expect(text).toContain("Tab:model");
     expect(text).toContain("d:compare");
     expect(text).toContain("q:quit");
   });
