@@ -5,3 +5,5 @@ dist/
 .idea/
 .claude/
 docs/
+CLAUDE.md
+eslint.config.js
