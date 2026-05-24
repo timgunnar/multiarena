@@ -1,19 +1,19 @@
 # multiarena
 
-Terminal-native multi-model AI coding assistant. Chat with multiple LLMs side by side, compare their answers, and let the best one execute.
+终端原生多模型 AI 编程助手。同时与多个大模型对话，并排对比回答，择其优者执行。
 
-**Why:** Instead of betting on one model before you type, run N models simultaneously and pick the best result after.
+**核心思路：** 不用在打字前选模型。每轮同时跑 N 个模型，事后比结果。
 
-## Install
+## 安装
 
 ```bash
 npm install -g multiarena
 ```
 
-## Quick Start
+## 快速开始
 
 ```bash
-# Create a config file
+# 创建配置文件
 cat > .multiarenarc << 'EOF'
 [models.claude]
 provider = "anthropic"
@@ -30,61 +30,61 @@ active = ["claude", "gpt"]
 broadcast = true
 EOF
 
-# Launch
+# 启动
 multiarena
 ```
 
-## Features
+## 功能
 
-- **Broadcast mode** — message goes to all models; see responses side by side
-- **Directed mode** — message goes to one model; full-width detail view
-- **Comparison mode** — two models side by side; diff at a glance
-- **Tab-driven** — `Tab` cycles through targets, `↑↓` scrolls output
-- **Isolated worktrees** — each model gets its own `git worktree`, no file conflicts
-- **6 built-in tools** — bash, read, write, edit, glob, grep
-- **Permission control** — session memory, cross-model shared approvals
+- **广播模式** — 消息发给所有模型，并排查看回复
+- **定向模式** — 消息只发给一个模型，全宽详情视图
+- **对比模式** — 两个模型并排对比，差异一目了然
+- **Tab 驱动** — `Tab` 循环切换对话目标，`↑↓` 滚动输出
+- **隔离工作树** — 每个模型独立的 `git worktree`，无文件冲突
+- **6 个内置工具** — bash、read、write、edit、glob、grep
+- **权限控制** — 会话记忆，跨模型共享授权
 
-## Supported Providers
+## 支持的 Provider
 
-| Provider | Models |
-|----------|--------|
-| Anthropic | Claude Sonnet 4.6, Opus 4.7, Haiku 4.5 |
-| OpenAI | GPT-4o, GPT-4.1 |
-| Google | Gemini 2.5 Flash, Gemini 2.5 Pro |
-| DeepSeek | DeepSeek-V4, DeepSeek-R1 |
+| Provider | 模型 |
+|----------|------|
+| Anthropic | Claude Sonnet 4.6、Opus 4.7、Haiku 4.5 |
+| OpenAI | GPT-4o、GPT-4.1 |
+| Google | Gemini 2.5 Flash、Gemini 2.5 Pro |
+| DeepSeek | DeepSeek-V4、DeepSeek-R1 |
 | MiniMax | MiniMax-M1 |
-| Ollama | Any local model |
+| Ollama | 任意本地模型 |
 
-## Keyboard Shortcuts
+## 快捷键
 
-| Key | Action |
-|-----|--------|
-| `Tab` | Cycle target (broadcast → model A → model B → ...) |
-| `d` | Compare current model with another |
-| `m` | Mute/unmute a model |
-| `r` | Reset model history |
-| `q` | Quit |
-| `↑ ↓` | Scroll output / history |
-| `Esc` | Return to broadcast mode |
+| 按键 | 功能 |
+|------|------|
+| `Tab` | 循环切换目标（广播 → 模型A → 模型B → …） |
+| `d` | 将当前模型与另一个对比 |
+| `m` | 静音/取消静音模型 |
+| `r` | 重置模型对话历史 |
+| `q` | 退出 |
+| `↑ ↓` | 滚动输出/历史 |
+| `Esc` | 返回广播模式 |
 
-## Configuration
+## 配置
 
-Configuration is read from `.multiarenarc` (TOML) in the current directory or `~/.multiarenarc`. Values support `${ENV_VAR}` interpolation.
+配置文件为 `.multiarenarc`（TOML 格式），读取顺序：当前目录 → `~/.multiarenarc`。支持 `${ENV_VAR}` 环境变量。
 
 ```toml
-[models.<name>]
+[models.<名称>]
 provider = "anthropic"       # anthropic | openai | google | deepseek | minimax | ollama
-model = "claude-sonnet-4-6"  # API model identifier
-api_key = "${ENV_VAR}"       # API key (optional, can use env var)
-endpoint = "..."             # Custom endpoint (optional)
-context_limit = 200000       # Override context window (optional)
+model = "claude-sonnet-4-6"  # API 模型标识
+api_key = "${ENV_VAR}"       # API key（可选，可直接用环境变量）
+endpoint = "..."             # 自定义端点（可选）
+context_limit = 200000       # 覆盖上下文窗口（可选）
 
 [defaults]
-active = ["claude", "gpt"]   # Models to start
-broadcast = true             # Start in broadcast mode
+active = ["claude", "gpt"]   # 启动时加载的模型
+broadcast = true             # 启动时进入广播模式
 ```
 
-Sessions are persisted to `~/.multiarena/sessions/`. Resume with `multiarena --resume <id>`.
+会话保存至 `~/.multiarena/sessions/`。使用 `multiarena --resume <id>` 恢复历史会话。
 
 ## License
 
