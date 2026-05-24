@@ -9,6 +9,7 @@ interface Props {
   targetMode: { type: "broadcast" } | { type: "directed"; modelName: string };
   scrollOffsets: Record<string, number>;
   comparisonModel?: string | null;
+  terminalWidth: number;
 }
 
 export const OutputArea: React.FC<Props> = ({
@@ -16,9 +17,10 @@ export const OutputArea: React.FC<Props> = ({
   targetMode,
   scrollOffsets,
   comparisonModel,
+  terminalWidth,
 }) => {
   if (targetMode.type === "broadcast") {
-    return <BroadcastSummary models={models} />;
+    return <BroadcastSummary models={models} terminalWidth={terminalWidth} />;
   }
 
   const activeModel = models.find((m) => m.name === targetMode.modelName);
@@ -39,11 +41,9 @@ export const OutputArea: React.FC<Props> = ({
     return (
       <Box flexDirection="row" flexGrow={1}>
         <Box flexDirection="column" flexGrow={1} marginRight={1}>
-          <Text bold>{activeModel.name}</Text>
           <ModelDetail model={activeModel} scrollOffset={scrollOffsets[activeModel.name] ?? 0} />
         </Box>
         <Box flexDirection="column" flexGrow={1}>
-          <Text bold>{compModel.name}</Text>
           <ModelDetail model={compModel} scrollOffset={scrollOffsets[compModel.name] ?? 0} />
         </Box>
       </Box>

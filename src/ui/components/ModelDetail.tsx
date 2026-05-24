@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { ModelState } from "../../core/types.js";
+import { formatTokens } from "./StatusBar.js";
 
 interface Props {
   model: ModelState;
@@ -8,13 +9,16 @@ interface Props {
 }
 
 export const ModelDetail: React.FC<Props> = ({ model, scrollOffset }) => {
-  const allLines = model.buffer.split("\n");
+  const allLines = model.buffer ? model.buffer.split("\n") : [];
   const visibleLines = allLines.slice(scrollOffset);
+  const totalTokens = model.usage.input + model.usage.output;
+  const isEmpty = allLines.length === 0 || (allLines.length === 1 && allLines[0].trim() === "");
 
   return (
-    <Box flexDirection="column" flexGrow={1}>
-      {visibleLines.length === 0 && !model.isStreaming && (
-        <Text dimColor>No output yet</Text>
+    <Box flexDirection="column" flexGrow={1} borderStyle="single" borderColor="gray">
+      <Text bold>{model.name}</Text>
+      {isEmpty && !model.isStreaming && (
+        <Text dimColor>No output</Text>
       )}
       {visibleLines.map((line, i) => {
         const isError = /^\[?(?:Error|error)[:\]]/.test(line);
@@ -25,6 +29,9 @@ export const ModelDetail: React.FC<Props> = ({ model, scrollOffset }) => {
         );
       })}
       {model.isStreaming && <Text color="gray">▋</Text>}
+      <Text dimColor>
+        {formatTokens(totalTokens)}/{formatTokens(model.contextLimit)} · {isEmpty ? 0 : allLines.length} lines · {model.isStreaming ? "streaming..." : "done"}
+      </Text>
     </Box>
   );
 };

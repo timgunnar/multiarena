@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Box, Text, useInput, useApp } from "ink";
-import { StatusBar } from "./components/StatusBar.js";
 import { OutputArea } from "./components/OutputArea.js";
 import { InputBar } from "./components/InputBar.js";
-import { Session, type SessionSnapshot } from "../core/session.js";
+import { Session, type SessionSnapshot, contextLimitForModel } from "../core/session.js";
 import { loadConfig, validateConfig } from "../config/loader.js";
 import type { ModelState } from "../core/types.js";
 import { createDefaultRegistry } from "../tools/registry.js";
@@ -12,7 +11,9 @@ import { runTurn } from "../core/turn.js";
 import { WorktreeManager } from "../isolation/worktree.js";
 import { saveSession, loadSession } from "../persistence/session.js";
 
-const SYSTEM_PROMPT = "You are a helpful AI coding assistant. Be concise.";
+function makeSystemPrompt(modelName: string, provider: string): string {
+  return `You are a helpful AI coding assistant. You are the "${modelName}" model (provider: ${provider}). Be concise.`;
+}
 
 // App-level (module-scoped) tool registry and permission manager.
 // Created once and shared across all submissions.
@@ -40,7 +41,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
             muted: false,
             buffer: "",
             usage: { input: 0, output: 0 },
-            contextLimit: 128000,
+            contextLimit: contextLimitForModel(config.models[m.name]?.provider ?? "", config.models[m.name]?.context_limit),
           })),
           targetMode:
             saved.lastTarget === "broadcast"
@@ -57,6 +58,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const [scrollOffsets, setScrollOffsets] = useState<Record<string, number>>({});
   const [modelStates, setModelStates] = useState<ModelState[]>(() => session.models);
   const [comparisonModel, setComparisonModel] = useState<string | null>(null);
+  const comparisonFromBroadcastRef = useRef(false);
 
   const activeScrollModel =
     session.targetMode.type === "directed" ? session.targetMode.modelName : null;
@@ -156,14 +158,20 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     if (key.tab) {
       session.cycleTarget();
       setComparisonModel(null);
+      comparisonFromBroadcastRef.current = false;
       setModelStates([...session.models]);
       return;
     }
 
-    // Escape dismisses comparison mode
+    // Escape dismisses comparison mode (restore broadcast if entered from there)
     if (key.escape) {
       if (comparisonModel) {
+        if (comparisonFromBroadcastRef.current) {
+          session.setTarget({ type: "broadcast" });
+          comparisonFromBroadcastRef.current = false;
+        }
         setComparisonModel(null);
+        setModelStates([...session.models]);
         shortcutHandledRef.current = true;
         return;
       }
@@ -207,14 +215,26 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     // 'd' — toggle comparison mode (current model vs next unmuted model)
     if (inputValue === "d") {
       if (comparisonModel) {
+        // Exiting comparison: restore broadcast if we entered from there
+        if (comparisonFromBroadcastRef.current) {
+          session.setTarget({ type: "broadcast" });
+          comparisonFromBroadcastRef.current = false;
+        }
         setComparisonModel(null);
       } else {
         const unmuted = session.models.filter((m) => !m.muted);
-        const baseName =
-          session.targetMode.type === "directed"
-            ? session.targetMode.modelName
-            : unmuted[0]?.name;
-        if (baseName && unmuted.length >= 2) {
+        if (unmuted.length < 2) {
+          shortcutHandledRef.current = true;
+          return;
+        }
+        if (session.targetMode.type === "broadcast") {
+          // From broadcast: switch to directed for the first model, compare with second
+          session.setTarget({ type: "directed", modelName: unmuted[0].name });
+          setComparisonModel(unmuted[1].name);
+          comparisonFromBroadcastRef.current = true;
+        } else {
+          // From directed: toggle comparison on/off for the current model
+          const baseName = session.targetMode.modelName;
           const idx = unmuted.findIndex((m) => m.name === baseName);
           const next = unmuted[(idx + 1) % unmuted.length];
           if (next && next.name !== baseName) {
@@ -222,6 +242,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
           }
         }
       }
+      setModelStates([...session.models]);
       shortcutHandledRef.current = true;
       return;
     }
@@ -232,6 +253,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         session.toggleMute(session.targetMode.modelName);
         setModelStates([...session.models]);
         setComparisonModel(null);
+        comparisonFromBroadcastRef.current = false;
       }
       shortcutHandledRef.current = true;
       return;
@@ -307,7 +329,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
             modelName: m.name,
             config: mc,
             messages: m.messages,
-            systemPrompt: SYSTEM_PROMPT,
+            systemPrompt: makeSystemPrompt(m.name, mc.provider),
             tools: toolRegistry.getDefinitions(),
             registry: toolRegistry,
             permission: permissionManager,
@@ -340,11 +362,6 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   );
 
   const terminalWidth = process.stdout.columns ?? 80;
-
-  const contextUsages: Record<string, number> = {};
-  for (const m of modelStates) {
-    contextUsages[m.name] = session.getContextUsage(m.name);
-  }
 
   // ── No models configured: show startup guide ──────────────────
   if (modelStates.length === 0) {
@@ -387,9 +404,6 @@ broadcast = true`;
 
   return (
     <Box flexDirection="column" width="100%">
-      {/* Top: fixed status bar */}
-      <StatusBar models={modelStates} activeModelName={activeModelName} contextUsages={contextUsages} />
-
       {/* Config warnings */}
       {configWarnings.length > 0 && (
         <Box flexDirection="column">
@@ -408,13 +422,16 @@ broadcast = true`;
         targetMode={session.targetMode}
         scrollOffsets={scrollOffsets}
         comparisonModel={comparisonModel}
+        terminalWidth={terminalWidth}
       />
 
       {/* Divider */}
       <Text>{"─".repeat(terminalWidth)}</Text>
 
-      {/* Bottom: fixed input bar */}
+      {/* Bottom: model indicators + shortcuts + input */}
       <InputBar
+        models={modelStates}
+        activeModelName={activeModelName}
         prefix={targetPrefix}
         value={input}
         onChange={handleInputChange}

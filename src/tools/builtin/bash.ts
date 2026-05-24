@@ -28,10 +28,12 @@ export const bashTool: ToolHandler = {
         encoding: "utf-8",
         timeout: 30000,
         maxBuffer: 1024 * 1024,
+        shell: "bash",
       });
       return output || "(no output)";
     } catch (err: any) {
-      return `Command failed (exit ${err.status}): ${err.stderr ?? err.message}`;
+      const detail = (err.stderr || err.message || "unknown error").trim();
+      return `Command failed (exit ${err.status ?? "?"}): ${detail}\n[cmd] ${command}`;
     }
   },
 };

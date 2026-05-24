@@ -14,7 +14,7 @@ function renderBar(ratio: number): string {
   return "█".repeat(filled) + "░".repeat(blocks - filled);
 }
 
-function formatTokens(n: number): string {
+export function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
   return String(n);
@@ -31,15 +31,14 @@ export const StatusBar: React.FC<Props> = ({ models, activeModelName, contextUsa
     {/* Row 1: model names + indicators */}
     <Box height={1} flexDirection="row">
       {models.map((m) => {
-        const isActive = activeModelName === m.name;
-        const hasNew = m.buffer.length > 0 && !isActive;
-        const color = isActive ? "green" : ("white" as const);
+        const isTargeted = activeModelName === null || activeModelName === m.name;
+        const color = isTargeted ? "green" : ("white" as const);
         return (
           <Box key={m.name} marginRight={1}>
-            <Text color={color} bold={isActive}>
+            <Text color={color} bold={isTargeted}>
               {m.name}
             </Text>
-            {hasNew && <Text color="yellow"> ●</Text>}
+            {isTargeted && !m.muted && <Text color="yellow"> ●</Text>}
             {m.muted && <Text color="gray"> [muted]</Text>}
           </Box>
         );

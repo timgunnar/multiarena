@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Session } from "../../src/core/session.js";
+import { Session, contextLimitForModel } from "../../src/core/session.js";
 import { ArenaConfig } from "../../src/config/types.js";
 
 function mockConfig(active: string[] = ["claude", "gpt"]): ArenaConfig {
@@ -119,5 +119,53 @@ describe("Session", () => {
     const s = new Session(mockConfig([]), "/tmp/test");
     const result = s.cycleTarget();
     expect(result).toEqual({ type: "broadcast" });
+  });
+
+  it("setTarget changes target mode directly", () => {
+    const s = new Session(mockConfig(), "/tmp/test");
+    s.setTarget({ type: "directed", modelName: "gpt" });
+    expect(s.targetMode).toEqual({ type: "directed", modelName: "gpt" });
+    s.setTarget({ type: "broadcast" });
+    expect(s.targetMode).toEqual({ type: "broadcast" });
+  });
+});
+
+describe("contextLimitForModel", () => {
+  it("returns explicit value when provided", () => {
+    expect(contextLimitForModel("anthropic", 500000)).toBe(500000);
+    expect(contextLimitForModel("unknown", 999)).toBe(999);
+  });
+
+  it("ignores explicit value when zero or negative", () => {
+    expect(contextLimitForModel("anthropic", 0)).toBe(200000);
+    expect(contextLimitForModel("anthropic", -1)).toBe(200000);
+  });
+
+  it("returns 200k for anthropic", () => {
+    expect(contextLimitForModel("anthropic")).toBe(200000);
+  });
+
+  it("returns 128k for openai", () => {
+    expect(contextLimitForModel("openai")).toBe(128000);
+  });
+
+  it("returns 1M for google", () => {
+    expect(contextLimitForModel("google")).toBe(1048576);
+  });
+
+  it("returns 1M for deepseek", () => {
+    expect(contextLimitForModel("deepseek")).toBe(1048576);
+  });
+
+  it("returns 1M for minimax", () => {
+    expect(contextLimitForModel("minimax")).toBe(1048576);
+  });
+
+  it("returns 128k for ollama", () => {
+    expect(contextLimitForModel("ollama")).toBe(128000);
+  });
+
+  it("returns 128k for unknown provider", () => {
+    expect(contextLimitForModel("unknown_provider")).toBe(128000);
   });
 });

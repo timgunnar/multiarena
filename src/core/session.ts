@@ -45,7 +45,7 @@ export class Session {
           buffer: "",
           isStreaming: false,
           usage: { input: 0, output: 0 },
-          contextLimit: contextLimitForModel(mc?.model ?? "", mc?.context_limit),
+          contextLimit: contextLimitForModel(mc?.provider ?? "", mc?.context_limit),
         };
       });
 
@@ -97,6 +97,10 @@ export class Session {
     if (m) {
       m.messages.push({ role: "tool", content: result, tool_call_id: toolCallId });
     }
+  }
+
+  setTarget(target: TargetMode): void {
+    this.state.targetMode = target;
   }
 
   /** Cycle Tab through targets: broadcast → model1 → model2 → ... → broadcast */
@@ -171,13 +175,16 @@ export class Session {
   }
 }
 
-function contextLimitForModel(model: string, explicit?: number): number {
+export function contextLimitForModel(provider: string, explicit?: number): number {
   if (explicit && explicit > 0) return explicit;
-  if (model.includes("claude")) return 200000;
-  if (model.includes("gpt-4")) return 128000;
-  if (model.includes("gpt-3.5")) return 16384;
-  if (model.includes("gemini")) return 1048576;
-  if (model.includes("deepseek")) return 128000;
-  if (model.includes("minimax") || model.includes("MiniMax")) return 1048576;
-  return 128000;
+  // Sensible defaults per provider. Users can override with context_limit in config.
+  switch (provider) {
+    case "anthropic":  return 200000;
+    case "openai":     return 128000;
+    case "google":     return 1048576;
+    case "deepseek":   return 1048576;
+    case "minimax":    return 1048576;
+    case "ollama":     return 128000;
+    default:           return 128000;
+  }
 }

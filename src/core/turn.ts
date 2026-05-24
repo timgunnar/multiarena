@@ -99,10 +99,6 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
 
       // Execute tools and feed results back
       for (const tc of pendingToolCalls) {
-        const toolLabel = `\n[Tool: ${tc.name || "(unknown)"}]\n`;
-        allText.push(toolLabel);
-        yield { type: "text", content: toolLabel } as StreamEvent;
-
         if (!tc.name || tc.name.trim() === "") {
           const errMsg = "Tool call with empty name — skipped";
           ctx.messages.push({ role: "tool", content: errMsg, tool_call_id: tc.id });
@@ -131,6 +127,11 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
           continue;
         }
 
+        // Friendly label — shows what the model is doing in plain language
+        const label = friendlyToolLabel(tc.name, args);
+        allText.push(label);
+        yield { type: "text", content: label } as StreamEvent;
+
         let result: string;
         try {
           result = await ctx.registry.execute(tc.name, args, ctx.worktreePath);
@@ -153,5 +154,25 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
     };
   } finally {
     provider?.abort();
+  }
+}
+
+/** Turn a tool name + args into a human-readable action label. */
+export function friendlyToolLabel(name: string, args: Record<string, unknown>): string {
+  switch (name) {
+    case "bash":
+      return `\n$ ${args.command ?? "(no command)"}\n`;
+    case "read_file":
+      return `\nReading ${args.file_path ?? "(?)"}\n`;
+    case "write_file":
+      return `\nWriting ${args.file_path ?? "(?)"}\n`;
+    case "edit_file":
+      return `\nEditing ${args.file_path ?? "(?)"}\n`;
+    case "glob":
+      return `\nFinding ${args.pattern ?? "(?)"}\n`;
+    case "grep":
+      return `\nSearching "${args.pattern ?? "(?)"}"\n`;
+    default:
+      return `\nRunning ${name}...\n`;
   }
 }

@@ -1,41 +1,56 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { ModelState } from "../../core/types.js";
+import { formatTokens } from "./StatusBar.js";
 
 interface Props {
   models: ModelState[];
+  terminalWidth: number;
 }
 
 const PANEL_LINES = 4;
 
-export const BroadcastSummary: React.FC<Props> = ({ models }) => {
+export const BroadcastSummary: React.FC<Props> = ({ models, terminalWidth }) => {
   const activeModels = models.filter((m) => !m.muted);
+  const panelWidth = Math.floor(terminalWidth / activeModels.length);
 
   return (
     <Box flexDirection="row" flexGrow={1}>
-      {activeModels.map((m) => {
-        const lines = m.buffer.split("\n").slice(0, PANEL_LINES);
-        const totalLines = m.buffer.split("\n").length;
+      {activeModels.map((m, idx) => {
+        const rawLines = m.buffer ? m.buffer.split("\n") : [];
+        const totalLines = rawLines.length;
+        const isEmpty = totalLines === 0 || (totalLines === 1 && rawLines[0].trim() === "");
+        const displayLines = rawLines.slice(-PANEL_LINES);
+        while (displayLines.length < PANEL_LINES) {
+          displayLines.unshift("");
+        }
+        const isLast = idx === activeModels.length - 1;
         return (
           <Box
             key={m.name}
             flexDirection="column"
-            flexGrow={1}
+            width={panelWidth}
             borderStyle="single"
             borderColor="gray"
-            marginRight={1}
+            marginRight={isLast ? 0 : 1}
           >
             <Text bold>{m.name}</Text>
-            {lines.map((line, i) => (
-              <Text key={i} wrap="truncate">
-                {line || " "}
-              </Text>
-            ))}
-            {totalLines === 0 && (
-              <Text dimColor>Waiting...</Text>
-            )}
+            {displayLines.map((line, i) => {
+              if (isEmpty && i === 0) {
+                return (
+                  <Text key={i} dimColor>
+                    {m.isStreaming ? "Waiting..." : "No output"}
+                  </Text>
+                );
+              }
+              return (
+                <Text key={i} wrap="truncate">
+                  {line || " "}
+                </Text>
+              );
+            })}
             <Text dimColor>
-              {totalLines} lines · {m.isStreaming ? "streaming..." : "done"}
+              {isEmpty ? 0 : totalLines} lines · {formatTokens(m.usage.input + m.usage.output)}/{formatTokens(m.contextLimit)} · {m.isStreaming ? "streaming..." : "done"}
             </Text>
           </Box>
         );

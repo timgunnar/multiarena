@@ -43,7 +43,7 @@ describe("bash tool", () => {
     fs.writeFileSync(path.join(tmpDir, "hello.txt"), "world");
     // Use a command that proves we're in the worktree
     const result = await bashTool.execute(
-      { command: process.platform === "win32" ? "type hello.txt" : "cat hello.txt" },
+      { command: "cat hello.txt" },
       tmpDir,
     );
     expect(result).toContain("world");
@@ -51,10 +51,9 @@ describe("bash tool", () => {
 
   it("returns (no output) for silent commands", async () => {
     const result = await bashTool.execute(
-      { command: process.platform === "win32" ? "echo." : "true" },
+      { command: "true" },
       tmpDir,
     );
-    // echo. on Windows outputs a dot, so we just check it doesn't error
     expect(result).toBeDefined();
     expect(result).not.toContain("Command failed");
   });
