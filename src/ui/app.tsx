@@ -87,6 +87,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const [deliberationProgress, setDeliberationProgress] =
     useState<DeliberationProgress | null>(null);
   const [deliberationDocument, setDeliberationDocument] = useState("");
+  const [deliberationThinkText, setDeliberationThinkText] = useState("");
   const [deliberationRounds, setDeliberationRounds] = useState<Array<{ round: number; modelName: string; role: "draft" | "revise" | "polish" | "review"; changeCount?: number; changeSamples?: string[] }>>([]);
   const [deliberationScrollOffset, setDeliberationScrollOffset] = useState(0);
   const deliberatingRef = useRef(false);
@@ -496,9 +497,18 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
       for await (const event of stream) {
         setDeliberationProgress(event);
-        if (event.type === "round_start") {
+        if (event.type === "think_start") {
+          setDeliberationThinkText("");
+          setDeliberationDocument("");
+        } else if (event.type === "think_text" && event.content) {
+          setDeliberationThinkText((prev) => prev + event.content!);
+        } else if (event.type === "think_end") {
+          // Think done — keep think text in state for UI reference,
+          // main round will populate deliberationDocument next.
+        } else if (event.type === "round_start") {
           doc = "";
           setDeliberationDocument("");
+          setDeliberationThinkText("");
           setDeliberationRounds((prev) => [
             ...prev,
             { round: event.round, modelName: event.modelName!, role: event.role! },
@@ -872,6 +882,7 @@ broadcast = true`;
         terminalWidth={terminalWidth}
         deliberationProgress={deliberationProgress}
         deliberationDocument={deliberationDocument}
+        deliberationThinkText={deliberationThinkText}
         deliberationRounds={deliberationRounds}
         teamMode={teamMode}
         deliberationScrollOffset={deliberationScrollOffset}

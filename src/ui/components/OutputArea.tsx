@@ -14,6 +14,7 @@ interface Props {
   terminalWidth: number;
   deliberationProgress?: DeliberationProgress | null;
   deliberationDocument?: string;
+  deliberationThinkText?: string;
   deliberationRounds?: RoundSummary[];
   teamMode?: boolean;
   deliberationScrollOffset?: number;
@@ -27,6 +28,7 @@ export const OutputArea: React.FC<Props> = ({
   terminalWidth,
   deliberationProgress,
   deliberationDocument,
+  deliberationThinkText,
   deliberationRounds,
   teamMode,
   deliberationScrollOffset = 0,
@@ -45,6 +47,7 @@ export const OutputArea: React.FC<Props> = ({
           progress={deliberationProgress}
           scrollOffset={deliberationScrollOffset}
           document={deliberationDocument ?? ""}
+          thinkText={deliberationThinkText ?? ""}
           rounds={deliberationRounds ?? []}
         />
       );
@@ -57,6 +60,7 @@ export const OutputArea: React.FC<Props> = ({
           <DeliberationView
             progress={deliberationProgress}
             document={deliberationDocument ?? ""}
+            thinkText={deliberationThinkText ?? ""}
             rounds={deliberationRounds ?? []}
             scrollOffset={deliberationScrollOffset}
           />

@@ -26,15 +26,17 @@ export interface RoundSummary {
 interface Props {
   progress: DeliberationProgress;
   document: string;
+  thinkText?: string;
   rounds: RoundSummary[];
   scrollOffset?: number;
 }
 
-export const DeliberationView: React.FC<Props> = ({ progress, document, rounds, scrollOffset = 0 }) => {
+export const DeliberationView: React.FC<Props> = ({ progress, document, thinkText = "", rounds, scrollOffset = 0 }) => {
   const role = progress.role ?? "draft";
   const roleColor = ROLE_COLORS[role];
   const isActive = progress.type !== "done" && progress.type !== "error";
   const isDone = progress.type === "done";
+  const isThinking = progress.type === "think_start" || progress.type === "think_text";
   const spin = spinner(Date.now() % 10);
 
   const allLines = document ? document.split("\n") : [];
@@ -80,9 +82,25 @@ export const DeliberationView: React.FC<Props> = ({ progress, document, rounds, 
       {/* Active round label */}
       {isActive && (
         <Box marginBottom={1}>
-          <Text color={roleColor}>
-            {roundLabel(role)}中 — {progress.modelName} — 正在生成…
-          </Text>
+          {isThinking ? (
+            <Text dimColor>
+              💭 思考中 — {progress.modelName} — 分析当前状态…
+            </Text>
+          ) : (
+            <Text color={roleColor}>
+              {roundLabel(role)}中 — {progress.modelName} — 正在生成…
+            </Text>
+          )}
+        </Box>
+      )}
+
+      {/* Think text (private analysis, shown dimmed) */}
+      {thinkText && isThinking && (
+        <Box flexDirection="column" marginBottom={1}>
+          <Text dimColor>── 私有分析 ──</Text>
+          {thinkText.split("\n").map((line, i) => (
+            <Text key={i} dimColor>{line || " "}</Text>
+          ))}
         </Box>
       )}
 

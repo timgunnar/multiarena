@@ -13,7 +13,7 @@ export interface DeliberationRoundConfig {
 }
 
 export interface DeliberationProgress {
-  type: "round_start" | "text" | "round_end" | "done" | "error";
+  type: "think_start" | "think_text" | "think_end" | "round_start" | "text" | "round_end" | "done" | "error";
   round: number;
   totalRounds: number;
   modelName?: string;
@@ -151,6 +151,75 @@ ${previousDocument}
 }
 
 /**
+ * Build a private "think" prompt for the given role.
+ * The model analyses the current state before acting — this output is NOT
+ * shared with other models, but is fed back into the same model's main
+ * round system prompt so its public output is informed by private reasoning.
+ */
+function buildThinkPrompt(
+  role: RoundRole,
+  task: string,
+  isFirstRound: boolean,
+  constraint?: string,
+  previousDocument?: string,
+): string {
+  const docBlock = previousDocument
+    ? `\n\n## 当前文档（请仔细分析）\n${previousDocument}`
+    : "";
+
+  const taskBlock = `\n\n## 用户任务/反馈\n${task}`;
+
+  const constraintBlock = constraint
+    ? `\n\n## 约束文档\n${constraint}`
+    : "";
+
+  switch (role) {
+    case "draft":
+      return `你即将以**起草者**的身份撰写一份初稿。在此之前，请先进行私有分析：
+${taskBlock}${constraintBlock}
+
+请简短回答以下问题（用你自己的话，不要长篇大论）：
+1. 任务的核心目标是什么？需要覆盖哪些关键要点？
+2. 文档应该是什么结构？（章节/段落规划）
+3. 有什么需要特别注意的约束或陷阱？
+4. 有什么地方信息不足，需要合理假设的？`;
+
+    case "revise":
+      return `你即将以**修订者**的身份修改一份文档。在此之前，请先进行私有分析：
+${taskBlock}${constraintBlock}${docBlock}
+
+请简短回答以下问题：
+1. 这份文档的优点是什么？哪些部分写得不错？
+2. 存在哪些问题？（偏离任务、遗漏要点、逻辑不严谨、表达不清、潜在的事实错误或幻觉）
+3. 对照约束文档，哪些地方违反了约束？
+4. 你计划做哪些具体修改？按优先级列出。${isFirstRound ? "\n注意：这是第一轮修订，你看到的是初稿。重点关注初稿是否忠实地回应了用户的任务。" : ""}`;
+
+    case "polish":
+      return `你即将以**润色者**的身份最终润色一份文档。在此之前，请先进行私有分析：
+${taskBlock}${constraintBlock}${docBlock}
+
+请简短回答以下问题：
+1. 文档的整体语言质量如何？（流畅度、可读性、语气一致性）
+2. 有哪些表达可以更优雅或更精准？
+3. 对照约束文档，还有什么需要修正的？
+4. 你独有的补充见解是什么？（如果有的话）`;
+
+    case "review":
+      return `你即将以**终审者**的身份做最终审查。在此之前，请先进行私有分析：
+${taskBlock}${constraintBlock}${docBlock}
+
+请简短回答以下问题：
+1. 经过多轮修改后，文档是否偏离了用户的原始意图？
+2. 逐条对照约束文档检查——还有违规项吗？
+3. 有没有任何模型引入了事实错误或幻觉？
+4. 最终交付前，还有什么必须清理或修复的？`;
+
+    default:
+      return "";
+  }
+}
+
+/**
  * Run the R2D2 (Round-Robin Deliberative Drafting) pipeline.
  *
  * Models take turns in sequence: the first drafts, the second revises,
@@ -176,15 +245,7 @@ export async function* runDeliberation(
     const rc = roundConfigs[i];
     const previousDocument = i > 0 ? documents[i - 1] : undefined;
     const draftAuthor = i > 0 ? roundConfigs[0].modelName : undefined;
-
-    const systemPrompt = buildSystemPrompt(
-      rc.role,
-      task,
-      i === roundConfigs.length - 1,
-      constraint,
-      previousDocument,
-      draftAuthor,
-    );
+    const isFinalRound = i === roundConfigs.length - 1;
 
     yield {
       type: "round_start",
@@ -193,6 +254,84 @@ export async function* runDeliberation(
       modelName: rc.modelName,
       role: rc.role,
     };
+
+    // ── Private Think Phase ──────────────────────────────────────
+    // The model analyses the current state privately before acting.
+    // This output is NOT shared with other models — it only informs
+    // this model's own main round via the system prompt.
+    let thinkOutput = "";
+    const thinkPrompt = buildThinkPrompt(
+      rc.role,
+      task,
+      i === 0,
+      constraint,
+      previousDocument,
+    );
+
+    if (thinkPrompt) {
+      yield {
+        type: "think_start",
+        round: i + 1,
+        totalRounds,
+        modelName: rc.modelName,
+        role: rc.role,
+      };
+
+      try {
+        const thinkStream = runTurn({
+          modelName: rc.modelName,
+          config: rc.config,
+          messages: [{ role: "user", content: "请按上述要求进行分析。用简洁的语言回答，不要长篇大论。" }],
+          systemPrompt: thinkPrompt,
+          tools: [],
+          registry: new ToolRegistry(),
+          permission: new PermissionManager(),
+          worktreePath: worktreePath ?? process.cwd(),
+        });
+
+        for await (const event of thinkStream) {
+          if (event.type === "text") {
+            thinkOutput += event.content;
+            yield {
+              type: "think_text",
+              round: i + 1,
+              totalRounds,
+              modelName: rc.modelName,
+              role: rc.role,
+              content: event.content,
+            };
+          } else if (event.type === "error") {
+            // Think failure is non-fatal — proceed without think context
+            thinkOutput = "";
+            break;
+          }
+        }
+      } catch {
+        thinkOutput = "";
+      }
+
+      yield {
+        type: "think_end",
+        round: i + 1,
+        totalRounds,
+        modelName: rc.modelName,
+        role: rc.role,
+      };
+    }
+
+    // ── Main Round System Prompt (informed by private think) ──────
+    const thinkBlock = thinkOutput
+      ? `\n\n## 你的私有分析结果\n以下是你刚才对当前状态的分析。请基于这些洞察来完成你的任务：\n\n${thinkOutput}`
+      : "";
+
+    const systemPrompt = buildSystemPrompt(
+      rc.role,
+      task,
+      isFinalRound,
+      constraint,
+      previousDocument,
+      draftAuthor,
+    ) + thinkBlock;
 
     // Build messages from the shared context plus this round's role instruction.
     const instruction: Message = {

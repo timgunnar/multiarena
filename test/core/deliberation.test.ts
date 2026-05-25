@@ -153,11 +153,16 @@ describe("runDeliberation", () => {
   it("uses previous round output in subsequent rounds", async () => {
     const mockRunTurn = runTurn as any;
 
-    // Return different output per round
-    let roundIdx = 0;
-    const outputs = ["Draft v1.", "Revised v2.", "Polished v3."];
+    // Each round now has 2 calls: think (private) + main (public).
+    // Even indices = think outputs, odd indices = main round outputs.
+    let callIdx = 0;
+    const outputs = [
+      "Think: plan draft.", "Draft v1.",
+      "Think: review draft.", "Revised v2.",
+      "Think: polish review.", "Polished v3.",
+    ];
     mockRunTurn.mockImplementation(() => {
-      const text = outputs[roundIdx++]!;
+      const text = outputs[callIdx++]!;
       return mockTurnText(text)();
     });
 
@@ -183,17 +188,16 @@ describe("runDeliberation", () => {
     expect(done?.document).toContain("Polished v3.");
 
     // Verify system prompts received the previous document
-    // Round 2 (revise) should have received round 1's output
     const calls = mockRunTurn.mock.calls;
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(6); // think + main per round
 
-    // Round 2 (revise): system prompt should include draft
-    const reviseSysPrompt = calls[1]?.[0]?.systemPrompt ?? "";
+    // Round 2 main (revise) at calls[3]: system prompt should include draft
+    const reviseSysPrompt = calls[3]?.[0]?.systemPrompt ?? "";
     expect(reviseSysPrompt).toContain("Draft v1.");
     expect(reviseSysPrompt).toContain("修订");
 
-    // Round 3 (polish): system prompt should include revised doc
-    const polishSysPrompt = calls[2]?.[0]?.systemPrompt ?? "";
+    // Round 3 main (polish) at calls[5]: system prompt should include revised doc
+    const polishSysPrompt = calls[5]?.[0]?.systemPrompt ?? "";
     expect(polishSysPrompt).toContain("Revised v2.");
     expect(polishSysPrompt).toContain("润色");
   });
@@ -315,13 +319,16 @@ describe("runDeliberation", () => {
   it("continue editing: second deliberation sees first deliberation output via sharedMessages", async () => {
     const mockRunTurn = runTurn as any;
 
-    let roundIdx = 0;
-    const firstOutputs = ["First draft.", "First revise."];
-    const secondOutputs = ["Second draft based on first.", "Second revise."];
-
+    // Interleaved: think (even) + main (odd) per round.
+    let callIdx = 0;
+    const outputs = [
+      "Think: plan.", "First draft.",
+      "Think: review.", "First revise.",
+      "Think: plan round 2.", "Second draft based on first.",
+      "Think: review round 2.", "Second revise.",
+    ];
     mockRunTurn.mockImplementation(() => {
-      const text = roundIdx < 2 ? firstOutputs[roundIdx]! : secondOutputs[roundIdx - 2]!;
-      roundIdx++;
+      const text = outputs[callIdx++]!;
       return mockTurnText(text)();
     });
 
@@ -357,7 +364,8 @@ describe("runDeliberation", () => {
 
     // Second deliberation's draft round sees the follow-up task
     const calls = mockRunTurn.mock.calls;
-    const secondDraftCall = calls[2]?.[0]; // 3rd call (0-indexed: 2)
+    // calls layout: 0-3 = first deliberation (think+main × 2), 4-7 = second deliberation
+    const secondDraftCall = calls[5]?.[0]; // main call for second deliberation round 1
     expect(secondDraftCall.messages).toHaveLength(5); // 4 shared + 1 round instruction
     expect(secondDraftCall.systemPrompt).toContain("Make it shorter"); // task from last user msg
 
