@@ -160,13 +160,17 @@ ${previousDocument}
  * emerges through sequential refinement.
  */
 export async function* runDeliberation(
-  task: string,
+  sharedMessages: Message[],
   roundConfigs: DeliberationRoundConfig[],
   constraint?: string,
   worktreePath?: string,
 ): AsyncGenerator<DeliberationProgress> {
   const documents: string[] = [];
   const totalRounds = roundConfigs.length;
+
+  // Derive the task from the last user message in the shared context.
+  const lastUser = [...sharedMessages].reverse().find((m) => m.role === "user");
+  const task = lastUser?.content ?? "";
 
   for (let i = 0; i < roundConfigs.length; i++) {
     const rc = roundConfigs[i];
@@ -190,15 +194,15 @@ export async function* runDeliberation(
       role: rc.role,
     };
 
-    const messages: Message[] = [
-      {
-        role: "user",
-        content:
-          rc.role === "draft"
-            ? `请起草以下文档：\n\n${task}`
-            : "请根据你的角色要求和上述文档内容，输出修改后的完整文档。不要输出任何前言或后记，直接输出文档内容。",
-      },
-    ];
+    // Build messages from the shared context plus this round's role instruction.
+    const instruction: Message = {
+      role: "user",
+      content:
+        rc.role === "draft"
+          ? `请起草以下文档：\n\n${task}`
+          : "请根据你的角色要求和上述文档内容，输出修改后的完整文档。不要输出任何前言或后记，直接输出文档内容。",
+    };
+    const messages: Message[] = [...sharedMessages, instruction];
 
     let buffer = "";
 
@@ -251,6 +255,7 @@ export async function* runDeliberation(
     }
 
     documents.push(buffer);
+    sharedMessages.push({ role: "assistant", content: buffer });
 
     // Extract revision annotations for the process summary
     const revisionMatches = buffer.match(/\[修订:\s*([^\]]+?)\]/g) ?? [];

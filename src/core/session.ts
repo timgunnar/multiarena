@@ -14,6 +14,7 @@ export interface SessionSnapshot {
   }>;
   targetMode: TargetMode;
   worktreeBase: string;
+  teamMessages?: Message[];
 }
 
 export class Session {
@@ -21,6 +22,7 @@ export class Session {
     models: ModelState[];
     targetMode: TargetMode;
     worktreeBase: string;
+    teamMessages: Message[];
   };
 
   constructor(config: ArenaConfig, worktreeBase: string, snapshot?: SessionSnapshot) {
@@ -33,6 +35,7 @@ export class Session {
         })),
         targetMode: snapshot.targetMode,
         worktreeBase: snapshot.worktreeBase,
+        teamMessages: snapshot.teamMessages ?? [],
       };
     } else {
       const models: ModelState[] = (config.defaults.active ?? []).map((name) => {
@@ -53,6 +56,7 @@ export class Session {
         models,
         targetMode: { type: "broadcast" },
         worktreeBase,
+        teamMessages: [],
       };
     }
   }
@@ -63,6 +67,10 @@ export class Session {
 
   get targetMode(): TargetMode {
     return this.state.targetMode;
+  }
+
+  get teamMessages(): Message[] {
+    return this.state.teamMessages;
   }
 
   /** Add a user message to the target model(s). Returns affected models. */
@@ -168,6 +176,7 @@ export class Session {
       })),
       targetMode: this.state.targetMode,
       worktreeBase: this.state.worktreeBase,
+      teamMessages: [...this.state.teamMessages],
     };
   }
 

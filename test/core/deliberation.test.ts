@@ -9,6 +9,11 @@ import {
 import type { ModelConfig } from "../../src/config/types.js";
 import type { StreamEvent } from "../../src/provider/types.js";
 
+// Helper: wrap a task string into sharedMessages for the new API
+function sharedMsgs(task: string) {
+  return [{ role: "user" as const, content: task }];
+}
+
 // Mock runTurn so we control the output of each round
 vi.mock("../../src/core/turn.js", () => ({
   runTurn: vi.fn(),
@@ -120,7 +125,7 @@ describe("runDeliberation", () => {
     ];
 
     const events: DeliberationProgress[] = [];
-    for await (const event of runDeliberation("Write a report", roundConfigs)) {
+    for await (const event of runDeliberation(sharedMsgs("Write a report"), roundConfigs)) {
       events.push(event);
     }
 
@@ -163,7 +168,7 @@ describe("runDeliberation", () => {
     ];
 
     const events: DeliberationProgress[] = [];
-    for await (const event of runDeliberation("Task", roundConfigs)) {
+    for await (const event of runDeliberation(sharedMsgs("Task"),roundConfigs)) {
       events.push(event);
     }
 
@@ -205,7 +210,7 @@ describe("runDeliberation", () => {
     const constraint = "必须使用中文。\n禁止使用英文缩写。";
 
     const events: DeliberationProgress[] = [];
-    for await (const event of runDeliberation("Task", roundConfigs, constraint)) {
+    for await (const event of runDeliberation(sharedMsgs("Task"),roundConfigs, constraint)) {
       events.push(event);
     }
 
@@ -230,7 +235,7 @@ describe("runDeliberation", () => {
     ];
 
     const events: DeliberationProgress[] = [];
-    for await (const event of runDeliberation("Task", roundConfigs)) {
+    for await (const event of runDeliberation(sharedMsgs("Task"),roundConfigs)) {
       events.push(event);
     }
 
@@ -268,7 +273,7 @@ describe("runDeliberation", () => {
     ];
 
     const events: DeliberationProgress[] = [];
-    for await (const event of runDeliberation("Task", roundConfigs)) {
+    for await (const event of runDeliberation(sharedMsgs("Task"),roundConfigs)) {
       events.push(event);
     }
 
@@ -293,7 +298,7 @@ describe("runDeliberation", () => {
     ];
 
     const events: DeliberationProgress[] = [];
-    for await (const event of runDeliberation("Task", roundConfigs)) {
+    for await (const event of runDeliberation(sharedMsgs("Task"),roundConfigs)) {
       events.push(event);
     }
 
@@ -305,5 +310,66 @@ describe("runDeliberation", () => {
 
     const done = events.find((e) => e.type === "done");
     expect(done).toMatchObject({ round: 4, totalRounds: 4 });
+  });
+
+  it("continue editing: second deliberation sees first deliberation output via sharedMessages", async () => {
+    const mockRunTurn = runTurn as any;
+
+    let roundIdx = 0;
+    const firstOutputs = ["First draft.", "First revise."];
+    const secondOutputs = ["Second draft based on first.", "Second revise."];
+
+    mockRunTurn.mockImplementation(() => {
+      const text = roundIdx < 2 ? firstOutputs[roundIdx]! : secondOutputs[roundIdx - 2]!;
+      roundIdx++;
+      return mockTurnText(text)();
+    });
+
+    const roundConfigs: DeliberationRoundConfig[] = [
+      { modelName: "a", role: "draft", config: makeModelConfig() },
+      { modelName: "b", role: "revise", config: makeModelConfig() },
+    ];
+
+    // First deliberation: shared messages start with just the user task
+    const sharedMessages = sharedMsgs("Write a report");
+    const events1: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMessages, roundConfigs)) {
+      events1.push(event);
+    }
+
+    // After first deliberation, sharedMessages has:
+    // [user: "Write a report", assistant: "First draft.", assistant: "First revise."]
+    expect(sharedMessages).toHaveLength(3);
+    expect(sharedMessages[1].content).toContain("First draft.");
+    expect(sharedMessages[2].content).toContain("First revise.");
+
+    const done1 = events1.find((e) => e.type === "done");
+    expect(done1?.document).toContain("First revise.");
+
+    // User sends a follow-up message
+    sharedMessages.push({ role: "user", content: "Make it shorter" });
+
+    // Second deliberation: same sharedMessages array
+    const events2: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMessages, roundConfigs)) {
+      events2.push(event);
+    }
+
+    // Second deliberation's draft round sees the follow-up task
+    const calls = mockRunTurn.mock.calls;
+    const secondDraftCall = calls[2]?.[0]; // 3rd call (0-indexed: 2)
+    expect(secondDraftCall.messages).toHaveLength(5); // 4 shared + 1 round instruction
+    expect(secondDraftCall.systemPrompt).toContain("Make it shorter"); // task from last user msg
+
+    // First deliberation's output is in the shared context visible to second deliberation
+    const contextContents = secondDraftCall.messages.map((m: any) => m.content).join(" ");
+    expect(contextContents).toContain("First draft.");
+    expect(contextContents).toContain("First revise.");
+    expect(contextContents).toContain("Make it shorter");
+
+    // Second deliberation produces new output
+    expect(sharedMessages).toHaveLength(6); // 3 from first run + user follow-up + 2 new round outputs
+    const done2 = events2.find((e) => e.type === "done");
+    expect(done2?.document).toContain("Second revise.");
   });
 });

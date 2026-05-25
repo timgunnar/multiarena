@@ -426,7 +426,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
   // ── Deliberation runner ───────────────────────────────────────
   const runDeliberationPipeline = useCallback(
-    async (task: string) => {
+    async () => {
       if (deliberatingRef.current) return;
       deliberatingRef.current = true;
 
@@ -492,7 +492,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       setDeliberationScrollOffset(0);
       let doc = "";
 
-      const stream = runDeliberation(task, roundConfigs, constraint);
+      const stream = runDeliberation(session.teamMessages, roundConfigs, constraint);
 
       for await (const event of stream) {
         setDeliberationProgress(event);
@@ -524,18 +524,6 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         } else if (event.type === "error") {
           deliberatingRef.current = false;
           return;
-        }
-      }
-
-      // Keep the final document visible; user presses Esc to dismiss
-      // Inject the final document into each model's message history
-      // so they can discuss it when the user switches to chat mode.
-      if (doc) {
-        const contextMsg = `[团队审议结果]\n\n以下是你与其他模型协作完成的最终文档。用户可以就此文档与你讨论。\n\n---\n${doc}\n---`;
-        for (const m of session.models) {
-          if (!m.muted) {
-            m.messages.push({ role: "user", content: contextMsg });
-          }
         }
       }
 
@@ -641,18 +629,79 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       if (teamMode) {
         const r = reduceSubmitInTeam(currentModeState(), isOverview());
         if (r.action === "block") return;
+
+        inputHistoryRef.current.push(trimmed);
+        historyIdxRef.current = -1;
+        setInput("");
+
+        // All team interactions share session.teamMessages as context.
+        session.teamMessages.push({ role: "user", content: trimmed });
+
         if (r.action === "deliberate") {
-          inputHistoryRef.current.push(trimmed);
-          historyIdxRef.current = -1;
-          setInput("");
           setDeliberationDocument("");
           // Reset target to overview so OutputArea shows deliberation progress
           session.setTarget({ type: "broadcast" });
           setTargetVersion((v) => v + 1);
-          runDeliberationPipeline(trimmed);
+          runDeliberationPipeline();
           return;
         }
-        // r.action === "route_normally" — send as directed/broadcast message
+
+        // r.action === "route_normally" — team directed chat.
+        // The user is drilling into a specific model. Use shared team context.
+        const targetModel =
+          session.targetMode.type === "directed"
+            ? session.targetMode.modelName
+            : null;
+        if (!targetModel) return;
+
+        const tm = session.models.find((m) => m.name === targetModel && !m.muted);
+        if (!tm) return;
+
+        const tmc = config.models[targetModel];
+        if (!tmc) {
+          tm.buffer = `[Error: No config for model "${targetModel}"]`;
+          setModelStates([...session.models]);
+          return;
+        }
+
+        // Worktree setup
+        const taskId = Date.now().toString(36);
+        const wtManager = new WorktreeManager(process.cwd());
+        await wtManager.setup(taskId, [targetModel]);
+        const wtPath = wtManager.getWorktreePath(targetModel) ?? process.cwd();
+
+        tm.isStreaming = true;
+        tm.buffer = "";
+        setModelStates([...session.models]);
+
+        const stream = runTurn({
+          modelName: targetModel,
+          config: tmc,
+          messages: session.teamMessages,
+          systemPrompt: makeSystemPrompt(targetModel, tmc.provider),
+          tools: toolRegistry.getDefinitions(),
+          registry: toolRegistry,
+          permission: permissionManager,
+          worktreePath: wtPath,
+        });
+
+        for await (const event of stream) {
+          if (event.type === "text") {
+            tm.buffer += event.content;
+          } else if (event.type === "done") {
+            tm.usage.input += event.usage.input;
+            tm.usage.output += event.usage.output;
+            tm.isStreaming = false;
+          } else if (event.type === "error") {
+            tm.buffer += `\n[Error: ${event.message}]`;
+            tm.isStreaming = false;
+          }
+          setModelStates([...session.models]);
+        }
+
+        await wtManager.cleanup(taskId);
+        saveCurrentSession();
+        return;
       }
 
       // ── Team mode toggle ────────────────────────────────────
