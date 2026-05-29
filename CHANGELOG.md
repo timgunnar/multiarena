@@ -5,6 +5,8 @@
 ### 关键升级
 
 - **交互式权限确认** — 工具调用前弹窗询问用户：[y]es 允许一次 / [n]o 拒绝一次 / [a]lways allow 始终允许 / [d]eny always 始终拒绝。跨模型共享授权记忆，广播模式并发请求自动排队
+- **权限持久化** — `[a]lways` 和 `[d]eny always` 写入会话文件 `permissions` 字段，退出重启后恢复，用户可手动编辑 JSON
+- **README 权限文档** — 新增权限系统使用说明和会话文件格式示例
 - **README GitHub 安装方法** — 新增从源码安装说明（git clone + npm install + npm link）
 - **CLAUDE.md 发布文件范围** — 记录 npm 和 GitHub 各自包含/排除的文件清单
 

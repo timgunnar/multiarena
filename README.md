@@ -302,6 +302,34 @@ role = "review"
 
 具体模型名在配置文件的 `model` 字段中指定，使用各厂商的 API 模型名称。
 
+## 权限系统
+
+工具调用前会弹窗询问授权（硬编码安全规则不可覆盖）：
+
+```
+!!! Allow "claude" to run $ git status? [y]es/[n]o/[a]lways allow/[d]eny always
+```
+
+| 按键 | 效果 |
+|------|------|
+| `y` | 允许本次调用 |
+| `n` | 拒绝本次调用 |
+| `a` | 始终允许（记住到会话文件，所有模型共享） |
+| `d` | 始终拒绝（记住到会话文件，所有模型共享） |
+| `q` | 退出程序（拒绝所有待处理请求） |
+
+**权限持久化：** 选择 `a` 或 `d` 后，权限记录写入会话文件 `~/.multiarena/sessions/<id>.json` 的 `permissions` 字段。退出重启后可恢复，也可手动编辑该文件增删权限条目。
+
+```json
+// ~/.multiarena/sessions/<id>.json 中的权限示例
+{
+  "permissions": [
+    { "toolName": "bash", "args": { "command": "git status" }, "decision": "allow_always" },
+    { "toolName": "readFile", "args": { "filePath": ".git-credentials" }, "decision": "deny_always" }
+  ]
+}
+```
+
 ## 快捷键速查
 
 | 按键 | 功能 | 约束 |

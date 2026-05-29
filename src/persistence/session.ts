@@ -13,6 +13,12 @@ export interface SavedSession {
     buffer: string;
   }>;
   lastTarget: "broadcast" | string;
+  /** Permission entries persisted across sessions. User-editable. */
+  permissions?: Array<{
+    toolName: string;
+    args: Record<string, unknown>;
+    decision: "allow_always" | "deny_always";
+  }>;
 }
 
 export function saveSession(session: SavedSession): void {

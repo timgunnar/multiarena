@@ -49,6 +49,16 @@ export class PermissionManager {
     this.entries = [];
   }
 
+  /** Export all remembered entries for session persistence. */
+  getEntries(): PermissionEntry[] {
+    return [...this.entries];
+  }
+
+  /** Import remembered entries from a saved session. */
+  setEntries(entries: PermissionEntry[]): void {
+    this.entries = [...entries];
+  }
+
   /**
    * Request an interactive user decision.
    * Returns a request ID and a Promise that resolves when the user responds.

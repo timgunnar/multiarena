@@ -161,6 +161,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         buffer: m.buffer,
       })),
       lastTarget,
+      permissions: permissionManager.getEntries(),
     });
   }, [session, sessionId]);
 
@@ -194,6 +195,16 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   useEffect(() => {
     const wm = new WorktreeManager(process.cwd());
     wm.sweepOrphans().catch(() => {});
+  }, []);
+
+  // Restore saved permissions from session file on resume
+  useEffect(() => {
+    if (initialSessionId) {
+      const saved = loadSession(initialSessionId);
+      if (saved?.permissions && saved.permissions.length > 0) {
+        permissionManager.setEntries(saved.permissions);
+      }
+    }
   }, []);
 
   // Register permission state change callback for queue processing
