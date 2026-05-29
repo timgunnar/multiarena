@@ -1,9 +1,12 @@
-node_modules/
-dist/
-.env
-.multiarenarc
 .idea/
 .claude/
+dist/
 docs/
-CLAUDE.md
+node_modules/
+
+.env
+.multiarenarc
 eslint.config.js
+
+CLAUDE.md
+TODOLIST.md

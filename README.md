@@ -216,8 +216,20 @@ Tab 可切换到特定模型私聊。Shift+Tab 返回广播模式。
 
 ## 安装
 
+### npm（推荐）
+
 ```bash
 npm install -g multiarena
+```
+
+### 从源码安装（GitHub）
+
+```bash
+git clone https://github.com/timgunnar/multiarena.git
+cd multiarena
+npm install
+npm run build
+npm link
 ```
 
 ## 快速开始

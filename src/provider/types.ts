@@ -26,7 +26,8 @@ export type StreamEvent =
   | { type: "text"; content: string }
   | { type: "tool_call"; id: string; name: string; args: string }
   | { type: "done"; usage: TokenUsage }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "permission_required"; requestId: string; toolName: string; args: Record<string, unknown>; modelName: string };
 
 export interface ChatRequest {
   messages: Message[];

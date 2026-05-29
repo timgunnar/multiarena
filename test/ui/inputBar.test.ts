@@ -44,6 +44,7 @@ describe("InputBar", () => {
       value: "",
       onChange: noop,
       onSubmit: noop,
+      permissionPrompt: null,
     });
     const text = flattenText(el);
     expect(text).toContain("[all]");
@@ -58,6 +59,7 @@ describe("InputBar", () => {
       value: "",
       onChange: noop,
       onSubmit: noop,
+      permissionPrompt: null,
     });
     const text = flattenText(el);
     expect(text).toContain("[minimax]");
@@ -72,6 +74,7 @@ describe("InputBar", () => {
       value: "",
       onChange: noop,
       onSubmit: noop,
+      permissionPrompt: null,
     });
     const text = flattenText(el);
     expect(text).toContain("A");
@@ -87,6 +90,7 @@ describe("InputBar", () => {
       value: "",
       onChange: noop,
       onSubmit: noop,
+      permissionPrompt: null,
     });
     const text = flattenText(el);
     expect(text).toContain("A");
@@ -102,6 +106,7 @@ describe("InputBar", () => {
       value: "",
       onChange: noop,
       onSubmit: noop,
+      permissionPrompt: null,
     });
     const text = flattenText(el);
     expect(text).toContain("[muted]");
@@ -116,10 +121,77 @@ describe("InputBar", () => {
       value: "",
       onChange: noop,
       onSubmit: noop,
+      permissionPrompt: null,
     });
     const text = flattenText(el);
     expect(text).toContain("Tab:model");
     expect(text).toContain("d:compare");
     expect(text).toContain("q:quit");
+  });
+
+  // ── Permission prompt ───────────────────────────────────────
+
+  it("shows permission prompt when active", () => {
+    const models = [makeModel({ name: "claude" })];
+    const el = InputBar({
+      models,
+      activeModelName: "claude",
+      prefix: "claude",
+      value: "",
+      onChange: noop,
+      onSubmit: noop,
+      permissionPrompt: {
+        requestId: "perm-1",
+        toolName: "bash",
+        args: { command: "git status" },
+        modelName: "claude",
+      },
+    });
+    const text = flattenText(el);
+    expect(text).toContain("git status");
+    expect(text).toContain("claude");
+    expect(text).toContain("[y]es");
+    expect(text).toContain("[a]lways allow");
+    expect(text).toContain("[d]eny always");
+  });
+
+  it("shows friendly label for readFile in permission prompt", () => {
+    const models = [makeModel({ name: "gpt" })];
+    const el = InputBar({
+      models,
+      activeModelName: "gpt",
+      prefix: "gpt",
+      value: "",
+      onChange: noop,
+      onSubmit: noop,
+      permissionPrompt: {
+        requestId: "perm-2",
+        toolName: "read_file",
+        args: { file_path: "secret.txt" },
+        modelName: "gpt",
+      },
+    });
+    const text = flattenText(el);
+    expect(text).toContain("Reading secret.txt");
+  });
+
+  it("shows shortcut help for permission keys during prompt", () => {
+    const models = [makeModel()];
+    const el = InputBar({
+      models,
+      activeModelName: null,
+      prefix: "all",
+      value: "",
+      onChange: noop,
+      onSubmit: noop,
+      permissionPrompt: {
+        requestId: "perm-3",
+        toolName: "bash",
+        args: { command: "ls" },
+        modelName: "test",
+      },
+    });
+    const text = flattenText(el);
+    expect(text).toContain("Respond: y/n/a/d");
   });
 });

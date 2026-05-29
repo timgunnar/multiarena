@@ -119,6 +119,8 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
         }
 
         const decision = ctx.permission.check(tc.name, args);
+
+        // Hardcoded deny or previously remembered deny_always → skip
         if (decision === "deny" || decision === "deny_always") {
           const errMsg = `Permission denied for tool: ${tc.name}`;
           ctx.messages.push({ role: "tool", content: errMsg, tool_call_id: tc.id });
@@ -126,6 +128,31 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
           yield { type: "text", content: errMsg + "\n" } as StreamEvent;
           continue;
         }
+
+        // Previously remembered allow_always → skip prompt, execute directly
+        if (decision === "allow") {
+          // No remembered decision — ask the user
+          const request = ctx.permission.requestUserDecision(tc.name, args, ctx.modelName);
+          yield {
+            type: "permission_required",
+            requestId: request.requestId,
+            toolName: tc.name,
+            args,
+            modelName: ctx.modelName,
+          };
+
+          const userDecision = await request.promise;
+
+          if (userDecision === "deny" || userDecision === "deny_always") {
+            const errMsg = `Permission denied for tool: ${tc.name}`;
+            ctx.messages.push({ role: "tool", content: errMsg, tool_call_id: tc.id });
+            allText.push(errMsg + "\n");
+            yield { type: "text", content: errMsg + "\n" } as StreamEvent;
+            continue;
+          }
+          // allow or allow_always — proceed to execute
+        }
+        // else: decision was "allow_always" — execute directly
 
         // Friendly label — shows what the model is doing in plain language
         const label = friendlyToolLabel(tc.name, args);

@@ -93,6 +93,14 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const deliberatingRef = useRef(false);
   const deliberationAbortRef = useRef<AbortController | null>(null);
 
+  // ── Permission prompt state ────────────────────────────────────
+  const [permissionPrompt, setPermissionPrompt] = useState<{
+    requestId: string;
+    toolName: string;
+    args: Record<string, unknown>;
+    modelName: string;
+  } | null>(null);
+
   // Ref mirroring currentModeState() so the raw stdin Esc listener
   // always reads fresh mode state without re-subscribing on every render.
   const modeStateRef = useRef(currentModeState());
@@ -188,6 +196,23 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
     wm.sweepOrphans().catch(() => {});
   }, []);
 
+  // Register permission state change callback for queue processing
+  useEffect(() => {
+    permissionManager.onStateChange(() => {
+      const active = permissionManager.getActiveRequest();
+      if (active) {
+        setPermissionPrompt({
+          requestId: active.requestId,
+          toolName: active.toolName,
+          args: active.args,
+          modelName: active.modelName,
+        });
+      } else {
+        setPermissionPrompt(null);
+      }
+    });
+  }, []);
+
   // Raw stdin listener for Escape key.
   // Ink's useInput key.escape is unreliable on some terminal setups
   // (Windows Terminal + bash in particular). We listen for the raw
@@ -270,6 +295,36 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
   // Keyboard input: Tab cycling, scrolling, and single-key shortcuts.
   useInput((inputValue, key) => {
+    // ── Permission prompt: intercept y/n/a/d keys ────────────────
+    // Takes priority over all other shortcuts when a permission prompt is active.
+    if (permissionPrompt) {
+      if (key.ctrl || key.meta) return;
+
+      if (inputValue === "y" || inputValue === "n" ||
+          inputValue === "a" || inputValue === "d") {
+        let decision: "allow" | "deny" | "allow_always" | "deny_always";
+        switch (inputValue) {
+          case "y": decision = "allow"; break;
+          case "n": decision = "deny"; break;
+          case "a": decision = "allow_always"; break;
+          case "d": decision = "deny_always"; break;
+          default: return;
+        }
+        permissionManager.resolveActiveRequest(decision);
+        shortcutHandledRef.current = true;
+        return;
+      }
+      // During a permission prompt, suppress all other shortcuts and navigation
+      if (key.tab || key.escape) return;
+      if (inputValue === "q") {
+        permissionManager.destroy();
+        saveCurrentSession();
+        exit();
+        return;
+      }
+      return;
+    }
+
     // ── Tab (no shift): cycle target within current mode ──────────
     // Tab never changes teamMode. It cycles: overview → model1 → … → overview.
     if (key.tab && !key.shift) {
@@ -705,6 +760,16 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
           } else if (event.type === "error") {
             tm.buffer += `\n[Error: ${event.message}]`;
             tm.isStreaming = false;
+          } else if (event.type === "permission_required") {
+            const active = permissionManager.getActiveRequest();
+            if (active && active.requestId === event.requestId) {
+              setPermissionPrompt({
+                requestId: event.requestId,
+                toolName: event.toolName,
+                args: event.args,
+                modelName: event.modelName,
+              });
+            }
           }
           setModelStates([...session.models]);
         }
@@ -805,6 +870,16 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
             } else if (event.type === "error") {
               m.buffer += `\n[Error: ${event.message}]`;
               m.isStreaming = false;
+            } else if (event.type === "permission_required") {
+              const active = permissionManager.getActiveRequest();
+              if (active && active.requestId === event.requestId) {
+                setPermissionPrompt({
+                  requestId: event.requestId,
+                  toolName: event.toolName,
+                  args: event.args,
+                  modelName: event.modelName,
+                });
+              }
             }
             setModelStates([...session.models]);
           }
@@ -897,6 +972,7 @@ broadcast = true`;
         value={input}
         onChange={handleInputChange}
         onSubmit={handleSubmit}
+        permissionPrompt={permissionPrompt}
       />
     </Box>
   );
