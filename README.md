@@ -122,6 +122,22 @@ multiarena 有两个顶层模式，各自包含总览和模型私聊两种视图
 
 **共享上下文：** 团队模式使用统一的 `teamMessages` 消息线程。审议引擎直接从共享历史读取上下文，每轮产出自动写回。用户可追加新要求启动新一轮审议——模型自然看到上一轮所有产出 + 新指令。
 
+**对抗强度：** 通过配置或 CLI 参数控制模型间的批判性：
+
+| 强度 | 效果 |
+|------|------|
+| `off`（默认） | 纯协作接力 |
+| `low` | 修订轮注入批判提示，要求挑战上一轮逻辑 |
+| `medium` | 每轮输出批判点 + 修改，下一轮回应 |
+| `high` | 分配批判视角，启用镜像对抗轮次 |
+
+```toml
+[deliberation]
+adversarial = "high"
+```
+
+或 CLI 覆盖：`/team -a high`
+
 ### 启动审议
 
 在广播总览按 `Shift+Tab` 进入团队总览，输入任务描述后回车：
@@ -272,6 +288,7 @@ active = ["claude", "gpt"]   # 启动时加载的模型
 
 [deliberation]
 constraint_file = "rules.md" # 审议约束文件（可选）
+adversarial = "high"        # 对抗强度：off | low | medium | high（可选，默认 off）
 
 # 手动指定审议轮次（可选，默认自动镜像分配）
 [[deliberation.rounds]]
