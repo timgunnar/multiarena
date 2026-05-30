@@ -1,62 +1,62 @@
 # multiarena
 
-[中文](./README.md) | [English](./README_EN.md)
+[English](./README.md) | [中文](./README_CN.md)
 
-终端原生多模型 AI 协作工具。一键提问，多个大模型同时回答；多模型接力审议，产出经过多重打磨的文档。
+Terminal-native multi-model AI collaboration tool. Ask once, multiple LLMs answer simultaneously. Multi-model relay deliberation produces documents refined through multiple perspectives.
 
-## 模式系统
+## Mode System
 
-multiarena 有两个顶层模式，各自包含总览和模型私聊两种视图：
-
-```
-广播模式 (Broadcast)               团队模式 (Team)
-  ├── 总览：多模型并排面板             ├── 总览：审议入口 / 审议结果
-  └── 定向：单个模型全宽详情           └── 定向：与单个模型私聊
-```
-
-### 输入栏前缀
-
-前缀告诉你当前处于哪个模式和视图：
-
-| 前缀 | 所处位置 |
-|------|---------|
-| `[all]` | 广播总览 — 消息发给所有模型 |
-| `[模型名]` | 广播定向 — 只跟该模型对话 |
-| `[team]` | 团队总览 — 输入任务启动审议 |
-| `[team:模型名]` | 团队定向 — 审议后与该模型私聊 |
-
-### 模式切换规则
+multiarena has two top-level modes, each with an overview and a model drill-down view:
 
 ```
-          Shift+Tab (仅在总览时)          Shift+Tab (仅在总览时)
-广播总览 ←────────────────────→ 团队总览
-   ↑  ↓ Tab                        ↑  ↓ Tab
-广播定向                         团队定向
-   ↑                              ↑
-   └── Esc ───────────────────────┘── Esc
+Broadcast Mode                        Team Mode
+  ├── Overview: multi-panel side-by-side    ├── Overview: deliberation entry / results
+  └── Directed: single model full-width     └── Directed: private chat with one model
 ```
 
-**Tab** — 在当前模式内循环切换目标。从总览进入第一个模型，再按切到下一个，循环回总览。Tab **永远不会**切换模式（不会在广播 ↔ 团队之间跳）。
+### Input Bar Prefix
 
-**Shift+Tab** — 在广播和团队之间切换。**只在总览时生效**，且切换后总是落在目标模式的总览。如果你在私聊中，需要先按 Esc 回总览，再按 Shift+Tab。
+The prefix tells you which mode and view you're in:
 
-**Esc** — 返回当前模式的总览。无论你在私聊、对比视图、还是审议进行中，Esc 都会带你回到当前模式的总览。Esc **永远不会**切换模式。
+| Prefix | Location |
+|--------|----------|
+| `[all]` | Broadcast overview — message goes to all models |
+| `[model_name]` | Broadcast directed — talking to that model only |
+| `[team]` | Team overview — enter task to start deliberation |
+| `[team:model_name]` | Team directed — chat with that model post-deliberation |
 
-**d** — 对比模式。输入栏为空时，按 `d` 将当前模型与另一个模型的回答并排展示，再按 `d` 退出。在总览中按 `d` 会将第一个模型作为主视图、第二个作为对比。
+### Mode Switching
+
+```
+          Shift+Tab (overview only)          Shift+Tab (overview only)
+Broadcast Overview ←─────────────────→ Team Overview
+     ↑  ↓ Tab                            ↑  ↓ Tab
+Broadcast Directed                   Team Directed
+     ↑                                   ↑
+     └── Esc ────────────────────────────┘── Esc
+```
+
+**Tab** — Cycle target within current mode. Goes overview → model1 → model2 → overview. Tab **never** switches between broadcast and team.
+
+**Shift+Tab** — Toggle between broadcast and team. **Only works from overview.** If you're in a directed chat, Esc back to overview first.
+
+**Esc** — Return to current mode's overview. Works from private chat, compare view, or mid-deliberation. Esc **never** switches modes.
+
+**d** — Compare mode. With empty input bar, press `d` to compare current model's output with another side-by-side. Press `d` again to exit.
 
 ---
 
-## 广播模式（启动默认）
+## Broadcast Mode (Default)
 
-消息同时发给所有非静音模型，分栏并排查看回答。
+Messages sent to all non-muted models simultaneously, answers shown in side-by-side panels.
 
-### 广播总览
+### Broadcast Overview
 
 ```
 ┌─ claude ──────────────────────┐ ┌─ gpt ─────────────────────────┐
 │                               │ │                               │
-│  可以使用 ls 列出当前目录文件： │ │  你可以用 ls 或 dir 命令查看目 │
-│  $ ls -la                     │ │  录内容：                      │
+│  You can list files with ls:  │ │  Use ls or dir to view the    │
+│  $ ls -la                     │ │  directory:                   │
 │  total 48                     │ │  $ ls                          │
 │  drwxr-xr-x  12 user  staff   │ │  src/  test/  package.json     │
 │                               │ │                               │
@@ -67,20 +67,20 @@ multiarena 有两个顶层模式，各自包含总览和模型私聊两种视图
 [all] > ▊
 ```
 
-提交消息后，所有非静音模型同时接收并回答。每个面板底部显示行数、token 用量和状态。
+After submitting, all non-muted models receive the message and respond in parallel. Each panel shows line count, token usage, and status.
 
-### 广播定向（Tab 进入）
+### Broadcast Directed (Tab)
 
-按 `Tab` 进入某个模型的私聊视图。消息只发给该模型，输出区变为全宽详情。
+Press `Tab` to drill into a single model. Messages go only to that model, output area becomes full-width detail.
 
 ```
 ┌─ claude ──────────────────────────────────────────────────────────┐
 │                                                                    │
-│  我来详细分析这个方案的优缺点：                                       │
+│  Let me analyze the pros and cons of this approach in detail:       │
 │                                                                    │
-│  **优点：**                                                         │
-│  1. 四层架构清晰，每层职责单一，易于测试和维护                          │
-│  2. Provider 接口设计简洁，新增模型只需实现 chat() 方法                │
+│  **Strengths:**                                                     │
+│  1. Clean four-layer architecture, each layer has a single job      │
+│  2. Provider interface is simple, adding a new model is trivial     │
 │                                                                    │
 │  2K/200K · 15 lines · done                                         │
 └────────────────────────────────────────────────────────────────────┘
@@ -89,17 +89,18 @@ multiarena 有两个顶层模式，各自包含总览和模型私聊两种视图
 [claude] > ▊
 ```
 
-再按 `Tab` 切换到下一个模型（跳过静音模型），循环回到总览。按 `Esc` 返回总览。
+Press `Tab` again to switch to the next model (skipping muted), cycling back to overview. Press `Esc` to return to overview.
 
-### 对比模式（按 `d`）
+### Compare Mode (`d`)
 
-输入栏为空时按 `d`，将当前模型与下一个模型的回答并排对比。
+With empty input bar, press `d` to compare current model with the next model side-by-side.
 
 ```
 ┌─ claude ──────────────────────┐ ┌─ gpt ─────────────────────────┐
 │                               │ │                               │
-│  推荐使用策略模式，将每种算法封 │ │  建议用工厂模式配合依赖注入来解 │
-│  装为独立的策略类。            │ │  耦。                          │
+│  I'd recommend the Strategy   │ │  The Factory pattern with DI  │
+│  pattern for encapsulating    │ │  would better decouple the    │
+│  each algorithm.              │ │  components.                  │
 │                               │ │                               │
 │  2K/200K · 12 lines · done    │ │  1K/128K · 14 lines · done   │
 └───────────────────────────────┘ └───────────────────────────────┘
@@ -108,117 +109,116 @@ multiarena 有两个顶层模式，各自包含总览和模型私聊两种视图
 [claude] > ▊
 ```
 
-再按 `d` 退出对比，按 `Esc` 也能退出并回到总览。
+Press `d` again or `Esc` to exit compare mode.
 
 ---
 
-## 团队模式（Shift+Tab 进入）
+## Team Mode (Shift+Tab to Enter)
 
-多个模型接力协作，起草 → 修订 → 润色 → 终审，产出一份经过多视角打磨的文档。
+Multiple models collaborate in relay, drafting → revising → polishing → reviewing to produce a document refined through multiple perspectives.
 
-### 核心机制
+### Core Mechanisms
 
-**镜像接力：** 模型按 A→B→C→B→A 顺序接力。正向：起草 → 修订 → 润色 → 终审；反向：中间模型再次修订，第一个模型最终审查。
+**Mirror Relay:** Models relay in A→B→C→B→A order. Forward: draft → revise → polish → review. Reverse: middle models revise again, first model does final review.
 
-**私有思考：** 每轮提交前，模型先进行私有分析——审视当前文档的优劣、识别事实错误或幻觉、规划修改方案。思考内容不进入共享上下文（其他模型不可见），防止锚定偏差。
+**Private Think:** Before each round, models do private analysis — examining the document, identifying issues, planning changes. Think output is NOT shared (invisible to other models), preventing anchoring bias.
 
-**共享上下文：** 团队模式使用统一的 `teamMessages` 消息线程。审议引擎直接从共享历史读取上下文，每轮产出自动写回。用户可追加新要求启动新一轮审议。
+**Shared Context:** Team mode uses a unified `teamMessages` thread. The deliberation engine reads from shared history, each round's output is auto-pushed back. Users can enter new requirements to start another round.
 
-**对抗强度：** 可在审议中引入批判性，防止模型过度和谐：
+**Adversarial Intensity:** Introduce critical thinking into deliberation to prevent excessive harmony:
 
-| 强度 | 效果 |
-|------|------|
-| `off`（默认） | 纯协作接力 |
-| `low` | 修订轮注入批判提示 |
-| `medium` | 每轮输出批判点 + 修改，下一轮回应 |
-| `high` | 分配批判视角（skeptic/pragmatist 等 6 种），启用镜像对抗轮次 |
+| Level | Effect |
+|-------|--------|
+| `off` (default) | Pure collaborative relay |
+| `low` | Critique prompts injected in revision rounds |
+| `medium` | Each round outputs critique points + revisions, next round responds |
+| `high` | Assign critical perspectives (skeptic/pragmatist etc., 6 types), enable mirror adversarial rounds |
 
-配置方式：`[deliberation] adversarial = "high"` 或 CLI `/team -a high`
+Config: `[deliberation] adversarial = "high"` or CLI `/team -a high`
 
-### 操作流程
+### Workflow
 
-**启动审议：** 在广播总览按 `Shift+Tab` 进入团队总览，输入任务描述后回车：
+**Start Deliberation:** Press `Shift+Tab` in broadcast overview to enter team overview, type a task and press Enter:
 
 ```
 ────────────────────────────────────────────────────────────────────
-团队模式
+Team Mode
 
-输入任务描述即可启动多模型接力审议。
-Tab 可切换到特定模型私聊。Shift+Tab 返回广播模式。
+Enter a task to start multi-model relay deliberation.
+Tab to chat with a specific model. Shift+Tab to return to broadcast.
 ────────────────────────────────────────────────────────────────────
  minimax  deepseek ●  — Tab:model d:compare m:mute r:reset q:quit
-[team] > 写一篇关于兰州拉面的美食日记▊
+[team] > Write a food diary about Lanzhou noodles▊
 ```
 
-**审议进行中：** 每轮先私有思考（💭 思考中），再公开提交修改。按 `Esc` 中止。
+**In Progress:** Each round begins with private think (💭), then public commit. Press `Esc` to abort.
 
 ```
-┌─ 团队审议 ─────────────────────────────────────────────────────────┐
+┌─ Team Deliberation ───────────────────────────────────────────────┐
 │                                                                    │
-│ 第 2/5 轮：deepseek (修订)                                          │
+│ Round 2/5: deepseek (revise)                                       │
 │                                                                    │
-│ ✓ 起草     ● 修订     ○ 润色     ○ 修订     ○ 终审                   │
-│ minimax    deepseek   minimax   deepseek   minimax                  │
+│ ✓ draft     ● revise    ○ polish    ○ revise    ○ review           │
+│ minimax     deepseek    minimax    deepseek    minimax              │
 │                                                                    │
-│ 💭 思考中 — deepseek — 分析当前状态…                                 │
+│ 💭 Thinking — deepseek — analyzing current state…                  │
 │                                                                    │
-│ ── 私有分析 ──                                                      │
-│ 文档在场景描写方面做得不错，但缺少对拉面本身的细节…                      │
+│ ── Private Analysis ──                                             │
+│ The document has good scene descriptions but lacks noodle details…  │
 │                                                                    │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-**审议完成：** 显示审议过程和最终文档，每轮列出模型、角色、修改处数和代表性修改内容。
+**Completed:** Shows the deliberation process and final document, with model name, role, change count, and representative modifications per round.
 
 ```
-┌─ 团队审议 ─────────────────────────────────────────────────────────┐
+┌─ Team Deliberation ───────────────────────────────────────────────┐
 │                                                                    │
-│ 审议完成 · 3 轮 · 4 处修改                                          │
+│ Deliberation complete · 3 rounds · 4 changes                       │
 │                                                                    │
-│ ✓ 起草    ✓ 修订     ✓ 终审                                         │
-│ minimax  deepseek  minimax                                         │
+│ ✓ draft    ✓ revise     ✓ review                                   │
+│ minimax    deepseek     minimax                                    │
 │                                                                    │
-│ ── 审议过程 ──                                                      │
-│ 1. minimax（起草）                                                   │
-│ 2. deepseek（修订） — 4 处修改                                       │
-│      明天还想去！ → 我决定下次再来。                                   │
-│      這個味道吧。 → 这个味道吧。                                      │
-│      明天还想再来一碗。 → 计划下次再品尝一次。                          │
-│ 3. minimax（终审） — 无修改                                          │
+│ ── Process ──                                                      │
+│ 1. minimax (draft)                                                  │
+│ 2. deepseek (revise) — 4 changes                                    │
+│      I'll come back tomorrow! → I'll try it again next time.       │
+│      This flavor → This specific flavor                             │
+│ 3. minimax (review) — no changes                                   │
 │                                                                    │
-│ ── 最终文档 ──                                                      │
-│ # 今天吃了兰州拉面，我很开心                                          │
-│ 今天中午去楼下那家兰州拉面馆…                                         │
+│ ── Final Document ──                                               │
+│ # Today I had Lanzhou noodles and I'm happy                        │
+│ At noon I went to the Lanzhou noodle shop downstairs…              │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-**审议后私聊：** 按 `Tab` 切换到任一模型私聊，所有模型共享同一份对话历史（含审议全过程），可在审议产出基础上继续讨论：
+**Post-Deliberation Chat:** Press `Tab` to chat with any model privately. All models share the same conversation history (including the full deliberation process):
 
 ```
-按 Tab → [team:minimax] > 你觉得终审时deepseek的修改方向对吗？
+Tab → [team:minimax] > Do you think deepseek's revisions were on point?
 ```
 
-**继续修改：** 在团队总览输入新要求，启动新一轮审议。共享上下文中已有上一轮产出：
+**Continue Editing:** Enter new requirements in team overview to start a new round. Shared context already contains the previous output:
 
 ```
-[team] > 把语气改得更文艺一些，增加更多感官细节
+[team] > Make the tone more literary, add more sensory details
 ```
 
-### /merge — 合并回答
+### /merge — Merge Outputs
 
-在任意模式下输入 `/merge`，选一个模型将所有非静音模型的最新回答合并为综合文档，标注共识（`[共识]`）、独有贡献（`[来源: 模型名]`）和分歧（`[分歧]`）。
+Type `/merge` in any mode, select a model to merge all non-muted models' latest outputs into a comprehensive document, annotated with consensus (`[consensus]`), unique contributions (`[source: model_name]`), and dissent (`[dissent]`).
 
 ---
 
-## 安装
+## Installation
 
-### npm（推荐）
+### npm (Recommended)
 
 ```bash
 npm install -g multiarena
 ```
 
-### 从源码安装（GitHub）
+### From Source (GitHub)
 
 ```bash
 git clone https://github.com/timgunnar/multiarena.git
@@ -228,10 +228,10 @@ npm run build
 npm link
 ```
 
-## 快速开始
+## Quick Start
 
 ```bash
-# 创建配置文件
+# Create config file
 cat > .multiarenarc << 'EOF'
 [models.claude]
 provider = "anthropic"
@@ -247,30 +247,30 @@ api_key = "${OPENAI_API_KEY}"
 active = ["claude", "gpt"]
 EOF
 
-# 启动
+# Launch
 multiarena
 ```
 
-## 配置
+## Configuration
 
-配置文件 `.multiarenarc`（TOML 格式），放在当前目录或 `~/.multiarenarc`。
+Config file `.multiarenarc` (TOML format), placed in current directory or `~/.multiarenarc`.
 
 ```toml
-[models.<名称>]
+[models.<name>]
 provider = "anthropic"       # anthropic | openai | google | deepseek | minimax | ollama
-model = "claude-sonnet-4-6"  # API 模型名
-api_key = "${ENV_VAR}"       # API key，支持环境变量
-endpoint = "..."             # 自定义端点（可选）
-context_limit = 200000       # 上下文窗口大小（可选）
+model = "claude-sonnet-4-6"  # API model name
+api_key = "${ENV_VAR}"       # API key, supports environment variables
+endpoint = "..."             # Custom endpoint (optional)
+context_limit = 200000       # Context window size (optional)
 
 [defaults]
-active = ["claude", "gpt"]   # 启动时加载的模型
+active = ["claude", "gpt"]   # Models loaded on startup
 
 [deliberation]
-constraint_file = "rules.md" # 审议约束文件（可选）
-adversarial = "high"        # 对抗强度：off | low | medium | high（可选，默认 off）
+constraint_file = "rules.md" # Deliberation constraint file (optional)
+adversarial = "high"         # Adversarial intensity: off | low | medium | high (optional, default off)
 
-# 手动指定审议轮次（可选，默认自动镜像分配）
+# Manually specify deliberation rounds (optional, auto mirror assignment by default)
 [[deliberation.rounds]]
 model = "claude"
 role = "draft"
@@ -284,41 +284,41 @@ model = "claude"
 role = "review"
 ```
 
-会话保存至 `~/.multiarena/sessions/`。使用 `multiarena --resume <id>` 恢复历史会话。
+Sessions saved to `~/.multiarena/sessions/`. Resume with `multiarena --resume <id>`.
 
-## 支持的 Provider
+## Supported Providers
 
-| Provider | 厂商 | 说明 |
-|----------|------|------|
-| `anthropic` | Anthropic | Claude 系列（Sonnet / Opus / Haiku） |
-| `openai` | OpenAI | GPT-4o、GPT-4.1 等 |
-| `google` | Google | Gemini 系列 |
-| `deepseek` | DeepSeek | DeepSeek-V3、DeepSeek-R1 等 |
-| `minimax` | MiniMax | MiniMax-M2 系列 |
-| `ollama` | Ollama | 任意本地模型 |
+| Provider | Vendor | Notes |
+|----------|--------|-------|
+| `anthropic` | Anthropic | Claude series (Sonnet / Opus / Haiku) |
+| `openai` | OpenAI | GPT-4o, GPT-4.1, etc. |
+| `google` | Google | Gemini series |
+| `deepseek` | DeepSeek | DeepSeek-V3, DeepSeek-R1, etc. |
+| `minimax` | MiniMax | MiniMax-M2 series |
+| `ollama` | Ollama | Any local model |
 
-具体模型名在配置文件的 `model` 字段中指定，使用各厂商的 API 模型名称。
+Specify the model name in the config file's `model` field using each vendor's API model name.
 
-## 权限系统
+## Permission System
 
-工具调用前会弹窗询问授权（硬编码安全规则不可覆盖）：
+Tool calls prompt for user authorization before execution (hardcoded safety rules cannot be overridden):
 
 ```
 !!! Allow "claude" to run $ git status? [y]es/[n]o/[a]lways allow/[d]eny always
 ```
 
-| 按键 | 效果 |
-|------|------|
-| `y` | 允许本次调用 |
-| `n` | 拒绝本次调用 |
-| `a` | 始终允许（记住到会话文件，所有模型共享） |
-| `d` | 始终拒绝（记住到会话文件，所有模型共享） |
-| `q` | 退出程序（拒绝所有待处理请求） |
+| Key | Effect |
+|-----|--------|
+| `y` | Allow this call |
+| `n` | Deny this call |
+| `a` | Always allow (persisted to session file, shared across all models) |
+| `d` | Always deny (persisted to session file, shared across all models) |
+| `q` | Quit (deny all pending requests) |
 
-**权限持久化：** 选择 `a` 或 `d` 后，权限记录写入会话文件 `~/.multiarena/sessions/<id>.json` 的 `permissions` 字段。退出重启后可恢复，也可手动编辑该文件增删权限条目。
+**Permission Persistence:** Choosing `a` or `d` writes the permission to the session file's `permissions` field at `~/.multiarena/sessions/<id>.json`. Restored on resume, and can be manually edited.
 
 ```json
-// ~/.multiarena/sessions/<id>.json 中的权限示例
+// Example permissions in ~/.multiarena/sessions/<id>.json
 {
   "permissions": [
     { "toolName": "bash", "args": { "command": "git status" }, "decision": "allow_always" },
@@ -327,20 +327,20 @@ role = "review"
 }
 ```
 
-## 快捷键速查
+## Keyboard Shortcuts
 
-| 按键 | 功能 | 约束 |
-|------|------|------|
-| `Tab` | 当前模式内循环切换目标（总览 → 模型1 → 模型2 → 总览） | 不切换模式，跳过静音模型 |
-| `Shift+Tab` | 广播 ↔ 团队模式切换 | **仅在总览时生效**，切换后落在目标模式总览 |
-| `Esc` | 返回当前模式总览 / 退出对比 / 中止审议 | 不切换模式 |
-| `d` | 对比两个模型的回答（输入栏为空时） | 需要至少 2 个非静音模型 |
-| `m` | 静音/取消静音当前模型 | 定向模式下生效 |
-| `r` | 重置当前模型对话历史 | 定向模式下生效 |
-| `↑ ↓` | 输入为空：浏览历史输入；输入非空：滚动输出 | 团队总览下审议内容也可滚动 |
-| `/team` | 等同于 Shift+Tab | |
-| `/merge` | 合并各模型最近的回答 | 需要至少 2 个模型有回复 |
-| `q` | 退出（自动保存会话） | |
+| Key | Action | Constraint |
+|-----|--------|------------|
+| `Tab` | Cycle target within current mode (overview → model1 → model2 → overview) | Never switches modes, skips muted models |
+| `Shift+Tab` | Toggle broadcast ↔ team mode | **Overview only**, lands on target mode's overview |
+| `Esc` | Return to mode overview / exit compare / abort deliberation | Never switches modes |
+| `d` | Compare two models' answers (empty input bar) | At least 2 non-muted models |
+| `m` | Mute/unmute current model | Directed mode only |
+| `r` | Reset current model's context | Directed mode only |
+| `↑ ↓` | Empty input: browse history; non-empty: scroll output | Also scrolls deliberation view in team overview |
+| `/team` | Equivalent to Shift+Tab | |
+| `/merge` | Merge all models' latest outputs | At least 2 models with responses |
+| `q` | Quit (auto-save session) | |
 
 ## License
 

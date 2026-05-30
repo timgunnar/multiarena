@@ -13,9 +13,9 @@
   "files": [
     "dist/",
     "README.md",
-    "README_EN.md",
+    "README_CN.md",
     "CHANGELOG.md",
-    "CHANGELOG_EN.md",
+    "CHANGELOG_CN.md",
     "LICENSE"
   ],
   "keywords": [

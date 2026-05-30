@@ -1,190 +1,187 @@
 # Changelog
 
-[中文](./CHANGELOG.md) | [English](./CHANGELOG_EN.md)
+[English](./CHANGELOG.md) | [中文](./CHANGELOG_CN.md)
 
 ## v0.1.6
 
-### 关键升级
+### Key Upgrades
 
-- **对抗审议** — 在团队审议中增加对抗强度控制（off/low/medium/high）和批判视角分配
-  - `off`（默认）：纯协作接力
-  - `low`：修订轮注入批判提示，要求挑战逻辑和假设
-  - `medium`：每轮输出批判点 + 修改，下一轮回应
-  - `high`：分配批判视角 + 启用镜像对抗轮次
-- **六种批判视角** — skeptic/pragmatist/user_advocate/devils_advocate/optimist/synthesizer，自动分配给参与模型
-- **配置双通道** — `.multiarenarc` 中 `[deliberation] adversarial = "high"` 或 CLI `/team -a high`
+- **Adversarial Deliberation** — Added adversarial intensity control (off/low/medium/high) and critical perspective assignment in team deliberation
+  - `off` (default): pure collaboration
+  - `low`: critique prompts injected in revision rounds
+  - `medium`: each round outputs critique points + revisions, next round responds
+  - `high`: assign critical perspectives, enable mirror adversarial rounds
+- **Six Critical Perspectives** — skeptic/pragmatist/user_advocate/devils_advocate/optimist/synthesizer, auto-assigned to participating models
+- **Dual Config Channels** — `.multiarenarc` `[deliberation] adversarial = "high"` or CLI `/team -a high`
 
-### 测试
+### Tests
 
-- 新增 9 个测试用例（assignPerspectives 4、autoAssignRounds adversarial 2、runDeliberation 3）
-- 全部 31 文件、339 测试通过
+- 9 new test cases (assignPerspectives 4, autoAssignRounds adversarial 2, runDeliberation 3)
+- 31 files, 339 tests all passing
 
 ---
 
 ## v0.1.5
 
-### 关键升级
+### Key Upgrades
 
-- **交互式权限确认** — 工具调用前弹窗询问用户：[y]es 允许一次 / [n]o 拒绝一次 / [a]lways allow 始终允许 / [d]eny always 始终拒绝。跨模型共享授权记忆，广播模式并发请求自动排队
-- **权限持久化** — `[a]lways` 和 `[d]eny always` 写入会话文件 `permissions` 字段，退出重启后恢复，用户可手动编辑 JSON
-- **README 权限文档** — 新增权限系统使用说明和会话文件格式示例
-- **README GitHub 安装方法** — 新增从源码安装说明（git clone + npm install + npm link）
-- **CLAUDE.md 发布文件范围** — 记录 npm 和 GitHub 各自包含/排除的文件清单
+- **Interactive Permission Confirmation** — Tool calls prompt user before execution: [y]es allow once / [n]o deny once / [a]lways allow / [d]eny always. Cross-model shared authorization memory, broadcast mode concurrent requests auto-queued.
+- **Permission Persistence** — `[a]lways` and `[d]eny always` saved to session file's `permissions` field, restored on resume, user-editable JSON.
+- **README Permission Docs** — Added permission system usage guide and session file format examples.
+- **README GitHub Install** — Added source install instructions (git clone + npm install + npm link).
+- **CLAUDE.md Published Files Scope** — Documented npm and GitHub file inclusion/exclusion lists.
 
-### 测试
+### Tests
 
-- 新增 18 个测试用例（权限交互 8 个、turn 层 4 个、InputBar 3 个、集成测试 3 个）
-- 全部 31 个测试文件、330 个测试用例通过
+- 18 new test cases (permission interactive 8, turn layer 4, InputBar 3, integration 3)
+- 31 files, 330 tests all passing
 
 ---
 
 ## v0.1.4
 
-### 关键升级
+### Key Upgrades
 
-- **团队共享上下文** — 团队模式新增 `teamMessages` 共享消息线程，所有模型读写同一份对话历史。审议引擎从共享历史读取上下文而非零基础构建，每轮产出自动 push 回共享数组
-- **私有思考阶段（Think Phase）** — 审议每轮之前模型先进行私有分析：审视当前文档优劣、识别问题、规划修改方案，再基于分析结果动手修改。思考内容不进入共享上下文（其他模型不可见），防止锚定偏差，同时拦截幻觉
-- **"继续修改"Bug 修复** — 审议完成后在团队概览输入新要求，新一轮审议通过共享上下文自然看到上一轮全部产出和用户新指令，不再出现"缺失必要信息"错误
-- **上下文管理文档** — 新增 `docs/multiarena-context-and-prompts.md`，详细记录模型上下文管理架构和系统提示词设计
+- **Team Shared Context** — Team mode adds `teamMessages` shared message thread, all models read/write the same conversation history. Deliberation engine reads context from shared history, auto-pushes output back after each round.
+- **Private Think Phase** — Before each deliberation round, models do private analysis: examine the current document, identify issues, plan changes. Think output is NOT shared (invisible to other models), preventing anchoring bias.
+- **"Continue Editing" Bug Fix** — After deliberation completes, entering new requirements in team overview triggers a new round that naturally sees all previous output + new instructions via shared context.
+- **Context Management Docs** — Added `docs/multiarena-context-and-prompts.md` documenting model context management architecture and system prompts.
 
-### 关键 Bug 修复
+### Key Bug Fixes
 
-- 删除 `[团队审议结果]` 手动注入逻辑 — 共享上下文已包含所有审议产出，无需事后打补丁
-- 团队私聊（Tab 到模型）使用 `teamMessages` 作为上下文，与审议共享同一消息线程
+- Removed `[审议结果]` manual injection logic — shared context already contains all deliberation output.
+- Team directed chat (Tab to model) uses `teamMessages` as context, sharing the same thread with deliberation.
 
-### 测试
+### Tests
 
-- 新增"继续修改"端到端测试（第一轮审议产出 → 用户追加消息 → 第二轮审议能访问完整上文）
-- 全部 30 个测试文件、312 个测试用例通过
+- Added "continue editing" end-to-end test.
+- 30 test files, 312 test cases all passing.
 
 ---
 
 ## v0.1.3
 
-### 关键升级
+### Key Upgrades
 
-- **模式导航重构** — 广播/团队两种顶层模式，Tab 在模式内循环（概览 ↔ 模型），Esc 返回概览，Shift+Tab 切换模式
-- **团队私聊** — 审议完成后可 Tab 切换到任一模型继续对话，模型自动获得审议结果上下文
-- **镜像轮次审议** — 多模型从正向到反向接力（ABCBA），最终轮自动清理过程标注产出干净文档
-- **审议流程摘要** — 每轮显示修改处数和代表性修改内容，类似 git 提交记录
-- **审议继续修改** — 审议完成后在团队总览输入新要求即可启动新一轮修改
-- **对比模式退出修复** — 按 `d` 不会错误对比相同模型，支持 wrap-around 选择下一个不同模型
+- **Mode Navigation Rework** — Two top-level modes (Broadcast/Team), Tab cycles within mode (overview ↔ model), Esc returns to overview, Shift+Tab toggles modes.
+- **Team Private Chat** — After deliberation, Tab to any model for continued discussion, model receives deliberation context.
+- **Mirror Round Deliberation** — Multi-model forward-to-reverse relay (ABCBA), final round auto-cleans process annotations.
+- **Deliberation Summary** — Each round shows change count and representative modifications, similar to git commit logs.
+- **Compare Mode Exit Fix** — `d` won't incorrectly compare same model, supports wrap-around to next different model.
 
-### 关键 Bug 修复
+### Key Bug Fixes
 
-- **Esc 键在 Windows Terminal 不生效** — 绕过 Ink 的 `useInput`，使用原始 `process.stdin` 监听 `\x1b` 字节，35ms 超时区分独立 Esc 和转义序列
-- **Shift+Tab 只从概览生效** — 从定向模式按 Shift+Tab 不再意外切换，必须先 Esc 回概览
-- Tab 循环跳过静音模型，不会"卡"在不可见模型上
-- 审议完成后 Tab 发送消息不再错误启动新一轮审议
-- 广播模式 divider 渲染残留修复 — 移除冗余分隔线
-- 审议视图文字过暗修复 — 去除双重灰色叠加，添加滚动支持
-- 审议视图内容无法滚动 — 新增 `deliberationScrollOffset`，滚轮浏览审议历史
-- npm pack 缺少 `dist/` — 创建 `.npmignore` 覆盖 `.gitignore` 的 `dist/` 排除
-- 删除残留的 `StatusBar.js` / `.d.ts` 编译产物，新增 `prebuild` 清理步骤
-- 最终文档不再包含 `[修订:]` / `[补充:]` 过程标注
-- DeepSeek 不再将创意写作误判为编程任务（优化系统提示词）
-- Think-tag 过滤逻辑提取为可测试纯函数
+- **Esc key not working in Windows Terminal** — Bypasses Ink's `useInput`, uses raw `process.stdin` to listen for `\x1b` bytes.
+- **Shift+Tab only works from overview** — From directed mode, Shift+Tab no longer unexpectedly switches.
+- Tab cycling skips muted models.
+- After deliberation, Tab-sent messages no longer incorrectly trigger new deliberation.
+- Broadcast mode divider rendering artifact removed.
+- Deliberation view text too dim fixed, scroll support added.
+- `npm pack` missing `dist/` — Created `.npmignore` to override `.gitignore` `dist/` exclusion.
+- Removed residual `StatusBar.js`/`.d.ts` build artifacts, added `prebuild` cleanup step.
+- Final document no longer contains process annotations like `[修订:]`/`[补充:]`.
+- DeepSeek no longer misidentifies creative writing as coding tasks.
+- Think-tag filtering extracted as testable pure function.
 
-### 测试
+### Tests
 
-- 模式转换测试：48 个用例（含 `buildModeState`、error 状态、用户旅程）
-- Session 测试：28 个用例（含静音模型跳过、全静音边界）
-- 新增 CLI 参数解析测试：11 个用例
-- 新增 Provider 工厂测试：12 个用例
-- 新增 DeliberationView 组件测试：13 个用例
-- 新增 Think-tag 过滤器测试：17 个用例
-- 新增跨模块集成测试：19 个用例
-- Ollama adapter 测试从 4 个扩展到 15 个
-- Permission 测试新增 `deny_always`、`.git-credentials`、`grep .env` 覆盖
-- Registry 测试新增 `execute()` 成功路径和异常处理
-- 全部 30 个测试文件、311 个测试用例通过
+- Mode transition tests: 48 cases
+- Session tests: 28 cases (muted model skipping, all-mute edge case)
+- New CLI argument parsing tests: 11 cases
+- New Provider factory tests: 12 cases
+- New DeliberationView component tests: 13 cases
+- New Think-tag filter tests: 17 cases
+- New cross-module integration tests: 19 cases
+- Ollama adapter tests expanded from 4 to 15
+- Permission tests: new `deny_always`, `.git-credentials`, `grep .env` coverage
+- 30 test files, 311 test cases all passing.
 
 ---
 
 ## v0.1.2
 
-### 关键升级
+### Key Upgrades
 
-- **团队模式** — 多模型接力协作（起草 → 修订 → 润色 → 审查），产出一份经过多重打磨的文档
-- **/merge 合并命令** — 将各模型已有的回答合并为一份综合文档，标注共识和分歧
-- **Shift+Tab 模式切换** — 广播模式与团队模式一键切换，输入 `/team` 也可切换
-- **项目重新定位** — 从 AI 编程助手转向通用内容生成平台
-- **CHANGELOG.md** — 按版本记录关键升级、Bug 修复和测试覆盖
+- **Team Mode** — Multi-model relay collaboration (draft → revise → polish → review), producing a polished document.
+- **/merge Command** — Merge all model outputs into a comprehensive document with consensus/dissent annotations.
+- **Shift+Tab Mode Toggle** — One-key switch between broadcast and team modes.
+- **Project Repositioning** — From AI coding assistant to general-purpose content generation platform.
+- **CHANGELOG.md** — Per-version key upgrades, bug fixes and test coverage.
 
-### 关键 Bug 修复
+### Key Bug Fixes
 
-- Shift+Tab 在部分 Windows 终端上不生效，增加原始序列监听作为兜底
-- 删除死代码 `StatusBar.tsx`，提取 `formatTokens` 到独立文件
-- 移除 `cycleTargetReverse` 无用方法
-- 移除 `Ctrl+O` / `Ctrl+S` 多余快捷键，保持交互简洁
+- Shift+Tab not working on some Windows terminals, added raw sequence fallback.
+- Removed dead code `StatusBar.tsx`, extracted `formatTokens`.
+- Removed unused `cycleTargetReverse` method.
+- Removed `Ctrl+O`/`Ctrl+S` redundant shortcuts.
 
-### 测试
+### Tests
 
-- 新增 11 个 deliberation 测试用例（`autoAssignRounds`、`runDeliberation`、事件序列、约束注入、错误处理）
-- 全部 24 个测试文件、164 个测试用例通过
+- 11 deliberation test cases (autoAssignRounds, runDeliberation, event sequence, constraint injection, error handling).
+- 24 test files, 164 test cases all passing.
 
 ---
 
 ## v0.1.1
 
-### 关键升级
+### Key Upgrades
 
-- **MiniMax、DeepSeek Provider** — 6 家厂商全部接入
-- **Token 用量实时显示** — 广播和定向视图均显示每模型的 token 消耗
-- **上下文水位可配置** — `context_limit` 支持自定义，超出阈值有颜色预警
-- **Provider 超时与重试** — 请求超时自动中断，支持重试策略
-- **输入历史导航** — `↑↓` 键浏览历史输入
-- **滚动偏移** — 定向模式下 `↑↓` 可滚动查看长输出
-- **快捷键提示** — InputBar 底部常驻快捷键说明
-- **会话持久化** — `q` 退出自动保存，`--resume` 恢复历史会话
-- **孤儿 worktree 清理** — 启动时自动扫除上次崩溃遗留的 worktree
-- **CLI 参数** — `--help` / `--version` 支持
-- **配置校验** — 启动时警告缺失的模型或 API key
+- **MiniMax, DeepSeek Providers** — All 6 providers connected.
+- **Token Usage Display** — Real-time token consumption shown for each model in broadcast and directed views.
+- **Context Waterline Configurable** — `context_limit` option with color warning on threshold.
+- **Provider Timeout & Retry** — Auto-abort on timeout with retry strategy.
+- **Input History Navigation** — `↑↓` to browse input history.
+- **Scroll Offset** — `↑↓` to scroll long output in directed mode.
+- **Shortcut Hints** — Persistent shortcut help in input bar.
+- **Session Persistence** — Auto-save on `q` exit, `--resume` to restore.
+- **Orphan Worktree Cleanup** — Auto-remove stale worktrees from prior crashes on startup.
+- **CLI Arguments** — `--help`/`--version` support.
+- **Config Validation** — Startup warnings for missing models or API keys.
 
-### 关键 Bug 修复
+### Key Bug Fixes
 
-- bash 工具空命令导致 hang，改为优雅拒绝
-- 推理模型（DeepSeek-R1 等）的 `think` 标签被误当作正文输出，增加过滤
-- 工具调用参数为空时导致异常，增加兜底处理
-- MiniMax 中国区端点错误，改为 `minimax.chat`
-- Google Gemini 工具结果角色应为 `function` 而非 `tool`
-- Google Gemini 缺少工具调用循环处理
-- npm bin 路径多余 `./` 前缀导致安装警告
+- Bash tool hanging on empty command, now gracefully rejected.
+- Reasoning model `think` tags mistakenly displayed as output, added filtering.
+- Tool call empty parameters causing exceptions, added fallback handling.
+- MiniMax China region endpoint corrected to `minimax.chat`.
+- Google Gemini tool result role should be `function` not `tool`.
+- Google Gemini missing tool-call loop handling.
+- npm bin path extra `./` prefix causing install warnings.
 
-### 测试
+### Tests
 
-- 新增 session 持久化测试（保存/加载/列表，5 个用例）
-- 新增 `runTurn` 工具调用循环测试（6 个用例）
-- 新增 UI 组件测试（`InputBar`、`formatTokens`）
-- 新增工具测试（`readFile`、`grep`、`bash`、`writeFile`、`editFile`）
-- 新增 `worktree` 隔离测试（5 个用例）
-- 新增 `permission` 权限测试（5 个用例）
-- 全部 24 个测试文件、164 个测试用例通过
+- Session persistence tests (save/load/list, 5 cases).
+- `runTurn` tool-call loop tests (6 cases).
+- UI component tests (InputBar, formatTokens).
+- Tool tests (readFile, grep, bash, writeFile, editFile).
+- Worktree isolation tests (5 cases).
+- Permission tests (5 cases).
+- 24 test files, 164 test cases all passing.
 
 ---
 
 ## v0.1.0
 
-### 关键升级
+### Key Upgrades
 
-- **首个可用版本** — 终端原生多模型 AI 助手正式发布
-- **广播模式** — 消息同时发给所有模型，分栏并排查看回答
-- **定向模式** — Tab 切换选择单一模型对话，全宽详情视图
-- **6 家 Provider** — Anthropic、OpenAI、Google、DeepSeek、MiniMax、Ollama
-- **Provider 统一接口** — AsyncGenerator + Adapter 模式，新增厂商只需实现 `chat()` 方法
-- **git worktree 隔离** — 每个模型运行在独立的 worktree 中，文件系统无冲突
-- **6 个内置工具** — bash、read、write、edit、glob、grep
-- **权限管理** — 会话内记忆已授权操作，跨模型共享
-- **TOML 配置** — `.multiarenarc` 文件，支持 `${ENV}` 环境变量和全局/项目级覆盖
-- **对话历史** — 每个模型独立维护完整上下文
+- **First Usable Version** — Terminal-native multi-model AI assistant officially released.
+- **Broadcast Mode** — Messages sent to all models simultaneously, side-by-side panel comparison.
+- **Directed Mode** — Tab to select a single model for conversation, full-width detail view.
+- **6 Providers** — Anthropic, OpenAI, Google, DeepSeek, MiniMax, Ollama.
+- **Provider Unified Interface** — AsyncGenerator + Adapter pattern, adding a new provider only requires implementing `chat()`.
+- **git Worktree Isolation** — Each model runs in an independent worktree, no filesystem conflicts.
+- **6 Built-in Tools** — bash, read, write, edit, glob, grep.
+- **Permission Management** — Session-memory authorized operations, cross-model shared.
+- **TOML Configuration** — `.multiarenarc` file, supports `${ENV}` variables and global/project-level override.
+- **Conversation History** — Each model maintains independent full context.
 
-### 关键 Bug 修复
+### Key Bug Fixes
 
-- Anthropic adapter 的 `AbortController` 在连续调用时会复用已中止的实例，改为每次调用新建
-- TOML 配置合并逻辑不完整，改用 `DEFAULT_CONFIG` 兜底
-- 修复 ESM 模块格式和 TypeScript 类型导入
+- Anthropic adapter `AbortController` reused aborted instances on consecutive calls, now created per-call.
+- TOML config merge logic incomplete, added `DEFAULT_CONFIG` fallback.
+- Fixed ESM module format and TypeScript type imports.
 
-### 测试
+### Tests
 
-- Anthropic Provider 适配器测试（含 abort 场景）
-- TOML 配置加载与默认值合并测试
+- Anthropic Provider adapter tests (including abort scenarios).
+- TOML config loading and default value merge tests.
