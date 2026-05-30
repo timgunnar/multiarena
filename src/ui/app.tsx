@@ -16,8 +16,10 @@ import {
   runDeliberation,
   runMerge,
   autoAssignRounds,
+  assignPerspectives,
   type DeliberationProgress,
   type MergeInput,
+  type AdversarialLevel,
 } from "../core/deliberation.js";
 import {
   reduceTab,
@@ -92,6 +94,9 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
   const [deliberationScrollOffset, setDeliberationScrollOffset] = useState(0);
   const deliberatingRef = useRef(false);
   const deliberationAbortRef = useRef<AbortController | null>(null);
+
+  // ── Adversarial override from CLI ──────────────────────────────
+  const adversarialOverrideRef = useRef<AdversarialLevel | null>(null);
 
   // ── Permission prompt state ────────────────────────────────────
   const [permissionPrompt, setPermissionPrompt] = useState<{
@@ -515,6 +520,17 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
       // Use config deliberation settings or auto-assign
       const delibConfig = config.deliberation;
+      const adversarial: AdversarialLevel =
+        adversarialOverrideRef.current
+        ?? delibConfig?.adversarial
+        ?? "off";
+
+      // Assign perspectives for high adversarial mode
+      let perspectives: Record<string, string> | undefined;
+      if (adversarial === "high") {
+        perspectives = assignPerspectives(activeModels) as Record<string, string>;
+      }
+
       let roundConfigs: Array<{
         modelName: string;
         role: "draft" | "revise" | "polish" | "review";
@@ -530,7 +546,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
             config: config.models[r.model],
           }));
       } else {
-        roundConfigs = autoAssignRounds(activeModels, config.models);
+        roundConfigs = autoAssignRounds(activeModels, config.models, adversarial, perspectives as any);
       }
 
       if (roundConfigs.length < 2) {
@@ -559,7 +575,14 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       setDeliberationScrollOffset(0);
       let doc = "";
 
-      const stream = runDeliberation(session.teamMessages, roundConfigs, constraint);
+      const stream = runDeliberation(
+        session.teamMessages,
+        roundConfigs,
+        constraint,
+        undefined, // worktreePath
+        adversarial,
+        perspectives as any,
+      );
 
       for await (const event of stream) {
         setDeliberationProgress(event);
@@ -703,6 +726,14 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
 
       // ── Team mode: submit runs deliberation or routes to model ──
       if (teamMode) {
+        // Parse adversarial override from CLI: /team -a high  or  /team --adversarial=medium
+        const advMatch = trimmed.match(/(?:--adversarial=|-a\s+)(off|low|medium|high)/i);
+        if (advMatch) {
+          adversarialOverrideRef.current = advMatch[1].toLowerCase() as AdversarialLevel;
+        } else {
+          adversarialOverrideRef.current = null;
+        }
+
         const r = reduceSubmitInTeam(currentModeState(), isOverview());
         if (r.action === "block") return;
 
