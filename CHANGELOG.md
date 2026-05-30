@@ -2,6 +2,10 @@
 
 [English](./CHANGELOG.md) | [中文](./CHANGELOG_CN.md)
 
+## v0.1.7
+
+- **README/CHANGELOG language restructure** — English is now the default (`README.md`, `CHANGELOG.md`), Chinese provided as `_CN` variants with language switcher links
+
 ## v0.1.6
 
 ### Key Upgrades

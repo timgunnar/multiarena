@@ -2,6 +2,10 @@
 
 [English](./CHANGELOG.md) | [中文](./CHANGELOG_CN.md)
 
+## v0.1.7
+
+- **README/CHANGELOG 中英文结构调整** — 默认为英文（`README.md`、`CHANGELOG.md`），中文提供 `_CN` 版本，带语言切换链接
+
 ## v0.1.6
 
 ### 关键升级
