@@ -3,8 +3,11 @@ import {
   runDeliberation,
   autoAssignRounds,
   roundLabel,
+  assignPerspectives,
+  PERSPECTIVE_POOL,
   type DeliberationProgress,
   type DeliberationRoundConfig,
+  type Perspective,
 } from "../../src/core/deliberation.js";
 import type { ModelConfig } from "../../src/config/types.js";
 import type { StreamEvent } from "../../src/provider/types.js";
@@ -379,5 +382,143 @@ describe("runDeliberation", () => {
     expect(sharedMessages).toHaveLength(6); // 3 from first run + user follow-up + 2 new round outputs
     const done2 = events2.find((e) => e.type === "done");
     expect(done2?.document).toContain("Second revise.");
+  });
+});
+
+// ── Adversarial deliberation ───────────────────────────────────
+
+describe("assignPerspectives", () => {
+  it("assigns unique perspectives when enough available", () => {
+    const models = ["A", "B", "C"];
+    const result = assignPerspectives(models);
+    expect(Object.keys(result)).toHaveLength(3);
+    const values = Object.values(result);
+    expect(new Set(values).size).toBe(3);
+  });
+
+  it("wraps around when fewer perspectives than models", () => {
+    const models = ["A", "B", "C", "D", "E", "F", "G", "H"]; // 8 models, 6 perspectives
+    const result = assignPerspectives(models);
+    expect(Object.keys(result)).toHaveLength(8);
+    expect(result["A"]).toBe("skeptic");
+    expect(result["F"]).toBe("synthesizer");
+    // Wraps: 7th model gets skeptic again
+    expect(result["G"]).toBe("skeptic");
+    expect(result["H"]).toBe("pragmatist");
+  });
+
+  it("uses custom pool when provided", () => {
+    const result = assignPerspectives(["X", "Y"], ["optimist", "skeptic"] as Perspective[]);
+    expect(result["X"]).toBe("optimist");
+    expect(result["Y"]).toBe("skeptic");
+  });
+
+  it("single model gets first perspective", () => {
+    const result = assignPerspectives(["solo"]);
+    expect(result["solo"]).toBe(PERSPECTIVE_POOL[0]);
+  });
+});
+
+describe("autoAssignRounds adversarial", () => {
+  const modelCfg: ModelConfig = { provider: "openai", model: "gpt-4o" };
+
+  it("off/low/medium keep same round count (no change from default)", () => {
+    const models: Record<string, ModelConfig> = { A: modelCfg, B: modelCfg, C: modelCfg };
+    const off = autoAssignRounds(["A", "B", "C"], models, "off");
+    const low = autoAssignRounds(["A", "B", "C"], models, "low");
+    const med = autoAssignRounds(["A", "B", "C"], models, "medium");
+    expect(off.length).toBe(low.length);
+    expect(low.length).toBe(med.length);
+    expect(off.length).toBe(5); // A(draft) B(revise) C(polish) B(revise) A(review)
+  });
+
+  it("high mode generates more reverse rounds than default", () => {
+    const models: Record<string, ModelConfig> = { A: modelCfg, B: modelCfg, C: modelCfg };
+    const result = autoAssignRounds(["A", "B", "C"], models, "high");
+    // Forward: A(draft) B(revise) C(polish) = 3
+    // Reverse with high: B(revise) B(polish) A(review) = 3
+    // Total: 6 (vs 5 for off/low/medium)
+    expect(result.length).toBeGreaterThan(5);
+    expect(result.length).toBe(6);
+    // Final round is always review by first model
+    expect(result[result.length - 1].role).toBe("review");
+    expect(result[result.length - 1].modelName).toBe("A");
+    // Check reverse double: B appears twice in reverse
+    const reverseRoles = result.slice(3).map(r => r.role);
+    expect(reverseRoles.some(r => r === "polish")).toBe(true);
+  });
+});
+
+describe("runDeliberation adversarial modes", () => {
+  const modelCfg: ModelConfig = { provider: "openai", model: "gpt-4o" };
+  const mockConfig = { provider: "openai", model: "gpt-4o", api_key: "sk-test" } as ModelConfig;
+
+  it("does not crash with adversarial=high + perspectives", async () => {
+    // Mock runTurn to return simple text+done for both think and main
+    (runTurn as any).mockImplementation(async function* () {
+      yield { type: "text", content: "Mock output." } as StreamEvent;
+      yield { type: "done", usage: { input: 1, output: 1 } } as StreamEvent;
+    });
+
+    const shared = sharedMsgs("Write a test document");
+    const rounds = [
+      { modelName: "A", role: "draft" as const, config: mockConfig },
+      { modelName: "B", role: "revise" as const, config: mockConfig },
+      { modelName: "C", role: "polish" as const, config: mockConfig },
+      { modelName: "B", role: "revise" as const, config: mockConfig },
+      { modelName: "A", role: "review" as const, config: mockConfig },
+    ];
+    const perspectives = { A: "skeptic", B: "optimist", C: "pragmatist" } as Record<string, Perspective>;
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(shared, rounds, undefined, undefined, "high", perspectives)) {
+      events.push(event);
+    }
+
+    expect(events.some(e => e.type === "done")).toBe(true);
+  });
+
+  it("low adversarial does not change round count", async () => {
+    (runTurn as any).mockImplementation(async function* () {
+      yield { type: "text", content: "Mock." } as StreamEvent;
+      yield { type: "done", usage: { input: 0, output: 0 } } as StreamEvent;
+    });
+
+    const shared = sharedMsgs("Test");
+    const rounds = [
+      { modelName: "A", role: "draft" as const, config: mockConfig },
+      { modelName: "B", role: "revise" as const, config: mockConfig },
+      { modelName: "A", role: "review" as const, config: mockConfig },
+    ];
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(shared, rounds, undefined, undefined, "low")) {
+      events.push(event);
+    }
+
+    const roundEndEvents = events.filter(e => e.type === "round_end");
+    expect(roundEndEvents).toHaveLength(3);
+    expect(events.some(e => e.type === "done")).toBe(true);
+  });
+
+  it("default off mode works with new parameters", async () => {
+    (runTurn as any).mockImplementation(async function* () {
+      yield { type: "text", content: "Default." } as StreamEvent;
+      yield { type: "done", usage: { input: 0, output: 0 } } as StreamEvent;
+    });
+
+    const shared = sharedMsgs("Hello");
+    const rounds = [
+      { modelName: "A", role: "draft" as const, config: mockConfig },
+      { modelName: "A", role: "review" as const, config: mockConfig },
+    ];
+
+    const events: DeliberationProgress[] = [];
+    // No adversarial args — should default to off
+    for await (const event of runDeliberation(shared, rounds)) {
+      events.push(event);
+    }
+
+    expect(events.some(e => e.type === "done")).toBe(true);
   });
 });
