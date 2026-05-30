@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.1.6
+
+### 关键升级
+
+- **对抗审议** — 在团队审议中增加对抗强度控制（off/low/medium/high）和批判视角分配
+  - `off`（默认）：纯协作接力
+  - `low`：修订轮注入批判提示，要求挑战逻辑和假设
+  - `medium`：每轮输出批判点 + 修改，下一轮回应
+  - `high`：分配批判视角 + 启用镜像对抗轮次
+- **六种批判视角** — skeptic/pragmatist/user_advocate/devils_advocate/optimist/synthesizer，自动分配给参与模型
+- **配置双通道** — `.multiarenarc` 中 `[deliberation] adversarial = "high"` 或 CLI `/team -a high`
+
+### 测试
+
+- 新增 9 个测试用例（assignPerspectives 4、autoAssignRounds adversarial 2、runDeliberation 3）
+- 全部 31 文件、339 测试通过
+
+---
+
 ## v0.1.5
 
 ### 关键升级
