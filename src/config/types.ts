@@ -11,6 +11,8 @@ export interface DeliberationConfig {
   rounds: Array<{ model: string; role: "draft" | "revise" | "polish" | "review" }>;
   /** Path to a constraint document (markdown), relative to project root. */
   constraint_file?: string;
+  /** 对抗强度。off = 纯协作（默认），low = 批判提示注入，medium = 挑战-回应嵌入，high = 视角分配 + 镜像对抗。 */
+  adversarial?: "off" | "low" | "medium" | "high";
 }
 
 export interface ArenaConfig {

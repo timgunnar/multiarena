@@ -6,6 +6,34 @@ import { PermissionManager } from "../tools/permission.js";
 
 export type RoundRole = "draft" | "revise" | "polish" | "review";
 
+export type AdversarialLevel = "off" | "low" | "medium" | "high";
+
+export type Perspective =
+  | "skeptic"
+  | "pragmatist"
+  | "user_advocate"
+  | "devils_advocate"
+  | "optimist"
+  | "synthesizer";
+
+export const PERSPECTIVE_LABELS: Record<Perspective, string> = {
+  skeptic: "质疑者",
+  pragmatist: "务实派",
+  user_advocate: "用户视角",
+  devils_advocate: "反方",
+  optimist: "乐观派",
+  synthesizer: "综合者",
+};
+
+export const PERSPECTIVE_POOL: Perspective[] = [
+  "skeptic",
+  "pragmatist",
+  "user_advocate",
+  "devils_advocate",
+  "optimist",
+  "synthesizer",
+];
+
 export interface DeliberationRoundConfig {
   modelName: string;
   role: RoundRole;
