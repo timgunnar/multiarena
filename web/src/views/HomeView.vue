@@ -158,7 +158,7 @@ onMounted(() => {
 
 .home-card:hover {
   border-color: var(--border);
-  filter: brightness(1.1);
+  background: var(--surface-hover);
 }
 
 .card-emoji {

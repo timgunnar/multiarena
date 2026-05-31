@@ -88,10 +88,27 @@ export function useWebSocket() {
         break
       }
 
-      case 'deliberation':
-        // Deliberation progress event — replaces current state
-        state.deliberation = msg.event
+      case 'deliberation': {
+        // Accumulate deliberation events into a rich state object
+        const evt = msg.event || msg
+        if (!state.deliberation || !state.deliberation.thinkText) {
+          state.deliberation = { thinkText: '', document: '', rounds: [], round: 0, totalRounds: 0, phase: '' }
+        }
+        const d = state.deliberation
+        if (evt.round) d.round = evt.round
+        if (evt.totalRounds) d.totalRounds = evt.totalRounds
+        if (evt.modelName) d.modelName = evt.modelName
+        if (evt.role) d.role = evt.role
+        if (evt.type === 'think_text' && evt.content) d.thinkText += evt.content
+        if (evt.type === 'text' && evt.content) d.document += evt.content
+        if (evt.type === 'round_end') {
+          d.document = evt.document || d.document
+          d.rounds.push({ round: evt.round, modelName: evt.modelName || '', role: evt.role || '', changeCount: evt.changeCount, changeSamples: evt.changeSamples })
+        }
+        if (evt.type === 'done') d.document = evt.document || d.document
+        if (evt.type) d.phase = evt.type
         break
+      }
 
       case 'permission_required':
         state.permissionPrompt = {
