@@ -59,14 +59,9 @@ watch(
 <template>
   <div class="broadcast">
     <!-- Top bar -->
-    <header class="bc-top">
-      <div class="bc-top-left">
-        <span class="bc-mode-badge">{{ state.mode === 'broadcast' ? t('broadcast') : t('directed') }}</span>
-        <span v-if="state.sessionId" class="bc-session">{{ state.sessionId.slice(0, 8) }}</span>
-      </div>
-      <div class="bc-top-right">
-        <span class="bc-model-count">{{ models.length }} {{ models.length === 1 ? t('statusModel').toLowerCase() : t('models') }}</span>
-      </div>
+    <header class="view-header">
+      <span class="view-title">{{ t('broadcast') }}</span>
+      <span class="view-meta">{{ models.length }} models · {{ state.sessionId.slice(0, 8) }}</span>
     </header>
 
     <!-- Model panels grid -->
@@ -154,46 +149,24 @@ watch(
   background: var(--bg);
 }
 
-/* Top bar */
-.bc-top {
+.view-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
+  gap: 12px;
+  padding: 10px 20px;
   background: var(--surface);
-  border-bottom: 1px solid var(--card);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-
-.bc-top-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.bc-mode-badge {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #1f6feb22;
-  color: #58a6ff;
-  padding: 2px 8px;
-  border-radius: 4px;
+.view-title {
+  font-size: 15px;
   font-weight: 600;
+  color: var(--text);
+  flex: 1;
 }
-
-.bc-session {
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
-  font-size: 0.72rem;
-  color: #484f58;
-}
-
-.bc-top-right {
+.view-meta {
   font-size: 0.75rem;
   color: var(--text-dim);
-}
-
-.bc-model-count {
   font-variant-numeric: tabular-nums;
 }
 

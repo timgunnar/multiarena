@@ -159,9 +159,6 @@ function onResumeSession(id) {
           <span class="status-dot"></span>
           {{ isConnected ? t('connected') : t('disconnected') }}
         </div>
-        <div v-if="state.mode" class="mode-badge">
-          {{ state.mode === 'directed' ? t('directed') : t('broadcast') }}
-        </div>
       </section>
     </div>
   </aside>
@@ -452,13 +449,4 @@ function onResumeSession(id) {
   background: currentColor;
 }
 
-.mode-badge {
-  background: #1f6feb33;
-  color: #58a6ff;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
 </style>

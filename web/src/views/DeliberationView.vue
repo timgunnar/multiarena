@@ -40,17 +40,13 @@ const phase = computed(() => {
   return deliberation.value.phase || 'thinking'
 })
 
-function backToBroadcast() {
-  currentView.value = 'broadcast'
-}
 </script>
 
 <template>
   <div class="delib">
-    <header class="delib-top">
-      <button class="delib-back" @click="backToBroadcast">{{ t('back') }}</button>
-      <span class="delib-title">{{ t('deliberation') }}</span>
-      <div v-if="deliberation" class="delib-phase-badge" :class="phase">{{ phase }}</div>
+    <header class="view-header">
+      <span class="view-title">{{ t('deliberation') }}</span>
+      <div v-if="deliberation" class="view-badge" :class="phase">{{ phase }}</div>
     </header>
 
     <div v-if="!deliberation" class="delib-start">
@@ -132,41 +128,22 @@ function backToBroadcast() {
   overflow-y: auto;
 }
 
-.delib-top {
+.view-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 10px 20px;
   background: var(--surface);
-  border-bottom: 1px solid var(--card);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 5;
 }
-
-.delib-back {
-  background: none;
-  border: none;
-  color: #58a6ff;
-  cursor: pointer;
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.delib-back:hover {
-  background: #1f6feb22;
-}
-
-.delib-title {
-  font-size: 0.9rem;
+.view-title {
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
   flex: 1;
 }
-
-.delib-phase-badge {
+.view-badge {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -176,21 +153,9 @@ function backToBroadcast() {
   background: var(--card);
   color: var(--text-dim);
 }
-
-.delib-phase-badge.thinking {
-  background: #9a670022;
-  color: #d29922;
-}
-
-.delib-phase-badge.writing {
-  background: #1f6feb22;
-  color: #58a6ff;
-}
-
-.delib-phase-badge.reviewing {
-  background: #7c3aed22;
-  color: #a371f7;
-}
+.view-badge.thinking { background: #9a670022; color: #d29922; }
+.view-badge.writing { background: #1f6feb22; color: #58a6ff; }
+.view-badge.reviewing { background: #7c3aed22; color: #a371f7; }
 
 .delib-empty {
   flex: 1;
