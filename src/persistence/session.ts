@@ -11,14 +11,20 @@ export interface SavedSession {
     name: string;
     messages: Array<{ role: string; content: string; tool_call_id?: string }>;
     buffer: string;
+    usage: { input: number; output: number };
+    muted: boolean;
   }>;
   lastTarget: "broadcast" | string;
+  /** Team-mode shared context — persisted so deliberation history survives restart. */
+  teamMessages?: Array<{ role: string; content: string }>;
   /** Permission entries persisted across sessions. User-editable. */
   permissions?: Array<{
     toolName: string;
     args: Record<string, unknown>;
     decision: "allow_always" | "deny_always";
   }>;
+  /** Input history for up-arrow navigation. */
+  inputHistory?: string[];
 }
 
 export function saveSession(session: SavedSession): void {

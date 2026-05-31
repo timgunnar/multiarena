@@ -58,9 +58,9 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
             name: m.name,
             provider: config.models[m.name]?.provider ?? "unknown",
             messages: m.messages as any,
-            muted: false,
-            buffer: "",
-            usage: { input: 0, output: 0 },
+            muted: m.muted ?? false,
+            buffer: saved.teamMessages?.length ? m.buffer : "", // keep buffer if no team context
+            usage: m.usage ?? { input: 0, output: 0 },
             contextLimit: contextLimitForModel(config.models[m.name]?.provider ?? "", config.models[m.name]?.context_limit),
           })),
           targetMode:
@@ -68,7 +68,12 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
               ? { type: "broadcast" }
               : { type: "directed", modelName: saved.lastTarget },
           worktreeBase: process.cwd(),
+          teamMessages: (saved.teamMessages ?? []) as any,
         };
+        // Restore input history
+        if (saved.inputHistory?.length) {
+          inputHistoryRef.current = saved.inputHistory;
+        }
         return new Session(config, process.cwd(), snapshot);
       }
     }
@@ -164,9 +169,16 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
           tool_call_id: msg.tool_call_id,
         })),
         buffer: m.buffer,
+        usage: { ...m.usage },
+        muted: m.muted,
       })),
       lastTarget,
+      teamMessages: session.teamMessages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
       permissions: permissionManager.getEntries(),
+      inputHistory: inputHistoryRef.current.slice(-100),
     });
   }, [session, sessionId]);
 
