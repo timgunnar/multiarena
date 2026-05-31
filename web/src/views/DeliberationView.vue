@@ -84,16 +84,7 @@ const phase = computed(() => {
       </div>
       <div class="delib-progress-label">{{ t('percentComplete', { pct: progressPct }) }}</div>
 
-      <!-- Think text -->
-      <section v-if="thinkText" class="delib-section">
-        <h3 class="delib-section-hdr">
-          <span class="delib-section-icon">&#9881;</span>
-          {{ t('thinking') }}
-        </h3>
-        <pre class="delib-think">{{ thinkText }}</pre>
-      </section>
-
-      <!-- Rounds -->
+      <!-- Rounds — each round shows its private think while in progress, then changes when done -->
       <section v-if="rounds.length > 0" class="delib-section">
         <h3 class="delib-section-hdr">
           <span class="delib-section-icon">&#9744;</span>
@@ -106,13 +97,14 @@ const phase = computed(() => {
             class="delib-round"
           >
             <div class="delib-round-hdr">
-              <span class="delib-round-num">{{ t('roundN', { n: idx + 1 }) }}</span>
-              <span class="delib-round-type">{{ r.type || 'compare' }}</span>
+              <span class="delib-round-num">{{ t('roundN', { n: r.round }) }} · {{ r.modelName }}</span>
+              <span class="delib-round-type">{{ r.type }}</span>
             </div>
+            <!-- Think (shown during thinking, hidden when round has results) -->
+            <pre v-if="r.think && !r.summary" class="delib-think">{{ r.think }}</pre>
+            <!-- Results (shown after think completes) -->
             <div v-if="r.summary" class="delib-round-summary">{{ r.summary }}</div>
-            <div v-if="r.decision" class="delib-round-decision">
-              <strong>{{ t('decision') }}:</strong> {{ r.decision }}
-            </div>
+            <div v-if="r.decision" class="delib-round-decision">{{ r.decision }}</div>
           </div>
         </div>
       </section>

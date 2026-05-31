@@ -112,14 +112,15 @@ export function useWebSocket() {
         // Accumulate deliberation events into a rich state object
         const evt = msg.event || msg
         if (!state.deliberation) {
-          state.deliberation = { thinkText: '', document: '', rounds: [], round: 0, totalRounds: 0, phase: '' }
+          state.deliberation = { thinkText: '', document: '', rounds: [], round: 0, totalRounds: 0, phase: '', currentThink: '' }
         }
         const d = state.deliberation
         if (evt.round) d.round = evt.round
         if (evt.totalRounds) d.totalRounds = evt.totalRounds
         if (evt.modelName) d.modelName = evt.modelName
         if (evt.role) d.role = evt.role
-        if (evt.type === 'think_text' && evt.content) d.thinkText += evt.content
+        if (evt.type === 'round_start') d.currentThink = ''
+        if (evt.type === 'think_text' && evt.content) { d.thinkText += evt.content; d.currentThink += evt.content }
         if (evt.type === 'text' && evt.content) d.document += evt.content
         if (evt.type === 'round_end') {
           d.document = evt.document || d.document
@@ -127,13 +128,14 @@ export function useWebSocket() {
             round: evt.round,
             modelName: evt.modelName || '',
             role: evt.role || '',
+            think: d.currentThink || '',
             changeCount: evt.changeCount,
             changeSamples: evt.changeSamples,
-            // UI-friendly aliases
-            type: evt.role || evt.type || 'round',
-            summary: evt.changeCount != null ? `${evt.changeCount} changes` : '',
-            decision: evt.changeSamples?.length ? evt.changeSamples[0] : ''
+            type: evt.role || 'round',
+            summary: evt.changeCount != null ? `${evt.changeCount} 处修改` : '',
+            decision: evt.changeSamples?.length ? evt.changeSamples[0] : '',
           })
+          d.currentThink = ''
         }
         if (evt.type === 'done') d.document = evt.document || d.document
         // Map raw event types to user-friendly phase labels
