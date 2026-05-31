@@ -178,8 +178,8 @@ function onResumeSession(id) {
 <style scoped>
 .sidebar {
   width: 260px;
-  background: #161b22;
-  border-right: 1px solid #30363d;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   transition: width 0.2s ease;
@@ -194,14 +194,14 @@ function onResumeSession(id) {
   display: flex;
   align-items: center;
   padding: 12px;
-  border-bottom: 1px solid #30363d;
+  border-bottom: 1px solid var(--border);
   min-height: 48px;
 }
 
 .toggle-btn {
   background: none;
   border: none;
-  color: #8b949e;
+  color: var(--text-dim);
   cursor: pointer;
   font-size: 1.1rem;
   padding: 4px 6px;
@@ -210,8 +210,8 @@ function onResumeSession(id) {
 }
 
 .toggle-btn:hover {
-  color: #c9d1d9;
-  background: #21262d;
+  color: var(--text);
+  background: var(--card);
 }
 
 .brand {
@@ -226,8 +226,8 @@ function onResumeSession(id) {
 .lang-btn {
   margin-left: auto;
   background: none;
-  border: 1px solid #30363d;
-  color: #8b949e;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
   cursor: pointer;
   font-size: 0.7rem;
   font-weight: 600;
@@ -237,7 +237,7 @@ function onResumeSession(id) {
 }
 
 .lang-btn:hover {
-  color: #c9d1d9;
+  color: var(--text);
   border-color: #58a6ff;
 }
 
@@ -253,7 +253,7 @@ function onResumeSession(id) {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8b949e;
+  color: var(--text-dim);
   padding: 12px 12px 4px;
   display: flex;
   align-items: center;
@@ -273,7 +273,7 @@ function onResumeSession(id) {
   gap: 8px;
   background: none;
   border: none;
-  color: #c9d1d9;
+  color: var(--text);
   padding: 6px 8px;
   border-radius: 6px;
   cursor: pointer;
@@ -283,7 +283,7 @@ function onResumeSession(id) {
 }
 
 .nav-link:hover:not(:disabled) {
-  background: #21262d;
+  background: var(--card);
 }
 
 .nav-link.active {
@@ -317,11 +317,11 @@ function onResumeSession(id) {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.8rem;
-  color: #8b949e;
+  color: var(--text-dim);
 }
 
 .model-item.streaming {
-  color: #c9d1d9;
+  color: var(--text);
   background: #1f6feb11;
 }
 
@@ -351,8 +351,8 @@ function onResumeSession(id) {
 
 .muted-badge {
   font-size: 0.6rem;
-  background: #30363d;
-  color: #8b949e;
+  background: var(--border);
+  color: var(--text-dim);
   padding: 1px 4px;
   border-radius: 3px;
   flex-shrink: 0;
@@ -395,8 +395,8 @@ function onResumeSession(id) {
 }
 
 .session-item:hover {
-  background: #21262d;
-  border-color: #30363d;
+  background: var(--card);
+  border-color: var(--border);
 }
 
 .session-id {
@@ -421,7 +421,7 @@ function onResumeSession(id) {
 .refresh-btn {
   background: none;
   border: none;
-  color: #8b949e;
+  color: var(--text-dim);
   cursor: pointer;
   font-size: 0.9rem;
   padding: 2px 4px;
@@ -429,13 +429,13 @@ function onResumeSession(id) {
 }
 
 .refresh-btn:hover {
-  color: #c9d1d9;
-  background: #21262d;
+  color: var(--text);
+  background: var(--card);
 }
 
 .status-section {
   padding: 8px 12px;
-  border-top: 1px solid #30363d;
+  border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 8px;

@@ -151,7 +151,7 @@ watch(
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #0d1117;
+  background: var(--bg);
 }
 
 /* Top bar */
@@ -160,8 +160,8 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: #161b22;
-  border-bottom: 1px solid #21262d;
+  background: var(--surface);
+  border-bottom: 1px solid var(--card);
   flex-shrink: 0;
 }
 
@@ -190,7 +190,7 @@ watch(
 
 .bc-top-right {
   font-size: 0.75rem;
-  color: #8b949e;
+  color: var(--text-dim);
 }
 
 .bc-model-count {
@@ -211,8 +211,8 @@ watch(
 .bc-panel {
   display: flex;
   flex-direction: column;
-  background: #161b22;
-  border: 1px solid #21262d;
+  background: var(--surface);
+  border: 1px solid var(--card);
   border-radius: 10px;
   overflow: hidden;
   min-height: 0;
@@ -231,7 +231,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  border-bottom: 1px solid #21262d;
+  border-bottom: 1px solid var(--card);
   flex-shrink: 0;
 }
 
@@ -258,7 +258,7 @@ watch(
 .bc-model-name {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #c9d1d9;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -280,7 +280,7 @@ watch(
 .bc-muted-tag {
   font-size: 0.6rem;
   color: #484f58;
-  background: #21262d;
+  background: var(--card);
   padding: 1px 5px;
   border-radius: 3px;
 }
@@ -298,7 +298,7 @@ watch(
   font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
   font-size: 0.8rem;
   line-height: 1.6;
-  color: #c9d1d9;
+  color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
@@ -317,15 +317,15 @@ watch(
   display: flex;
   justify-content: flex-end;
   padding: 6px 12px;
-  border-top: 1px solid #21262d;
+  border-top: 1px solid var(--card);
   flex-shrink: 0;
 }
 
 .bc-copy-btn {
   font-size: 0.7rem;
-  color: #8b949e;
+  color: var(--text-dim);
   background: none;
-  border: 1px solid #21262d;
+  border: 1px solid var(--card);
   padding: 3px 10px;
   border-radius: 4px;
   cursor: pointer;
@@ -333,8 +333,8 @@ watch(
 }
 
 .bc-copy-btn:hover:not(:disabled) {
-  background: #21262d;
-  color: #c9d1d9;
+  background: var(--card);
+  color: var(--text);
 }
 
 .bc-copy-btn:disabled {
@@ -362,7 +362,7 @@ watch(
 }
 
 .bc-perm-msg code {
-  background: #21262d;
+  background: var(--card);
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 0.78rem;
@@ -401,7 +401,7 @@ watch(
 }
 
 .bc-perm-btn.deny-always {
-  background: #6e7681; border-color: #8b949e; color: #fff;
+  background: #6e7681; border-color: var(--text-dim); color: #fff;
 }
 
 /* Input bar */
@@ -410,18 +410,18 @@ watch(
   align-items: flex-end;
   gap: 8px;
   padding: 10px 16px 14px;
-  background: #161b22;
-  border-top: 1px solid #21262d;
+  background: var(--surface);
+  border-top: 1px solid var(--card);
   flex-shrink: 0;
 }
 
 .bc-input {
   flex: 1;
   padding: 8px 12px;
-  background: #0d1117;
-  border: 1px solid #30363d;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #c9d1d9;
+  color: var(--text);
   font-size: 0.85rem;
   font-family: inherit;
   resize: none;

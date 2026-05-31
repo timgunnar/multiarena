@@ -114,8 +114,8 @@ provide('t', t)
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: #0d1117;
-  color: #c9d1d9;
+  background: var(--bg);
+  color: var(--text);
 }
 
 .main-area {
@@ -138,7 +138,7 @@ provide('t', t)
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #8b949e;
+  color: var(--text-dim);
   font-size: 1.2rem;
 }
 </style>

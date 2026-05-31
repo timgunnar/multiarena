@@ -141,7 +141,7 @@ onMounted(() => {
 
 .home-subtitle {
   font-size: 0.95rem;
-  color: #8b949e;
+  color: var(--text-dim);
 }
 
 .home-grid {
@@ -152,8 +152,8 @@ onMounted(() => {
 }
 
 .home-card {
-  background: #161b22;
-  border: 1px solid #21262d;
+  background: var(--surface);
+  border: 1px solid var(--card);
   border-radius: 12px;
   padding: 18px 16px;
   cursor: pointer;
@@ -161,20 +161,20 @@ onMounted(() => {
 }
 
 .home-card:hover {
-  border-color: #30363d;
+  border-color: var(--border);
   background: #1c2128;
 }
 
 .card-emoji {
   font-size: 1.3rem;
   margin-bottom: 8px;
-  color: #8b949e;
+  color: var(--text-dim);
 }
 
 .card-title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #c9d1d9;
+  color: var(--text);
   margin-bottom: 10px;
 }
 
@@ -189,7 +189,7 @@ onMounted(() => {
 .card-tags li {
   font-size: 0.72rem;
   color: #484f58;
-  background: #21262d;
+  background: var(--card);
   padding: 2px 10px;
   border-radius: 12px;
 }
@@ -202,8 +202,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #161b22;
-  border: 1px solid #21262d;
+  background: var(--surface);
+  border: 1px solid var(--card);
   border-radius: 12px;
   padding: 14px;
 }
@@ -213,7 +213,7 @@ onMounted(() => {
   padding: 10px 0;
   border: none;
   background: transparent;
-  color: #c9d1d9;
+  color: var(--text);
   font-size: 0.9rem;
   font-family: inherit;
   resize: vertical;
@@ -249,14 +249,14 @@ onMounted(() => {
 }
 
 .home-sessions {
-  border-top: 1px solid #21262d;
+  border-top: 1px solid var(--card);
   padding-top: 28px;
 }
 
 .section-heading {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #c9d1d9;
+  color: var(--text);
   margin-bottom: 14px;
 }
 
@@ -270,8 +270,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: #161b22;
-  border: 1px solid #21262d;
+  background: var(--surface);
+  border: 1px solid var(--card);
   border-radius: 10px;
   padding: 12px 16px;
   cursor: pointer;
@@ -284,7 +284,7 @@ onMounted(() => {
 }
 
 .session-card:hover {
-  border-color: #30363d;
+  border-color: var(--border);
 }
 
 .sess-id {

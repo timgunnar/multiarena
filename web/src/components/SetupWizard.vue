@@ -115,15 +115,15 @@ function prevStep() {
 <style scoped>
 .wizard-overlay {
   position: fixed; inset: 0;
-  background: #0d1117f2;
+  background: var(--bg)f2;
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
   backdrop-filter: blur(6px);
 }
 .wizard-card {
   width: 480px; max-width: 92vw;
-  background: #161b22;
-  border: 1px solid #30363d;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 32px 36px;
   box-shadow: 0 8px 40px rgba(0,0,0,0.5);
@@ -132,7 +132,7 @@ function prevStep() {
   display: flex; gap: 8px; margin-bottom: 20px;
 }
 .wiz-dot {
-  flex: 1; height: 3px; border-radius: 2px; background: #21262d;
+  flex: 1; height: 3px; border-radius: 2px; background: var(--card);
 }
 .wiz-dot.active { background: #58a6ff; }
 .wiz-dot.done { background: #3fb950; }
@@ -140,13 +140,13 @@ function prevStep() {
   font-size: 1.3rem; color: #f0f6fc; margin-bottom: 6px;
 }
 .wiz-desc {
-  font-size: 0.85rem; color: #8b949e; margin-bottom: 24px;
+  font-size: 0.85rem; color: var(--text-dim); margin-bottom: 24px;
 }
 .wiz-features {
   list-style: none; display: flex; flex-direction: column; gap: 10px;
 }
 .wiz-features li {
-  padding-left: 20px; position: relative; font-size: 0.88rem; color: #8b949e;
+  padding-left: 20px; position: relative; font-size: 0.88rem; color: var(--text-dim);
 }
 .wiz-features li::before {
   content: '\2713'; position: absolute; left: 0; color: #3fb950; font-weight: 700;
@@ -154,38 +154,38 @@ function prevStep() {
 .wiz-models { display: flex; flex-direction: column; gap: 8px; }
 .wiz-model-row {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; background: #0d1117;
-  border: 1px solid #21262d; border-radius: 8px; cursor: pointer;
+  padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--card); border-radius: 8px; cursor: pointer;
 }
-.wiz-model-row:hover { border-color: #30363d; }
+.wiz-model-row:hover { border-color: var(--border); }
 .wiz-model-row input { accent-color: #238636; }
 .wiz-provider-tag {
   font-size: 0.65rem; text-transform: uppercase; color: #484f58;
   letter-spacing: 0.05em; min-width: 80px;
 }
 .wiz-model-name {
-  font-size: 0.85rem; color: #c9d1d9;
+  font-size: 0.85rem; color: var(--text);
   font-family: 'Cascadia Code', 'Fira Code', monospace;
 }
-.wiz-count { font-size: 0.78rem; color: #8b949e; text-align: center; margin-top: 8px; }
-.wiz-ready p { font-size: 0.9rem; color: #8b949e; margin-bottom: 8px; }
-.wiz-ready strong { color: #c9d1d9; }
+.wiz-count { font-size: 0.78rem; color: var(--text-dim); text-align: center; margin-top: 8px; }
+.wiz-ready p { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 8px; }
+.wiz-ready strong { color: var(--text); }
 kbd {
-  background: #21262d; border: 1px solid #30363d;
+  background: var(--card); border: 1px solid var(--border);
   border-radius: 3px; padding: 1px 5px; font-size: 0.8rem;
   font-family: 'Cascadia Code', 'Fira Code', monospace;
 }
 .wiz-footer {
   display: flex; justify-content: space-between; align-items: center;
-  margin-top: 28px; padding-top: 20px; border-top: 1px solid #21262d;
+  margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--card);
 }
 .wiz-nav { display: flex; gap: 8px; }
 .wiz-btn {
   padding: 8px 20px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
-  border: 1px solid #30363d; transition: background 0.15s;
+  border: 1px solid var(--border); transition: background 0.15s;
 }
-.wiz-btn.sec { background: #21262d; color: #c9d1d9; }
-.wiz-btn.sec:hover { background: #30363d; }
+.wiz-btn.sec { background: var(--card); color: var(--text); }
+.wiz-btn.sec:hover { background: var(--border); }
 .wiz-btn.pri { background: #238636; border-color: #2ea043; color: #fff; }
 .wiz-btn.pri:hover { background: #2ea043; }
 </style>

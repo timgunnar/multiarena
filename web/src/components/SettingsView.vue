@@ -156,7 +156,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #0d1117;
+  background: var(--bg);
   overflow-y: auto;
 }
 
@@ -165,8 +165,8 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: #161b22;
-  border-bottom: 1px solid #21262d;
+  background: var(--surface);
+  border-bottom: 1px solid var(--card);
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -181,16 +181,16 @@ onMounted(() => {
 
 .settings-close-btn {
   padding: 6px 16px;
-  background: #21262d;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
   border-radius: 6px;
   font-size: 0.8rem;
   cursor: pointer;
 }
 
 .settings-close-btn:hover {
-  background: #30363d;
+  background: var(--border);
 }
 
 .settings-body {
@@ -214,7 +214,7 @@ onMounted(() => {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8b949e;
+  color: var(--text-dim);
   padding: 0 2px 6px;
 }
 
@@ -228,10 +228,10 @@ onMounted(() => {
 .field-provider,
 .field-model,
 .field-apikey {
-  background: #0d1117;
-  border: 1px solid #21262d;
+  background: var(--bg);
+  border: 1px solid var(--card);
   border-radius: 6px;
-  color: #c9d1d9;
+  color: var(--text);
   font-size: 0.8rem;
   font-family: inherit;
   padding: 6px 8px;
@@ -285,7 +285,7 @@ onMounted(() => {
   margin-top: 12px;
   padding: 8px 16px;
   background: none;
-  border: 1px dashed #30363d;
+  border: 1px dashed var(--border);
   color: #58a6ff;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -307,8 +307,8 @@ onMounted(() => {
 
 .settings-ftr {
   padding: 14px 20px;
-  border-top: 1px solid #21262d;
-  background: #161b22;
+  border-top: 1px solid var(--card);
+  background: var(--surface);
   flex-shrink: 0;
   position: sticky;
   bottom: 0;

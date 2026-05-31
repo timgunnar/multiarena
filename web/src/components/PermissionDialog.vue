@@ -57,8 +57,8 @@ const t = inject('t')
 .perm-dialog {
   width: 440px;
   max-width: 92vw;
-  background: #161b22;
-  border: 1px solid #30363d;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 28px 28px 22px;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
@@ -70,7 +70,7 @@ const t = inject('t')
   color: #f0f6fc;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #21262d;
+  border-bottom: 1px solid var(--card);
 }
 
 .perm-model,
@@ -90,13 +90,13 @@ const t = inject('t')
 
 .perm-value {
   font-size: 0.9rem;
-  color: #c9d1d9;
+  color: var(--text);
   font-weight: 600;
 }
 
 .perm-tool-name {
   font-size: 0.85rem;
-  background: #21262d;
+  background: var(--card);
   color: #d2a8ff;
   padding: 3px 8px;
   border-radius: 4px;
@@ -106,9 +106,9 @@ const t = inject('t')
 .perm-args-text {
   font-family: 'Cascadia Code', 'Fira Code', monospace;
   font-size: 0.75rem;
-  color: #8b949e;
-  background: #0d1117;
-  border: 1px solid #21262d;
+  color: var(--text-dim);
+  background: var(--bg);
+  border: 1px solid var(--card);
   border-radius: 6px;
   padding: 10px;
   max-height: 160px;
@@ -123,7 +123,7 @@ const t = inject('t')
   gap: 8px;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid #21262d;
+  border-top: 1px solid var(--card);
 }
 
 .perm-btn {
@@ -155,8 +155,8 @@ const t = inject('t')
 }
 
 .perm-btn.deny {
-  background: #21262d;
-  border-color: #30363d;
-  color: #c9d1d9;
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text);
 }
 </style>

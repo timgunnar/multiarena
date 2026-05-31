@@ -77,8 +77,8 @@ function onReconnect() {
 }
 
 .conn-btn.dismiss {
-  background: #21262d;
-  border-color: #30363d;
-  color: #8b949e;
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text-dim);
 }
 </style>
