@@ -40,7 +40,7 @@ npm link
 
 ```bash
 multiarena --version
-# multiarena v0.1.8
+# multiarena v0.2.0
 ```
 
 ### Uninstall
@@ -318,33 +318,51 @@ Config: `[deliberation] adversarial = "high"` or CLI `/team -a high`
 ### Starting Web Mode
 
 ```bash
-multiarena --web          # Start on localhost:3000
-multiarena --web 8080     # Custom port
+multiarena              # Start Web UI (no args, recommended)
+multiarena web          # Explicit web mode
+multiarena web 8080     # Custom port
+multiarena terminal     # Terminal mode (CLI)
 ```
 
-Opens automatically in your browser.
+Opens automatically in your browser at `http://127.0.0.1:3000`.
 
-### Layout
+### Home Page
 
 ```
-┌─ Sidebar ──┬─ Main ──────────────────────────────┐
-│ Sessions   │ ┌─ claude ────┐ ┌─ gpt ───────────┐ │
-│            │ │             │ │                  │ │
-│ + New      │ │ Response... │ │ Response...      │ │
-│            │ │             │ │                  │ │
-│ Sessions   │ └─────────────┘ └──────────────────┘ │
-│ list       │ ─────────────────────────────────────│
-│            │ [all] > ▊                             │
-└────────────┴─────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  ⚡ multiarena                [⚙] [🌙] [EN] │
+│─────────────────────────────────────────────│
+│           Good afternoon, Tim 👋             │
+│      What would you like to do today?        │
+│                                              │
+│  ┌ ✍️ Write ─┐ ┌ 📊 Analyze ─┐              │
+│  │ Brand story│ │ Compare     │              │
+│  │ Ad copy    │ │ Report      │              │
+│  └───────────┘ └────────────┘              │
+│                                              │
+│  ┌ 💡 Ideate ─┐ ┌ 🔍 Review ──┐            │
+│  │ Slogan     │ │ Find gaps    │            │
+│  │ Ideas      │ │ Polish       │            │
+│  └───────────┘ └────────────┘              │
+│                                              │
+│  ┌──────────────────────────────────────┐   │
+│  │  Write a brand story for my coffee…   │   │
+│  └──────────────────────────────────────┘   │
+│                [Start AI Team →]             │
+└─────────────────────────────────────────────┘
 ```
 
 ### Features
 
-- **Broadcast**: Multi-panel streaming, same as CLI
-- **Team Deliberation**: Round pipeline visualization
-- **Permission Dialog**: Modal popup for tool authorization
-- **Session Management**: Sidebar with new/switch/delete sessions
-- **Keyboard**: Same shortcuts mapped to web keys
+- **Task Cards**: One-click templates for common workflows (write, analyze, ideate, review)
+- **Broadcast**: Multi-panel streaming, compare model answers side-by-side
+- **Team Deliberation**: Round pipeline visualization with progress tracking
+- **Permission Dialog**: Modal popup for tool authorization (y/n/a/d)
+- **Session Sidebar**: New/switch/delete sessions
+- **i18n**: Chinese/English language toggle in header
+- **Settings**: Add/remove models and update API keys anytime
+- **Setup Wizard**: Guided first-run configuration, no config file editing needed
+- **Config Persistence**: Models saved to `.multiarenarc`, shared with CLI
 
 ### Security
 
@@ -352,17 +370,17 @@ Opens automatically in your browser.
 - API keys never leave the server process
 - No authentication required (local-only)
 
-### Current Status
+### Development
 
-Web UI is under active development (target v0.3.0). The server layer is complete — `multiarena web` starts the HTTP + SSE backend. The Vue frontend is in progress. To try the current version:
+To run the Vue frontend in dev mode:
 
 ```bash
-cd web && npm install && npm run dev    # Start Vite dev server
+cd web && npm install && npm run dev    # Vite dev server on :5173
 # In another terminal:
-multiarena web                           # Start backend
+multiarena web                           # Backend on :3000
 ```
 
-Open `http://localhost:5173` (Vite proxies API calls to the backend).
+Vite automatically proxies `/api` requests to the backend.
 
 ---
 
@@ -495,7 +513,7 @@ Orphaned worktrees from prior crashes are auto-cleaned on next startup. If persi
 
 ### Web mode blank page
 
-Run `npm run build:web` to compile the Vue frontend. Web UI is available from v0.3.0.
+Run `npm run build:web` to compile the Vue frontend. Web UI is available from v0.2.0.
 
 ### Session resume fails
 
