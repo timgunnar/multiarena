@@ -27,55 +27,77 @@ export function setPkgVersion(v: string): void {
 export const HELP = `multiarena — Multi-Model AI Coding Assistant
 
 Usage:
-  multiarena [options]
-
-Options:
-  --new              Start a new session (default)
-  --resume <id>      Resume a saved session
-  --web [port]       Start web mode (default port 3000)
-  --list             List saved sessions
-  --help             Show this help
-  --version          Show version`;
+  multiarena                         Show start guide (Web or Terminal)
+  multiarena web                     Start web mode (recommended for most users)
+  multiarena terminal                Start terminal mode (for developers)
+  multiarena --web [port]            Start web mode on custom port
+  multiarena --resume, -r <id>       Resume a saved session
+  multiarena --list, -l              List saved sessions
+  multiarena --help, -h, ?           Show this help
+  multiarena --version, -v           Show version`;
 
 export interface ParsedArgs {
   sessionId?: string;
   listOnly: boolean;
   showHelp: boolean;
   showVersion: boolean;
+  showGuide: boolean;    // No args — show start guide
   webMode: boolean;
   webPort: number;
+  terminalMode: boolean; // Explicit terminal mode
 }
 
+const DEFAULTS: ParsedArgs = {
+  listOnly: false, showHelp: false, showVersion: false,
+  showGuide: false, webMode: false, webPort: 3000, terminalMode: false,
+};
+
 export function parseArgs(argv: string[]): ParsedArgs {
-  if (argv.includes("--help") || argv.includes("-h")) {
-    return { listOnly: false, showHelp: true, showVersion: false, webMode: false, webPort: 3000 };
+  // Positional: "web" → start web mode
+  if (argv[0] === "web") {
+    return { ...DEFAULTS, webMode: true, webPort: argv[1] ? parseInt(argv[1], 10) || 3000 : 3000 };
   }
 
+  // Positional: "terminal" → start terminal mode
+  if (argv[0] === "terminal") {
+    return { ...DEFAULTS, terminalMode: true };
+  }
+
+  // No args — show interactive start guide
+  if (argv.length === 0) {
+    return { ...DEFAULTS, showGuide: true };
+  }
+
+  // Help: --help, -h, or ? (single question mark)
+  if (argv.includes("--help") || argv.includes("-h") || argv.includes("?")) {
+    return { ...DEFAULTS, showHelp: true };
+  }
+
+  // Version
   if (argv.includes("--version") || argv.includes("-v")) {
-    return { listOnly: false, showHelp: false, showVersion: true, webMode: false, webPort: 3000 };
+    return { ...DEFAULTS, showVersion: true };
   }
 
+  // Web mode
   const webIdx = argv.indexOf("--web");
   if (webIdx >= 0) {
     const port = parseInt(argv[webIdx + 1] ?? "3000", 10) || 3000;
-    return { listOnly: false, showHelp: false, showVersion: false, webMode: true, webPort: port };
+    return { ...DEFAULTS, webMode: true, webPort: port };
   }
 
+  // Resume: --resume or -r
   const resumeIdx = argv.indexOf("--resume");
-  if (resumeIdx >= 0 && argv[resumeIdx + 1]) {
-    return {
-      sessionId: argv[resumeIdx + 1],
-      listOnly: false,
-      showHelp: false,
-      showVersion: false,
-      webMode: false,
-      webPort: 3000,
-    };
+  const rIdx = argv.indexOf("-r");
+  const resumeFlag = resumeIdx >= 0 ? resumeIdx : rIdx;
+  if (resumeFlag >= 0 && argv[resumeFlag + 1]) {
+    return { ...DEFAULTS, sessionId: argv[resumeFlag + 1] };
   }
 
-  if (argv.includes("--list") || argv.includes("--list-sessions")) {
-    return { listOnly: true, showHelp: false, showVersion: false, webMode: false, webPort: 3000 };
+  // List: --list, --list-sessions, or -l
+  if (argv.includes("--list") || argv.includes("--list-sessions") || argv.includes("-l")) {
+    return { ...DEFAULTS, listOnly: true };
   }
 
-  return { listOnly: false, showHelp: false, showVersion: false, webMode: false, webPort: 3000 };
+  // Unknown args — show help
+  return { ...DEFAULTS, showHelp: true };
 }

@@ -2,9 +2,19 @@ import { describe, it, expect } from "vitest";
 import { parseArgs, getPkgVersion, setPkgVersion, HELP } from "../../src/cli/args.js";
 
 describe("parseArgs", () => {
-  it("returns defaults with no args", () => {
+  it("returns showGuide with no args", () => {
     const r = parseArgs([]);
-    expect(r).toEqual({ listOnly: false, showHelp: false, showVersion: false, webMode: false, webPort: 3000 });
+    expect(r.showGuide).toBe(true);
+    expect(r.webMode).toBe(false);
+  });
+
+  it("'web' positional starts web mode", () => {
+    expect(parseArgs(["web"]).webMode).toBe(true);
+    expect(parseArgs(["web", "8080"]).webPort).toBe(8080);
+  });
+
+  it("'terminal' positional starts terminal mode", () => {
+    expect(parseArgs(["terminal"]).terminalMode).toBe(true);
   });
 
   it("detects --help", () => {
