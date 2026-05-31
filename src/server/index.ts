@@ -72,22 +72,35 @@ export function startServer(port = PORT) {
   const mgr = new SessionManager(config);
   let sessionId = Date.now().toString(36);
 
+  // Connected SSE clients — broadcast events to all
+  const sseClients = new Set<http.ServerResponse>();
+
+  function broadcastSSE(event: string, data: unknown) {
+    for (const client of sseClients) {
+      try { sendSSE(client, event, data); } catch {}
+    }
+  }
+
   const server = http.createServer((req, res) => {
     const url = req.url ?? "/";
 
     // SSE stream endpoint
     if (url === "/api/stream" && req.method === "GET") {
       res.writeHead(200, SSE_HEADERS);
+      sseClients.add(res);
 
       // Send initial state
       sendSSE(res, "state", { ...mgr.getState(), sessionId });
 
       // Keep alive
-      const keepAlive = setInterval(() => res.write(":\n\n"), 15000);
+      const keepAlive = setInterval(() => {
+        try { res.write(":\n\n"); } catch { clearInterval(keepAlive); }
+      }, 15000);
 
       req.on("close", () => {
         clearInterval(keepAlive);
-        res.end();
+        sseClients.delete(res);
+        try { res.end(); } catch {}
       });
 
       return;
@@ -168,10 +181,32 @@ export function startServer(port = PORT) {
 
     switch (type) {
       case "submit": {
-        // For streaming, use a dedicated SSE connection
-        // The client should open /api/stream for SSE and POST commands here
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "ok" }));
+
+        // Process submission and broadcast events via SSE
+        const text = payload.text ?? "";
+        const mode = payload.mode ?? "broadcast";
+        (async () => {
+          try {
+            if (mode === "deliberation") {
+              for await (const event of mgr.deliberate(text)) {
+                broadcastSSE("deliberation", { event });
+              }
+            } else if (mode === "team_chat" && payload.modelName) {
+              for await (const event of mgr.teamChat(payload.modelName, text)) {
+                broadcastSSE("stream", event);
+              }
+            } else {
+              for await (const event of mgr.broadcast(text)) {
+                broadcastSSE("stream", event);
+              }
+            }
+            broadcastSSE("state", { ...mgr.getState(), sessionId });
+          } catch (err: any) {
+            broadcastSSE("error", { message: err.message });
+          }
+        })();
         break;
       }
 

@@ -60,7 +60,7 @@ onMounted(() => {
   <div class="home">
     <header class="home-hero">
       <h1 class="home-title">multiarena</h1>
-      <p class="home-subtitle">Compare multiple AI models side-by-side. Ask once, see all answers.</p>
+      <p class="home-subtitle">{{ t('heroSubtitle') }}</p>
     </header>
 
     <section class="home-grid">

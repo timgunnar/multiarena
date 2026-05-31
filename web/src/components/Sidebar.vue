@@ -88,7 +88,6 @@ function onResumeSession(id) {
             class="nav-link"
             :class="{ active: currentView === 'deliberation' }"
             @click="navTo('deliberation')"
-            :disabled="!state.deliberation"
           >
             <span class="nav-icon">&#9881;</span>
             {{ t('deliberation') }}
