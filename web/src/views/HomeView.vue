@@ -67,7 +67,7 @@ onMounted(() => {
       <div
         v-for="card in taskCards"
         :key="card.id"
-        class="home-card"
+        class="home-card glass"
         @click="onCardClick(card)"
       >
         <div class="card-emoji" v-html="card.emoji"></div>
@@ -79,7 +79,7 @@ onMounted(() => {
     </section>
 
     <section class="home-input-area">
-      <div class="input-wrapper">
+      <div class="input-wrapper glass">
         <textarea
           v-model="inputText"
           class="home-textarea"
@@ -151,9 +151,6 @@ onMounted(() => {
 }
 
 .home-card {
-  background: var(--surface);
-  border: 1px solid var(--card);
-  border-radius: 12px;
   padding: 18px 16px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
@@ -201,9 +198,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--card);
-  border-radius: 12px;
   padding: 14px;
 }
 

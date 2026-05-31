@@ -58,6 +58,7 @@ const phase = computed(() => {
           class="delib-textarea"
           :placeholder="t('deliberationPlaceholder')"
           rows="3"
+          @keydown.enter.exact.prevent="startDeliberation"
         ></textarea>
         <button
           class="delib-submit-btn"

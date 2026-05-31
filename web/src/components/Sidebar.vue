@@ -44,7 +44,7 @@ function onResumeSession(id) {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+  <aside class="sidebar glass" :class="{ collapsed: sidebarCollapsed }">
     <div class="sidebar-header">
       <button
         class="toggle-btn"
@@ -175,8 +175,6 @@ function onResumeSession(id) {
 <style scoped>
 .sidebar {
   width: 260px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   transition: width 0.2s ease;

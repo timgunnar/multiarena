@@ -59,7 +59,7 @@ watch(
 <template>
   <div class="broadcast">
     <!-- Top bar -->
-    <header class="view-header">
+    <header class="view-header glass">
       <span class="view-title">{{ t('broadcast') }}</span>
       <span class="view-meta">{{ models.length }} models · {{ state.sessionId.slice(0, 8) }}</span>
     </header>

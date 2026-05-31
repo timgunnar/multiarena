@@ -90,7 +90,7 @@ provide('t', t)
     />
     <template v-else>
       <Sidebar />
-      <div class="main-area" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+      <div class="main-area glass" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
         <ConnectionBanner />
         <main class="view-container">
           <HomeView v-if="currentView === 'home'" />
@@ -112,7 +112,6 @@ provide('t', t)
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--bg);
   color: var(--text);
 }
 
