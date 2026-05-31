@@ -162,7 +162,7 @@ onMounted(() => {
 
 .home-card:hover {
   border-color: var(--border);
-  background: #1c2128;
+  filter: brightness(1.1);
 }
 
 .card-emoji {
