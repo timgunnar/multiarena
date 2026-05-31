@@ -584,11 +584,22 @@ export async function* runDeliberation(
     documents.push(buffer);
     sharedMessages.push({ role: "assistant", content: buffer });
 
-    // Extract revision annotations for the process summary
-    const revisionMatches = buffer.match(/\[修订:\s*([^\]]+?)\]/g) ?? [];
-    const changeSamples = revisionMatches
-      .map((m) => m.replace(/^\[修订:\s*/, "").replace(/\]$/, ""))
-      .slice(0, 5);
+    // Compute change count: count differing lines between this round and previous
+    const prevLines = previousDocument ? previousDocument.split("\n") : [];
+    const currLines = buffer.split("\n");
+    let changeCount = 0;
+    const changeSamples: string[] = [];
+    const maxLen = Math.max(prevLines.length, currLines.length);
+    for (let j = 0; j < maxLen; j++) {
+      if ((prevLines[j] ?? "") !== (currLines[j] ?? "")) {
+        changeCount++;
+        if (changeSamples.length < 3 && prevLines[j] && currLines[j]) {
+          changeSamples.push(`${prevLines[j].slice(0, 40)} → ${currLines[j].slice(0, 40)}`);
+        }
+      }
+    }
+    // For draft (first round), count total lines as "changes"
+    if (i === 0) changeCount = currLines.filter(l => l.trim()).length;
 
     yield {
       type: "round_end",
@@ -597,7 +608,7 @@ export async function* runDeliberation(
       modelName: rc.modelName,
       role: rc.role,
       document: buffer,
-      changeCount: revisionMatches.length,
+      changeCount,
       changeSamples: changeSamples.length > 0 ? changeSamples : undefined,
     };
 
