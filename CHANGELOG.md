@@ -2,6 +2,10 @@
 
 [English](./CHANGELOG.md) | [中文](./CHANGELOG_CN.md)
 
+## v0.2.1
+
+- **npm 包纳入 web/dist/** — Web 前端随包发布，`multiarena` 开箱即用
+
 ## v0.2.0
 
 ### Key Upgrades
