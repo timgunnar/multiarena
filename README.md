@@ -150,7 +150,7 @@ Enter a task to start multi-model relay deliberation.
 Tab to chat with a specific model. Shift+Tab to return to broadcast.
 ────────────────────────────────────────────────────────────────────
  minimax  deepseek ●  — Tab:model d:compare m:mute r:reset q:quit
-[team] > Write a food diary about Lanzhou noodles▊
+[team] > Write a brand story for a specialty coffee roaster called "Bean Vault", for their website About page▊
 ```
 
 **In Progress:** Each round begins with private think (💭), then public commit. Press `Esc` to abort.
@@ -166,7 +166,8 @@ Tab to chat with a specific model. Shift+Tab to return to broadcast.
 │ 💭 Thinking — deepseek — analyzing current state…                  │
 │                                                                    │
 │ ── Private Analysis ──                                             │
-│ The document has good scene descriptions but lacks noodle details…  │
+│ The draft tells a good origin story but glosses over the roasting  │
+│ craft itself. Needs more sensory detail about the process.          │
 │                                                                    │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -176,34 +177,35 @@ Tab to chat with a specific model. Shift+Tab to return to broadcast.
 ```
 ┌─ Team Deliberation ───────────────────────────────────────────────┐
 │                                                                    │
-│ Deliberation complete · 3 rounds · 4 changes                       │
+│ Deliberation complete · 3 rounds · 5 changes                       │
 │                                                                    │
 │ ✓ draft    ✓ revise     ✓ review                                   │
 │ minimax    deepseek     minimax                                    │
 │                                                                    │
 │ ── Process ──                                                      │
 │ 1. minimax (draft)                                                  │
-│ 2. deepseek (revise) — 4 changes                                    │
-│      I'll come back tomorrow! → I'll try it again next time.       │
-│      This flavor → This specific flavor                             │
+│ 2. deepseek (revise) — 5 changes                                    │
+│      Our beans are sourced globally → From Ethiopian highlands to  │
+│      Colombian cloud forests, we trace every lot back to the farm   │
+│      Expert roasters → Roasters who listen for the second crack    │
 │ 3. minimax (review) — no changes                                   │
 │                                                                    │
 │ ── Final Document ──                                               │
-│ # Today I had Lanzhou noodles and I'm happy                        │
-│ At noon I went to the Lanzhou noodle shop downstairs…              │
+│ # Bean Vault — Where Every Bean Tells a Story                      │
+│ It started with a 1932 Probat roaster rescued from a barn…         │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
 **Post-Deliberation Chat:** Press `Tab` to chat with any model privately. All models share the same conversation history (including the full deliberation process):
 
 ```
-Tab → [team:minimax] > Do you think deepseek's revisions were on point?
+Tab → [team:minimax] > Do you think deepseek's revisions captured the craft angle well?
 ```
 
-**Continue Editing:** Enter new requirements in team overview to start a new round. Shared context already contains the previous output:
+**Continue Editing:** Enter new requirements in team overview to start a new round. The team sees the full previous draft and refines it:
 
 ```
-[team] > Make the tone more literary, add more sensory details
+[team] > Add sensory details about the roasting process — the crackle of beans, the smell of the first crack. This copy is for our packaging label, keep it under 80 words
 ```
 
 ### /merge — Merge Outputs
