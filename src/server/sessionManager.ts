@@ -35,10 +35,12 @@ export interface ServerState {
   targetModel: string | null;
   models: ModelSnapshot[];
   deliberation: {
-    progress: DeliberationProgress | null;
-    document: string;
     thinkText: string;
-    rounds: Array<{ round: number; modelName: string; role: string; changeCount?: number }>;
+    document: string;
+    rounds: Array<{ round: number; modelName: string; role: string; changeCount?: number; changeSamples?: string[] }>;
+    round: number;
+    totalRounds: number;
+    phase: string;
   } | null;
   permissionPrompt: {
     requestId: string;
@@ -57,6 +59,7 @@ export class SessionManager {
   toolRegistry = createDefaultRegistry();
   private inputHistory: string[] = [];
   private adversarialOverride: AdversarialLevel | null = null;
+  private lastDeliberation: ServerState["deliberation"] = null;
 
   constructor(config: ArenaConfig) {
     this.config = config;

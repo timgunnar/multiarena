@@ -6,39 +6,34 @@ const t = inject('t')
 
 const inputText = ref('')
 
+const currentPlaceholder = ref(t('askAllModels'))
+
 const taskCards = computed(() => [
   {
-    id: 'code',
-    emoji: '&lt;/&gt;',
-    title: t('writeCode'),
+    id: 'code', emoji: '&lt;/&gt;', title: t('writeCode'),
     items: [t('refactor'), t('newFeature'), t('debug')],
-    prompt: t('promptCode'),
+    placeholder: t('promptCode'),
   },
   {
-    id: 'write',
-    emoji: '&#9998;',
-    title: t('writeContent'),
+    id: 'write', emoji: '&#9998;', title: t('writeContent'),
     items: [t('blogPost'), t('documentation'), t('proposal')],
-    prompt: t('promptWrite'),
+    placeholder: t('promptWrite'),
   },
   {
-    id: 'analyze',
-    emoji: '&#9881;',
-    title: t('analyze'),
+    id: 'analyze', emoji: '&#9881;', title: t('analyze'),
     items: [t('codeReview'), t('architecture'), t('performance')],
-    prompt: t('promptAnalyze'),
+    placeholder: t('promptAnalyze'),
   },
   {
-    id: 'plan',
-    emoji: '&#9878;',
-    title: t('plan'),
+    id: 'plan', emoji: '&#9878;', title: t('plan'),
     items: [t('architecture'), t('migration'), t('roadmap')],
-    prompt: t('promptPlan'),
+    placeholder: t('promptPlan'),
   }
 ])
 
 function onCardClick(card) {
-  inputText.value = card.prompt
+  currentPlaceholder.value = card.placeholder
+  inputText.value = ''
 }
 
 function handleSubmit() {
@@ -84,7 +79,7 @@ onMounted(() => {
           v-model="inputText"
           class="home-textarea"
           rows="3"
-          :placeholder="t('askAllModels')"
+          :placeholder="currentPlaceholder"
           @keydown.enter.exact.prevent="handleSubmit"
         ></textarea>
         <button

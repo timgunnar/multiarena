@@ -91,17 +91,14 @@ function goBack() {
 }
 
 onMounted(() => {
-  // 1. Read server models from the HTML-embedded initial state (available immediately)
-  if (window.__INITIAL_STATE__?.models) {
-    loadServerModels(window.__INITIAL_STATE__.models)
-  }
-  // 2. Also try the reactive state in case __INITIAL_STATE__ was already consumed
-  if (serverModels.value.length === 0 && appState?.state?.models?.length > 0) {
+  // __INITIAL_STATE__ is consumed & deleted by useWebSocket before child components mount,
+  // so read the already-populated reactive state instead.
+  if (appState?.state?.models?.length > 0) {
     loadServerModels(appState.state.models)
   }
-  // 3. Load user models from localStorage
+  // Load user models from localStorage
   loadUserModels()
-  // 4. If nothing at all, add one empty row as starting point
+  // If nothing at all, add one empty row as starting point
   if (serverModels.value.length === 0 && userModels.value.length === 0) {
     userModels.value.push({ nickname: '', provider: 'Anthropic', apiKey: '', modelId: '' })
   }

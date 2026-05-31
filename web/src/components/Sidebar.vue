@@ -1,16 +1,30 @@
 <script setup>
 import { inject, ref, computed, onMounted } from 'vue'
+import { fetchSessions } from '../composables/useWebSocket.js'
 
+const appState = inject('appState')
 const {
   state,
   currentView,
   sessions,
   submit,
-  loadSessions,
+  loadSessions: injectedLoadSessions,
   resumeSession,
   sidebarCollapsed,
   toggleSidebar
-} = inject('appState')
+} = appState
+
+// Fallback: call standalone fetchSessions if inject didn't provide loadSessions
+async function loadSessions() {
+  if (typeof injectedLoadSessions === 'function') {
+    await injectedLoadSessions()
+  } else {
+    const data = await fetchSessions()
+    if (data.length > 0) {
+      sessions.value = data
+    }
+  }
+}
 
 const t = inject('t')
 const locale = inject('locale')
@@ -30,8 +44,13 @@ const activeModels = computed(() => state.models.filter(m => !m.muted).length)
 const isConnected = computed(() => state.connected)
 
 onMounted(async () => {
-  await loadSessions()
-  sessionsLoaded.value = true
+  try {
+    await loadSessions()
+  } catch {
+    // loadSessions already handles errors internally; just a safety net
+  } finally {
+    sessionsLoaded.value = true
+  }
 })
 
 function navTo(view) {

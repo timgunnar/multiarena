@@ -15,6 +15,23 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 const MAX_RECONNECT_ATTEMPTS = 2
 const RECONNECT_DELAYS = [1000, 3000]
 
+/**
+ * Standalone session loader — usable without instantiating the full composable.
+ * Exported so Sidebar and other components can call it directly without creating
+ * a duplicate WebSocket connection.
+ */
+export async function fetchSessions() {
+  try {
+    const res = await fetch('/api/sessions')
+    if (res.ok) {
+      return await res.json()
+    }
+  } catch {
+    // Server may not be running yet — suppress
+  }
+  return []
+}
+
 export function useWebSocket() {
   const state = reactive({
     sessionId: '',
@@ -91,7 +108,7 @@ export function useWebSocket() {
       case 'deliberation': {
         // Accumulate deliberation events into a rich state object
         const evt = msg.event || msg
-        if (!state.deliberation || !state.deliberation.thinkText) {
+        if (!state.deliberation) {
           state.deliberation = { thinkText: '', document: '', rounds: [], round: 0, totalRounds: 0, phase: '' }
         }
         const d = state.deliberation
@@ -103,7 +120,17 @@ export function useWebSocket() {
         if (evt.type === 'text' && evt.content) d.document += evt.content
         if (evt.type === 'round_end') {
           d.document = evt.document || d.document
-          d.rounds.push({ round: evt.round, modelName: evt.modelName || '', role: evt.role || '', changeCount: evt.changeCount, changeSamples: evt.changeSamples })
+          d.rounds.push({
+            round: evt.round,
+            modelName: evt.modelName || '',
+            role: evt.role || '',
+            changeCount: evt.changeCount,
+            changeSamples: evt.changeSamples,
+            // UI-friendly aliases for DeliberationView template
+            type: evt.role || 'compare',
+            summary: evt.changeSamples ? String(evt.changeSamples).slice(0, 200) : (evt.modelName ? `${evt.modelName} completed analysis` : ''),
+            decision: evt.changeCount != null ? `${evt.changeCount} change(s) proposed` : ''
+          })
         }
         if (evt.type === 'done') d.document = evt.document || d.document
         if (evt.type) d.phase = evt.type
@@ -251,13 +278,9 @@ export function useWebSocket() {
   }
 
   async function loadSessions() {
-    try {
-      const res = await fetch('/api/sessions')
-      if (res.ok) {
-        sessions.value = await res.json()
-      }
-    } catch (err) {
-      // Server may not be running yet — suppress
+    const data = await fetchSessions()
+    if (data.length > 0) {
+      sessions.value = data
     }
   }
 
