@@ -6,14 +6,14 @@
  *
  * Features:
  * - Real-time streaming — no polling
- * - Exponential backoff with max 2 reconnect attempts
+ * - Exponential backoff with max 10 reconnect attempts
  * - __INITIAL_STATE__ injection as instant fallback
  * - Connection status tracking
  */
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 
-const MAX_RECONNECT_ATTEMPTS = 2
-const RECONNECT_DELAYS = [1000, 3000]
+const MAX_RECONNECT_ATTEMPTS = 10
+const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 15000, 15000, 15000, 15000, 15000, 15000]
 
 /**
  * Standalone session loader — usable without instantiating the full composable.

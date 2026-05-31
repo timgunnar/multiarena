@@ -120,7 +120,7 @@ function prevStep() {
 <style scoped>
 .wizard-overlay {
   position: fixed; inset: 0;
-  background: var(--bg)f2;
+  background: var(--bg);
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
   backdrop-filter: blur(6px);

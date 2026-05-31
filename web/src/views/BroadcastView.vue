@@ -64,8 +64,15 @@ watch(
       <span class="view-meta">{{ models.length }} models · {{ state.sessionId.slice(0, 8) }}</span>
     </header>
 
+    <!-- Empty state: no models -->
+    <div v-if="models.length === 0" class="bc-empty">
+      <p class="bc-empty-title">{{ t('noModelsConfigured') }}</p>
+      <p class="bc-empty-hint">{{ t('noModelsBroadcastHint') }}</p>
+    </div>
+
     <!-- Model panels grid -->
     <div
+      v-else
       class="bc-grid"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
@@ -166,6 +173,28 @@ watch(
   font-size: 0.75rem;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+}
+
+/* Empty state */
+.bc-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+.bc-empty-title {
+  font-size: 1rem;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.bc-empty-hint {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  max-width: 400px;
+  line-height: 1.5;
 }
 
 /* Grid */

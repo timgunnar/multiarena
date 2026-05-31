@@ -138,6 +138,9 @@ const messages = {
     readyModels: '<strong>{n}</strong> 个模型已就绪。',
     readyPrompt: '输入提示词并按 <kbd>Enter</kbd> 开始。',
     wantsToRun: '<strong>{model}</strong> 想要运行 <code>{tool}</code>',
+    noModelsConfigured: '暂无模型配置',
+    noModelsBroadcastHint: '请在设置或 .multiarenarc 中配置模型，然后刷新页面开始多模型对比。',
+    noModelsDeliberationHint: '请在设置或 .multiarenarc 中配置模型，然后刷新页面开始团队审议。',
   },
   en: {
     home: 'Home',
@@ -276,6 +279,9 @@ const messages = {
     readyModels: '<strong>{n}</strong> model(s) ready.',
     readyPrompt: 'Type a prompt and press <kbd>Enter</kbd> to begin.',
     wantsToRun: '<strong>{model}</strong> wants to run <code>{tool}</code>',
+    noModelsConfigured: 'No models configured',
+    noModelsBroadcastHint: 'Add models in Settings or .multiarenarc, then refresh to start comparing.',
+    noModelsDeliberationHint: 'Add models in Settings or .multiarenarc, then refresh to start team deliberation.',
   },
 }
 

@@ -44,11 +44,16 @@ const activeModels = computed(() => state.models.filter(m => !m.muted).length)
 const isConnected = computed(() => state.connected)
 
 onMounted(async () => {
+  // Safety timeout: force sessionsLoaded to true even if loadSessions hangs
+  const safetyTimer = setTimeout(() => {
+    sessionsLoaded.value = true
+  }, 3000)
   try {
     await loadSessions()
   } catch {
     // loadSessions already handles errors internally; just a safety net
   } finally {
+    clearTimeout(safetyTimer)
     sessionsLoaded.value = true
   }
 })

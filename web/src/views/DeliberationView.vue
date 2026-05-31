@@ -12,6 +12,7 @@ function startDeliberation() {
 }
 
 const deliberation = computed(() => state.deliberation)
+const models = computed(() => state.models || [])
 
 const rounds = computed(() => {
   if (!deliberation.value) return []
@@ -51,7 +52,13 @@ const phase = computed(() => {
       <div v-if="deliberation" class="view-badge" :class="phase">{{ phase }}</div>
     </header>
 
-    <div v-if="!deliberation" class="delib-start glass">
+    <!-- Empty state: no models -->
+    <div v-if="!deliberation && models.length === 0" class="delib-empty glass">
+      <p class="delib-empty-title">{{ t('noModelsConfigured') }}</p>
+      <p class="delib-empty-hint">{{ t('noModelsDeliberationHint') }}</p>
+    </div>
+
+    <div v-else-if="!deliberation" class="delib-start glass">
       <p class="delib-start-title">{{ t('noDeliberation') }}</p>
       <p class="delib-start-hint">{{ t('deliberationHint') }}</p>
       <div class="delib-input-row">
@@ -157,6 +164,7 @@ const phase = computed(() => {
 .view-badge.thinking { background: var(--warning-alpha); color: var(--warning); }
 .view-badge.writing { background: var(--primary-alpha); color: var(--primary); }
 .view-badge.reviewing { background: var(--primary-alpha); color: var(--primary-hover); }
+.view-badge.complete { background: var(--accent-alpha); color: var(--accent); }
 
 .delib-empty {
   flex: 1;
@@ -170,6 +178,12 @@ const phase = computed(() => {
 }
 
 .delib-empty p {
+  margin-bottom: 8px;
+}
+
+.delib-empty-title {
+  font-size: 1rem;
+  color: var(--text);
   margin-bottom: 8px;
 }
 

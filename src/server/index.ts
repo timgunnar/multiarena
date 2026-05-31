@@ -418,6 +418,14 @@ export function startServer(port = PORT) {
     // Don't exit — keep the server running
   });
 
+  // Never crash — catch all unhandled errors
+  process.on("uncaughtException", (err) => {
+    console.error("[process] uncaughtException:", err.message);
+  });
+  process.on("unhandledRejection", (reason) => {
+    console.error("[process] unhandledRejection:", reason);
+  });
+
   server.listen(port, HOST, () => {
     console.log(`\n  multiarena web → http://${HOST}:${port}\n`);
   });
