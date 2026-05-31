@@ -334,3 +334,12 @@ function backToBroadcast() {
   max-height: 500px;
   overflow-y: auto;
 }
+
+.delib-start { text-align: center; padding: 48px 24px; }
+.delib-start-title { font-size: 20px; margin-bottom: 8px; color: #c9d1d9; }
+.delib-start-hint { color: #8b949e; margin-bottom: 32px; font-size: 0.9rem; }
+.delib-input-row { display: flex; gap: 12px; align-items: flex-start; max-width: 640px; margin: 0 auto; }
+.delib-textarea { flex: 1; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 12px; font-size: 15px; resize: vertical; min-height: 80px; font-family: inherit; }
+.delib-submit-btn { background: #7c3aed; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; cursor: pointer; white-space: nowrap; }
+.delib-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
