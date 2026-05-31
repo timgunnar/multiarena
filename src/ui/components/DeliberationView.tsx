@@ -94,15 +94,7 @@ export const DeliberationView: React.FC<Props> = ({ progress, document, thinkTex
         </Box>
       )}
 
-      {/* Think text (private analysis, shown dimmed) */}
-      {thinkText && isThinking && (
-        <Box flexDirection="column" marginBottom={1}>
-          <Text dimColor>── 私有分析 ──</Text>
-          {thinkText.split("\n").map((line, i) => (
-            <Text key={i} dimColor>{line || " "}</Text>
-          ))}
-        </Box>
-      )}
+      {/* Think phase is private model analysis — not displayed */}
 
       {/* Error state */}
       {progress.type === "error" && (
