@@ -1,8 +1,15 @@
 <script setup>
-import { computed, inject } from 'vue'
+import { ref, computed, inject } from 'vue'
 
-const { state, currentView } = inject('appState')
+const { state, currentView, submit } = inject('appState')
 const t = inject('t')
+const taskInput = ref('')
+
+function startDeliberation() {
+  if (!taskInput.value.trim()) return
+  submit(taskInput.value.trim(), 'deliberation')
+  taskInput.value = ''
+}
 
 const deliberation = computed(() => state.deliberation)
 
@@ -46,9 +53,22 @@ function backToBroadcast() {
       <div class="delib-phase-badge" :class="phase">{{ phase }}</div>
     </header>
 
-    <div v-if="!deliberation" class="delib-empty">
-      <p>{{ t('noDeliberation') }}</p>
-      <p class="delib-empty-hint">{{ t('deliberationHint') }}</p>
+    <div v-if="!deliberation" class="delib-start">
+      <p class="delib-start-title">{{ t('noDeliberation') }}</p>
+      <p class="delib-start-hint">{{ t('deliberationHint') }}</p>
+      <div class="delib-input-row">
+        <textarea
+          v-model="taskInput"
+          class="delib-textarea"
+          :placeholder="t('deliberationPlaceholder')"
+          rows="3"
+        ></textarea>
+        <button
+          class="delib-submit-btn"
+          @click="startDeliberation"
+          :disabled="!taskInput.trim()"
+        >{{ t('startTeam') }}</button>
+      </div>
     </div>
 
     <div v-else class="delib-content">

@@ -11,24 +11,42 @@ const providers = ['Anthropic', 'OpenAI', 'Google', 'DeepSeek', 'MiniMax', 'Olla
 const modelConfigs = ref([])
 
 function loadConfig() {
+  // 1. Load from localStorage (SetupWizard data)
   const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY)
   if (raw) {
     try {
       const parsed = JSON.parse(raw)
-      // Handle both {models: [...]} and plain array formats
       const list = Array.isArray(parsed) ? parsed : (parsed.models ?? [])
-      modelConfigs.value = list.map(m => ({
-        nickname: m.nickname || m.name || '',
-        provider: m.provider || 'Anthropic',
-        apiKey: m.api_key || m.apiKey || '',
-        modelId: m.modelId || m.name || '',
-      }))
-      return
+      for (const m of list) {
+        modelConfigs.value.push({
+          nickname: m.nickname || m.name || '',
+          provider: m.provider || 'Anthropic',
+          apiKey: m.api_key || m.apiKey || '',
+          modelId: m.modelId || m.name || '',
+        })
+      }
     } catch (e) {
-      console.error('[Settings] Failed to parse config:', e)
+      console.error('[Settings] Failed to parse localStorage config:', e)
     }
   }
-  modelConfigs.value = []
+  // 2. Also load models visible from server state (CLI-configured models)
+  const serverModels = inject('appState')?.state?.models
+  if (Array.isArray(serverModels)) {
+    for (const m of serverModels) {
+      if (!modelConfigs.value.some(lm => lm.modelId === m.name || lm.nickname === m.name)) {
+        modelConfigs.value.push({
+          nickname: m.name,
+          provider: '',
+          apiKey: '', // API key not exposed from server
+          modelId: m.name,
+        })
+      }
+    }
+  }
+  if (modelConfigs.value.length === 0) {
+    // Provide one empty row as starting point
+    modelConfigs.value.push({ nickname: '', provider: 'Anthropic', apiKey: '', modelId: '' })
+  }
 }
 
 function addModel() {
