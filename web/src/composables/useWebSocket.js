@@ -6,13 +6,14 @@
  *
  * Features:
  * - Real-time streaming — no polling
- * - Automatic reconnection with exponential backoff (1s, 2s, 4s, max 30s)
+ * - Exponential backoff with max 2 reconnect attempts
  * - __INITIAL_STATE__ injection as instant fallback
  * - Connection status tracking
  */
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 
-const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000]
+const MAX_RECONNECT_ATTEMPTS = 2
+const RECONNECT_DELAYS = [1000, 3000]
 
 export function useWebSocket() {
   const state = reactive({
@@ -32,6 +33,7 @@ export function useWebSocket() {
   let reconnectAttempt = 0
   let reconnectTimer = null
   let mounted = true
+  let intentionalClose = false
 
   // ── State update ──────────────────────────────────────────────
 
@@ -155,33 +157,49 @@ export function useWebSocket() {
     ws.onclose = (event) => {
       state.connected = false
       ws = null
-      // Code 1000 is normal closure — don't reconnect
-      if (mounted && event.code !== 1000) {
-        scheduleReconnect()
+      // Don't reconnect on intentional close or normal closure
+      if (!mounted || intentionalClose || event.code === 1000) {
+        return
       }
+      scheduleReconnect()
     }
 
-    ws.onerror = () => {
-      // onclose will fire next
+    ws.onerror = (event) => {
+      // Log but don't crash — onclose will fire next and handle reconnection
+      console.error('[WS] Connection error')
     }
   }
 
   function disconnect() {
+    intentionalClose = true
     clearTimeout(reconnectTimer)
     reconnectTimer = null
     reconnectAttempt = 0
     if (ws) {
-      ws.close(1000)
+      try {
+        ws.close(1000)
+      } catch {
+        // Already closed
+      }
       ws = null
     }
     state.connected = false
+    connectionError.value = null
   }
 
   function scheduleReconnect() {
     if (!mounted) return
-    const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)]
+
+    if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+      // Stop reconnecting after max attempts — user must refresh
+      connectionError.value = 'Connection lost — refresh page'
+      state.connected = false
+      return
+    }
+
+    const delay = RECONNECT_DELAYS[reconnectAttempt]
     reconnectAttempt++
-    connectionError.value = `Connection lost. Reconnecting in ${delay / 1000}s...`
+    connectionError.value = `Connection lost. Reconnecting in ${delay / 1000}s... (attempt ${reconnectAttempt}/${MAX_RECONNECT_ATTEMPTS})`
 
     clearTimeout(reconnectTimer)
     reconnectTimer = setTimeout(() => {
@@ -196,8 +214,14 @@ export function useWebSocket() {
       connectionError.value = 'Not connected. Retrying...'
       return false
     }
-    ws.send(JSON.stringify(msg))
-    return true
+    try {
+      ws.send(JSON.stringify(msg))
+      return true
+    } catch (e) {
+      console.error('[WS] Send failed:', e)
+      connectionError.value = 'Send failed — connection may be lost'
+      return false
+    }
   }
 
   function submit(text, mode = 'broadcast', modelName = null) {
@@ -230,6 +254,7 @@ export function useWebSocket() {
 
   onMounted(() => {
     mounted = true
+    intentionalClose = false
 
     // Server injects initial state into HTML — load instantly (before WS connects)
     if (window.__INITIAL_STATE__) {

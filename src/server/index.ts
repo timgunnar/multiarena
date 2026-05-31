@@ -128,7 +128,7 @@ export function startServer(port = PORT) {
       if (fs.existsSync(htmlPath)) {
         const html = fs.readFileSync(htmlPath, "utf-8");
         const stateJson = JSON.stringify({ ...mgr.getState(), sessionId });
-        const injected = html.replace("</body>", `<script>window.__INITIAL_STATE__=${stateJson};</script></body>`);
+        const injected = html.replace("<!-- __INITIAL_STATE__ -->", `<script>window.__INITIAL_STATE__=${stateJson};</script><!-- __INITIAL_STATE__ -->`);
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
         res.end(injected);
         return;
@@ -145,6 +145,17 @@ export function startServer(port = PORT) {
     // Send initial state on connect
     safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
 
+    // ── Keep-alive ping: detect dead connections every 30s ──
+    const pingInterval = setInterval(() => {
+      try {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.ping();
+        }
+      } catch {
+        // Connection already dead — cleanup handles it
+      }
+    }, 30000);
+
     ws.on("message", (data: Buffer) => {
       let msg: any;
       try {
@@ -156,9 +167,19 @@ export function startServer(port = PORT) {
       handleWsMessage(ws, msg);
     });
 
+    ws.on("close", () => {
+      clearInterval(pingInterval);
+    });
+
     ws.on("error", (err: Error) => {
       console.error("[ws] Connection error:", err.message);
+      clearInterval(pingInterval);
     });
+  });
+
+  wss.on("error", (err: Error) => {
+    console.error("[wss] WebSocketServer error:", err.message);
+    // Don't crash — the server keeps running, clients will reconnect
   });
 
   // ── WebSocket message handler ───────────────────────────────
@@ -370,6 +391,29 @@ export function startServer(port = PORT) {
         res.end(JSON.stringify({ error: `Unknown command: ${type}` }));
     }
   }
+
+  // ── Server-level error handling: NEVER crash ────────────────
+
+  server.on("error", (err: Error) => {
+    console.error("[server] HTTP server error:", err.message);
+    if ((err as any).code === "EADDRINUSE") {
+      console.error(`[server] Port ${port} is already in use. Please stop the other process or use a different port (MULTIARENA_PORT env var).`);
+      process.exit(1);
+    }
+    // Other errors: log but don't crash
+  });
+
+  process.on("uncaughtException", (err: Error) => {
+    console.error("[process] Uncaught exception:", err.message || err);
+    console.error(err.stack);
+    // Don't exit — keep the server running
+  });
+
+  process.on("unhandledRejection", (reason: any) => {
+    console.error("[process] Unhandled rejection:", reason?.message || reason);
+    if (reason?.stack) console.error(reason.stack);
+    // Don't exit — keep the server running
+  });
 
   server.listen(port, HOST, () => {
     console.log(`\n  multiarena web → http://${HOST}:${port}\n`);
