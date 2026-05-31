@@ -2,6 +2,11 @@
 
 [English](./CHANGELOG.md) | [中文](./CHANGELOG_CN.md)
 
+## v0.2.2
+
+- **文档审计补全** — 测试数统一、版本号同步、CHANGELOG 去重
+- **自动化审计脚本** — `scripts/release-audit.sh`
+
 ## v0.2.1
 
 ### 关键升级
