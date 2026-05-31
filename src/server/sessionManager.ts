@@ -246,6 +246,7 @@ export class SessionManager {
         } else if (event.type === "error") {
           m.buffer += `\n[Error: ${event.message}]`;
           m.isStreaming = false;
+          yield { type: "error" as const, message: event.message };
         } else if (event.type === "permission_required") {
           const active = this.permissionManager.getActiveRequest();
           if (active && active.requestId === event.requestId) {
