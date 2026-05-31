@@ -67,6 +67,11 @@
 | App 分支 | `test/harness/appBranches.test.ts` | 35 | /team 切换、对抗标志、静音、多轮会话、权限流程、配置覆盖 |
 | 安装/卸载 | `test/harness/install.test.ts` | 5 | npm pack、文件清单、安装验证、卸载无残留 |
 
+### Web 组件 (4 tests)
+| 模块 | 文件 | 测试数 | 覆盖点 |
+|------|------|--------|--------|
+| i18n | `web/src/__tests__/useI18n.test.js` | 4 | 中英文翻译、切换、缺失 key 处理 |
+
 ## 未覆盖
 
 | 区域 | 理由 |
@@ -74,3 +79,5 @@
 | Ink 渲染层视觉回归 | 终端 UI 需要屏幕截图/快照对比，当前框架不支持 |
 | `process.stdin` 原始字节监听 | 平台差异大，需要真实终端环境 |
 | `WorktreeManager` 完整 git 操作 | 需要真实 git 仓库，当前仅单元测试模拟 |
+| Vue 组件渲染测试 | 仅 i18n 逻辑测试，BroadcastView/DeliberationView 等需 `@vue/test-utils` + DOM 快照 |
+| Web 端到端浏览器测试 | 需 Playwright/Cypress，未纳入当前测试框架 |
