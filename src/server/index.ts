@@ -208,6 +208,8 @@ export function startServer(port = PORT) {
               safeSend(ws, event);
             }
             console.log(`[ws] Submit complete: ${eventCount} events, mode=${mode}`);
+            // Auto-save session after processing
+            try { mgr.save(sessionId); safeSend(ws, { type: "saved" }); } catch {}
             safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
           } catch (err: any) {
             console.error("[ws] Submit error:", err.message || err);
