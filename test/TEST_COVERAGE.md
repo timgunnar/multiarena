@@ -1,6 +1,6 @@
 # 测试覆盖报告
 
-> v0.2.0 · 45 文件 · 485 测试（主）+ 25 测试、2 文件（Web）
+> v0.2.1 · 46 文件 · 491 测试（主）+ 24 测试、2 文件（Web）
 
 ## 基础设施测试 (5)
 
@@ -28,11 +28,11 @@
 | Provider Factory | `test/provider/provider.test.ts` | 12 | createProvider、各 provider 创建 |
 | Think Filter | `test/provider/adapters/thinkFilter.test.ts` | 19 | think 标签状态机、嵌套 |
 
-## Web 端测试 (25)
+## Web 端测试 (24)
 
 | 模块 | 文件 | 测试数 | 覆盖点 |
 |------|------|--------|--------|
-| DeliberationView | `web/src/__tests__/DeliberationView.test.js` | 21 | 轮次标题、思考文本、摘要、阶段徽章、新对话按钮 |
+| DeliberationView | `web/src/__tests__/DeliberationView.test.js` | 20 | 轮次标题、思考文本、摘要、阶段徽章、新对话按钮 |
 | i18n | `web/src/__tests__/useI18n.test.js` | 4 | 中英文翻译、语言切换、缺失 key |
 
 ## 多端交互测试 (12)

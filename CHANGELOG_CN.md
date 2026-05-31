@@ -18,10 +18,6 @@
 
 ### 关键 Bug 修复
 
-- 修订轮不再丢失原文内容（follow-up 时区分重写和改写指令）
-- 2 模型 high 对抗模式反向循环为空 — 已修正
-- 用户历史消息不可见 — ModelDetail/BroadcastSummary 渲染完整对话
-- 助手回复因 buffer 清空丢失 — 流完成后存入 messages
 - Web WebSocket 断开 — submit 结果广播到所有 WebSocket 客户端
 - Web 侧栏审议链接不可点击 — 移除错误 disabled 状态
 - Web SettingsView 空白 — 修复与 SetupWizard 的 localStorage 数据格式不匹配
@@ -30,9 +26,9 @@
 
 ### 测试
 
-- 新增 86 E2E 测试（广播 7、审议 11、持久化 7、清理 4、权限 6、合并 5、团队聊天 5、App 分支 35、安装 1、跨环境 5）
-- 服务器测试 12 个 + Web 组件测试 25 个（DeliberationView 21、i18n 4）
-- 全部 45 文件、485 测试通过（主）+ 25 测试、2 文件（Web）
+- 新增 89 E2E 测试（广播 7、审议 11、持久化 7、清理 4、权限 6、合并 5、团队聊天 5、App 分支 35、安装 1、跨环境 8）
+- 服务器测试 12 个 + Web 组件测试 24 个（DeliberationView 20、i18n 4）
+- 全部 46 文件、491 测试通过（主）+ 24 测试、2 文件（Web）
 
 ## v0.1.8
 

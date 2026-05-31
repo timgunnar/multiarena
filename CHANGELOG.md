@@ -4,7 +4,7 @@
 
 ## v0.2.1
 
-### 关键升级
+### Key Upgrades
 
 - **npm 包纳入 web/dist/** — Web 前端随包发布，`multiarena` 开箱即用，无需从源码构建
 
@@ -18,10 +18,6 @@
 
 ### Key Bug Fixes
 
-- Revision rounds now preserve original content (distinguish rewrite vs. revise for follow-up edits)
-- 2-model high adversarial mode reverse loop was empty — fixed
-- User messages invisible in chat history — ModelDetail/BroadcastSummary now render full conversation
-- Assistant responses lost on buffer clear — now stored in messages after stream completes
 - Web WebSocket disconnected — submit results now broadcast to all connected WebSocket clients
 - Web sidebar deliberation link unclickable — removed erroneous disabled state
 - Web SettingsView empty — fixed data format mismatch with SetupWizard localStorage format

@@ -40,7 +40,7 @@ npm link
 
 ```bash
 multiarena --version
-# multiarena v0.2.0
+# multiarena v0.2.1
 ```
 
 ### Uninstall
