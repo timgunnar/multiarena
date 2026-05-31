@@ -131,9 +131,9 @@ export function useWebSocket() {
             think: d.currentThink || '',
             changeCount: evt.changeCount,
             changeSamples: evt.changeSamples,
-            type: evt.role || 'round',
-            summary: evt.changeCount != null ? `${evt.changeCount} 处修改` : '',
-            decision: evt.changeSamples?.length ? evt.changeSamples[0] : '',
+            type: evt.role || evt.type || 'round',
+            summary: evt.changeCount != null ? `${evt.changeCount} 处修改` : (evt.document ? '已完成' : ''),
+            decision: evt.changeSamples?.[0] || '',
           })
           d.currentThink = ''
         }
