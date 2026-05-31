@@ -36,6 +36,10 @@
       }
 
       html { background: var(--bg); color: var(--text); }
+      /* Override common component surfaces */
+      [data-theme="light"] .sidebar { background: #ffffff !important; border-color: #d1d5db !important; }
+      [data-theme="light"] .home-hero, [data-theme="light"] section { background: #fafbfc !important; }
+      [data-theme="light"] button:not(.lang-btn) { background: #f3f4f6; color: #1a1a2e; border-color: #d1d5db; }
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: var(--surface); }
       ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }

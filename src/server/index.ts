@@ -87,15 +87,16 @@ export function startServer(port = PORT) {
     // SSE stream endpoint
     if (url === "/api/stream" && req.method === "GET") {
       res.writeHead(200, SSE_HEADERS);
+      res.flushHeaders(); // Critical: flush headers immediately for SSE
       sseClients.add(res);
 
       // Send initial state
       sendSSE(res, "state", { ...mgr.getState(), sessionId });
 
-      // Keep alive
+      // Keep alive every 5s (browsers may close idle connections >15s)
       const keepAlive = setInterval(() => {
-        try { res.write(":\n\n"); } catch { clearInterval(keepAlive); }
-      }, 15000);
+        try { res.write(":\n\n"); } catch { clearInterval(keepAlive); sseClients.delete(res); }
+      }, 5000);
 
       req.on("close", () => {
         clearInterval(keepAlive);
