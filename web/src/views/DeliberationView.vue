@@ -84,7 +84,14 @@ const phase = computed(() => {
       </div>
       <div class="delib-progress-label">{{ t('percentComplete', { pct: progressPct }) }}</div>
 
-      <!-- Think text is private model analysis — not shown to user -->
+      <!-- Think text -->
+      <section v-if="thinkText" class="delib-section">
+        <h3 class="delib-section-hdr">
+          <span class="delib-section-icon">&#9881;</span>
+          {{ t('thinking') }}
+        </h3>
+        <pre class="delib-think">{{ thinkText }}</pre>
+      </section>
 
       <!-- Rounds -->
       <section v-if="rounds.length > 0" class="delib-section">
