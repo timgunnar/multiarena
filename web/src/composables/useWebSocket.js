@@ -1,7 +1,6 @@
 /**
- * Server communication via polling + HTTP POST.
- * Polls /api/cmd state every 2s. Submits via POST /api/cmd.
- * Simple, reliable, no SSE complexity.
+ * Server communication — initial state injection + streaming submit.
+ * No polling. No SSE. "Connection" is implied by the submit stream.
  */
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 
@@ -19,16 +18,11 @@ export function useWebSocket() {
   const sessions = ref([])
   const connectionError = ref(null)
   let mounted = true
-  let pollTimer = null
-  let pollFailures = 0
 
   function updateState(payload) {
-    if (!payload) { console.warn('[poll] empty payload'); return }
+    if (!payload) return
     state.connected = true
-    pollFailures = 0
     connectionError.value = null
-    console.log('[poll] got state, models:', payload.models?.length, 'sessionId:', payload.sessionId)
-
     state.sessionId = payload.sessionId || ''
     state.mode = payload.mode || 'broadcast'
     state.deliberation = payload.deliberation || null
@@ -49,32 +43,6 @@ export function useWebSocket() {
     }
   }
 
-  async function pollState() {
-    if (!mounted) return
-    try {
-      console.log('[poll] fetching state...')
-      const res = await fetch('/api/cmd', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'state' })
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      updateState(data)
-    } catch (e) {
-      console.error('[poll] fetch failed:', e.message)
-      pollFailures++
-      // Only show disconnected after 5+ consecutive failures (avoid transient glitches)
-      if (pollFailures >= 5) {
-        state.connected = false
-        connectionError.value = 'Cannot connect to server'
-      }
-    }
-    if (mounted) {
-      pollTimer = setTimeout(pollState, 2000)
-    }
-  }
-
   async function sendCommand(type, payload = {}) {
     try {
       const res = await fetch('/api/cmd', {
@@ -83,13 +51,13 @@ export function useWebSocket() {
         body: JSON.stringify({ type, ...payload })
       })
       return await res.json()
-    } catch (e) {
-      console.error('[cmd]', e.message)
+    } catch {
       return null
     }
   }
 
   async function submit(text, mode = 'broadcast', modelName = null) {
+    connectionError.value = null
     try {
       const res = await fetch('/api/cmd', {
         method: 'POST',
@@ -98,12 +66,11 @@ export function useWebSocket() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-      // Read streamed NDJSON response — same pattern as CLI's for-await
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
 
-      while (true) {
+      while (mounted) {
         const { done, value } = await reader.read()
         if (done) break
         buffer += decoder.decode(value, { stream: true })
@@ -126,14 +93,15 @@ export function useWebSocket() {
               currentView.value = 'deliberation'
             } else if (event.type === 'permission_required') {
               state.permissionPrompt = event
-            } else if (event.type === 'done' || event.type === 'error') {
-              // handled
             }
           } catch {}
         }
       }
+      // Refresh state after submit completes
+      const data = await sendCommand('state')
+      if (data) updateState(data)
     } catch (e) {
-      console.error('[submit]', e.message)
+      connectionError.value = 'Submit failed: ' + e.message
     }
   }
 
@@ -151,28 +119,24 @@ export function useWebSocket() {
 
   async function resumeSession(id) {
     await sendCommand('resume', { sessionId: id })
-    await pollState()
+    const data = await sendCommand('state')
+    if (data) updateState(data)
     currentView.value = 'broadcast'
-  }
-
-  function disconnect() {
-    mounted = false
-    if (pollTimer) clearTimeout(pollTimer)
   }
 
   onMounted(() => {
     mounted = true
-    // Use server-injected initial state if available (instant load)
+    // Server injects initial state into HTML — load instantly
     if (window.__INITIAL_STATE__) {
       updateState(window.__INITIAL_STATE__)
       delete window.__INITIAL_STATE__
     }
-    // Then poll for updates
-    pollState()
     loadSessions()
   })
 
-  onUnmounted(disconnect)
+  onUnmounted(() => {
+    mounted = false
+  })
 
   return {
     state,
