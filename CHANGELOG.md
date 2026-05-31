@@ -18,12 +18,18 @@
 - 2-model high adversarial mode reverse loop was empty — fixed
 - User messages invisible in chat history — ModelDetail/BroadcastSummary now render full conversation
 - Assistant responses lost on buffer clear — now stored in messages after stream completes
+- Web SSE disconnected — submit results now broadcast to all connected SSE clients
+- Web sidebar deliberation link unclickable — removed erroneous disabled state
+- Web SettingsView empty — fixed data format mismatch with SetupWizard localStorage format
+- Web hardcoded English on homepage — i18n coverage completed
+- Web dark/light theme — CSS variable theming with ☀/🌙 toggle
 
 ### Tests
 
-- 120+ new E2E tests (harness: broadcast 7, deliberation 11, persistence 7, cleanup 4, permission 6, merge 5, teamChat 5, appBranches 35, install 5)
-- Server tests: 12 (HTTP endpoints + SSE)
-- 42 test files, 440 tests all passing
+- 120+ new E2E tests (harness: broadcast 7, deliberation 11, persistence 7, cleanup 4, permission 6, merge 5, teamChat 5, appBranches 35, install 1, crossEnvironment 5)
+- Server tests: 12 (HTTP endpoints + SSE + SessionManager)
+- Web component tests: 4 (i18n)
+- 43 test files, 441 tests all passing (main) + 4 tests (web)
 
 ## v0.1.8
 
