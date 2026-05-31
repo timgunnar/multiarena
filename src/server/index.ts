@@ -7,6 +7,7 @@
 import * as http from "node:http";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as os from "node:os";
 import { loadConfig } from "../config/loader.js";
 import { SessionManager } from "./sessionManager.js";
 
@@ -116,8 +117,7 @@ export function startServer(port = PORT) {
         try {
           const cfg = JSON.parse(body);
           const toml = buildConfigTOML(cfg);
-          const fs = require("node:fs");
-          const configPath = require("node:path").join(require("node:os").homedir(), ".multiarenarc");
+          const configPath = path.join(os.homedir(), ".multiarenarc");
           fs.writeFileSync(configPath, toml, "utf-8");
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ status: "ok", path: configPath }));

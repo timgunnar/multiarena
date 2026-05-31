@@ -51,6 +51,15 @@ function saveConfig() {
   if (localStorage.getItem(LEGACY_KEY)) {
     localStorage.removeItem(LEGACY_KEY)
   }
+  // Also save to server (.multiarenarc) so CLI and future Web sessions share config
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ models: cleaned.map(m => ({
+      nickname: m.nickname, provider: m.provider,
+      name: m.modelId, api_key: m.apiKey
+    }))})
+  }).catch(() => {})
 }
 
 function goBack() {
