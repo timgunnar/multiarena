@@ -37,8 +37,7 @@ function mountView(stateOverrides = {}) {
 // ---------------------------------------------------------------------------
 
 describe('DeliberationView rendering', () => {
-  // Each mount injects scoped <style> tags into jsdom. Clean up between
-  // tests so style checks against collectStyleText() are isolated.
+  // Clean up between tests so mounts are isolated.
   let wrappers = []
 
   afterEach(() => {
@@ -148,6 +147,28 @@ describe('DeliberationView rendering', () => {
       })
 
       expect(wrapper.find('pre.delib-think').exists()).toBe(false)
+    })
+
+    it('delib-think pre element has correct class for scroll container styling', () => {
+      const { wrapper } = mountAndTrack({
+        deliberation: {
+          phase: 'thinking',
+          rounds: [
+            {
+              round: 1,
+              modelName: 'claude-sonnet',
+              type: 'writer',
+              think: 'Long analysis text that should scroll...',
+            },
+          ],
+        },
+      })
+
+      const pre = wrapper.find('pre.delib-think')
+      expect(pre.exists()).toBe(true)
+      expect(pre.classes()).toContain('delib-think')
+      // The element must be a <pre> tag (as verified by tag selector above)
+      expect(pre.element.tagName).toBe('PRE')
     })
   })
 

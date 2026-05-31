@@ -24,10 +24,10 @@
 
 ### Tests
 
-- 86 new E2E tests (broadcast 7, deliberation 11, persistence 7, cleanup 4, permission 6, merge 5, teamChat 5, appBranches 35, install 1, crossEnvironment 5)
+- 89 new E2E tests (broadcast 7, deliberation 11, persistence 7, cleanup 4, permission 6, merge 5, teamChat 5, appBranches 35, install 1, crossEnvironment 8)
 - Server tests: 12 (HTTP endpoints + WebSocket + SessionManager)
-- Web component tests: 25 (DeliberationView 21, i18n 4)
-- 45 test files, 485 tests all passing (main) + 25 tests, 2 files (web)
+- Web component tests: 24 (DeliberationView 20, i18n 4)
+- 45 test files, 491 tests all passing (main) + 24 tests, 2 files (web)
 
 ## v0.1.8
 
