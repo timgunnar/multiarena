@@ -72,7 +72,7 @@ watch(
       <div
         v-for="(m, idx) in models"
         :key="m.name || idx"
-        class="bc-panel"
+        class="bc-panel glass"
         :class="{ 'bc-panel--live': m.isStreaming, 'bc-panel--muted': m.muted }"
       >
         <div class="bc-panel-hdr">
@@ -122,7 +122,7 @@ watch(
     </div>
 
     <!-- Input bar -->
-    <div class="bc-input-bar">
+    <div class="bc-input-bar glass">
       <textarea
         v-model="inputText"
         class="bc-input"
@@ -154,8 +154,6 @@ watch(
   align-items: center;
   gap: 12px;
   padding: 10px 20px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 .view-title {
@@ -184,9 +182,6 @@ watch(
 .bc-panel {
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--card);
-  border-radius: 10px;
   overflow: hidden;
   min-height: 0;
 }
@@ -383,8 +378,6 @@ watch(
   align-items: flex-end;
   gap: 8px;
   padding: 10px 16px 14px;
-  background: var(--surface);
-  border-top: 1px solid var(--card);
   flex-shrink: 0;
 }
 

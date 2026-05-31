@@ -5,50 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>multiarena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html, body, #app { height: 100%; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+      html, body, #app { height: 100%; }
 
-      /* Dark theme (default) */
+      /* ═══ Dark theme (default) ═══ */
       :root, [data-theme="dark"] {
-        --bg: #0d1117;
-        --surface: #161b22;
-        --card: #21262d;
-        --border: #30363d;
-        --text: #c9d1d9;
-        --text-dim: #8b949e;
+        --bg: #0a0a0f;
+        --bg-gradient: linear-gradient(135deg, #0a0a0f 0%, #13111c 50%, #0a0a0f 100%);
+        --surface: #12121a;
+        --surface-hover: #1a1a26;
+        --card: #1c1c28;
+        --border: #1e1e2e;
+        --border-strong: #2a2a3e;
+        --text: #e8e8f0;
+        --text-secondary: #9898b0;
+        --text-dim: #686880;
         --primary: #7c3aed;
-        --primary-hover: #6d28d9;
-        --accent: #10b981;
-        --error: #ef4444;
-        --glass-bg: rgba(13, 17, 23, 0.6);
-        --glass-border: rgba(255, 255, 255, 0.08);
-        --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        --primary-hover: #8b5cf6;
+        --accent: #06d6a0;
+        --error: #ff4949;
+        --warning: #ffb347;
+        --glass-bg: rgba(18, 18, 26, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.06);
+        --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        --accent-alpha: rgba(6, 214, 160, 0.15);
+        --primary-alpha: rgba(124, 58, 237, 0.15);
+        --error-alpha: rgba(255, 73, 73, 0.15);
+        --warning-alpha: rgba(255, 179, 71, 0.15);
       }
-      /* Light theme */
+
+      /* ═══ Light theme ═══ */
       [data-theme="light"] {
-        --bg: #fafbfc;
+        --bg: #f5f3ff;
+        --bg-gradient: linear-gradient(135deg, #f5f3ff 0%, #faf5ff 50%, #f0f4ff 100%);
         --surface: #ffffff;
-        --card: #f3f4f6;
-        --border: #d1d5db;
-        --text: #1a1a2e;
-        --text-dim: #6b7280;
-        --primary: #7c3aed;
-        --primary-hover: #6d28d9;
+        --surface-hover: #f8f6ff;
+        --card: #f3f0ff;
+        --border: #e2ddf0;
+        --border-strong: #c4b5e0;
+        --text: #1a1028;
+        --text-secondary: #5c5470;
+        --text-dim: #9890a8;
+        --primary: #6d28d9;
+        --primary-hover: #7c3aed;
         --accent: #059669;
         --error: #dc2626;
-        --glass-bg: rgba(255, 255, 255, 0.7);
-        --glass-border: rgba(0, 0, 0, 0.08);
-        --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        --warning: #d97706;
+        --glass-bg: rgba(255, 255, 255, 0.75);
+        --glass-border: rgba(0, 0, 0, 0.06);
+        --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        --accent-alpha: rgba(5, 150, 105, 0.12);
+        --primary-alpha: rgba(109, 40, 217, 0.12);
+        --error-alpha: rgba(220, 38, 38, 0.12);
+        --warning-alpha: rgba(217, 119, 6, 0.12);
       }
 
       html {
-        background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+        background: var(--bg-gradient);
         color: var(--text);
       }
-      /* Light theme gradient override (data-theme is on <html>) */
-      [data-theme="light"] {
-        background: linear-gradient(135deg, #f0f2f5 0%, #fafbfc 50%, #e8ecf1 100%);
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+      }
+
+      code, pre, kbd, .mono {
+        font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
       }
 
       /* Glass morphism */
@@ -60,9 +96,11 @@
         border-radius: 16px;
         box-shadow: var(--glass-shadow);
       }
+
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: var(--surface); }
       ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
     </style>
   </head>
   <body>

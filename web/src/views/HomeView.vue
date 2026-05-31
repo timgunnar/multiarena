@@ -133,7 +133,7 @@ onMounted(() => {
 .home-title {
   font-size: 2rem;
   font-weight: 800;
-  color: #f0f6fc;
+  color: var(--text);
   margin-bottom: 8px;
   letter-spacing: -0.02em;
 }
@@ -184,7 +184,7 @@ onMounted(() => {
 
 .card-tags li {
   font-size: 0.72rem;
-  color: #484f58;
+  color: var(--text-dim);
   background: var(--card);
   padding: 2px 10px;
   border-radius: 12px;
@@ -217,7 +217,7 @@ onMounted(() => {
 }
 
 .home-textarea::placeholder {
-  color: #484f58;
+  color: var(--text-dim);
 }
 
 .home-submit {

@@ -213,7 +213,7 @@ function onResumeSession(id) {
   margin-left: 10px;
   font-weight: 700;
   font-size: 1rem;
-  color: #58a6ff;
+  color: var(--primary);
   white-space: nowrap;
   flex: 1;
 }
@@ -233,7 +233,7 @@ function onResumeSession(id) {
 
 .lang-btn:hover {
   color: var(--text);
-  border-color: #58a6ff;
+  border-color: var(--primary);
 }
 
 .sidebar-body {
@@ -282,8 +282,8 @@ function onResumeSession(id) {
 }
 
 .nav-link.active {
-  background: #1f6feb33;
-  color: #58a6ff;
+  background: var(--primary-alpha);
+  color: var(--primary);
 }
 
 .nav-link:disabled {
@@ -317,7 +317,7 @@ function onResumeSession(id) {
 
 .model-item.streaming {
   color: var(--text);
-  background: #1f6feb11;
+  background: var(--primary-alpha);
 }
 
 .model-item.muted {
@@ -328,13 +328,13 @@ function onResumeSession(id) {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #484f58;
+  background: var(--text-dim);
   flex-shrink: 0;
 }
 
 .model-status.active {
-  background: #3fb950;
-  box-shadow: 0 0 4px #3fb950;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
 }
 
 .model-name {
@@ -355,7 +355,7 @@ function onResumeSession(id) {
 
 .usage-badge {
   font-size: 0.6rem;
-  color: #58a6ff;
+  color: var(--primary);
   flex-shrink: 0;
 }
 
@@ -371,7 +371,7 @@ function onResumeSession(id) {
 .sessions-empty {
   padding: 8px 12px;
   font-size: 0.8rem;
-  color: #484f58;
+  color: var(--text-dim);
 }
 
 .session-list {
@@ -395,15 +395,15 @@ function onResumeSession(id) {
 }
 
 .session-id {
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
-  color: #58a6ff;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: var(--primary);
   margin-bottom: 2px;
 }
 
 .session-meta {
   display: flex;
   justify-content: space-between;
-  color: #484f58;
+  color: var(--text-dim);
   font-size: 0.7rem;
 }
 
@@ -441,11 +441,11 @@ function onResumeSession(id) {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #f85149;
+  color: var(--error);
 }
 
 .connection-status.connected {
-  color: #3fb950;
+  color: var(--accent);
 }
 
 .status-dot {

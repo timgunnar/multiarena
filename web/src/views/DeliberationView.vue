@@ -44,12 +44,12 @@ const phase = computed(() => {
 
 <template>
   <div class="delib">
-    <header class="view-header">
+    <header class="view-header glass">
       <span class="view-title">{{ t('deliberation') }}</span>
       <div v-if="deliberation" class="view-badge" :class="phase">{{ phase }}</div>
     </header>
 
-    <div v-if="!deliberation" class="delib-start">
+    <div v-if="!deliberation" class="delib-start glass">
       <p class="delib-start-title">{{ t('noDeliberation') }}</p>
       <p class="delib-start-hint">{{ t('deliberationHint') }}</p>
       <div class="delib-input-row">
@@ -68,7 +68,7 @@ const phase = computed(() => {
       </div>
     </div>
 
-    <div v-else class="delib-content">
+    <div v-else class="delib-content glass">
       <!-- Progress -->
       <div class="delib-progress-bar">
         <div class="delib-progress-fill" :style="{ width: progressPct + '%' }"></div>
@@ -134,8 +134,6 @@ const phase = computed(() => {
   align-items: center;
   gap: 12px;
   padding: 10px 20px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 .view-title {

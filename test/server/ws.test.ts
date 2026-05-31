@@ -73,25 +73,66 @@ beforeEach(() => {
 
 // ── Helpers ────────────────────────────────────────────────────
 
-function wsConnect(timeoutMs = 5000): Promise<WebSocket> {
+/**
+ * Connect and wait for the initial state message.
+ * Registers the message listener before the 'open' event fires to avoid
+ * the race where the server sends the initial state synchronously.
+ */
+function wsConnect(timeoutMs = 5000): Promise<{ ws: WebSocket; initMsg: any }> {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(`ws://127.0.0.1:${PORT}`);
+    let initMsg: any = null;
+    let opened = false;
+    let resolved = false;
+
     const timer = setTimeout(() => {
-      ws.close();
-      reject(new Error("WebSocket connection timeout"));
+      if (!resolved) {
+        resolved = true;
+        ws.close();
+        reject(new Error("WebSocket connection timeout"));
+      }
     }, timeoutMs);
-    ws.on("open", () => {
-      clearTimeout(timer);
-      resolve(ws);
+
+    function tryResolve() {
+      if (resolved) return;
+      if (opened && initMsg !== null) {
+        resolved = true;
+        clearTimeout(timer);
+        resolve({ ws, initMsg });
+      }
+    }
+
+    ws.on("message", (data: Buffer) => {
+      try {
+        initMsg = JSON.parse(data.toString());
+      } catch {
+        // ignore non-JSON
+        return;
+      }
+      tryResolve();
     });
+
+    ws.on("open", () => {
+      opened = true;
+      tryResolve();
+    });
+
     ws.on("error", (err) => {
-      clearTimeout(timer);
-      reject(err);
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        reject(err);
+      }
     });
   });
 }
 
-/** Wait for a single JSON message from the WebSocket. */
+/** Close a WebSocket cleanly and wait a tick. */
+function wsClose(ws: WebSocket): void {
+  ws.close();
+}
+
+/** Wait for a single JSON message — register listener before sending. */
 function wsNextMsg(ws: WebSocket, timeoutMs = 5000): Promise<any> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("Message timeout")), timeoutMs);
@@ -106,14 +147,6 @@ function wsNextMsg(ws: WebSocket, timeoutMs = 5000): Promise<any> {
     };
     ws.on("message", handler);
   });
-}
-
-/** Connect and consume the initial state message. Returns a ready WebSocket. */
-async function wsReady(): Promise<WebSocket> {
-  const ws = await wsConnect();
-  const init = await wsNextMsg(ws);
-  expect(init.type).toBe("state");
-  return ws;
 }
 
 function httpGet(urlPath: string): Promise<{ status: number; data: string; headers: Record<string, string> }> {
@@ -143,18 +176,17 @@ describe("WebSocket server robustness", () => {
   });
 
   it("client connects and immediately receives a {type: 'state'} message", async () => {
-    const ws = await wsConnect();
-    const msg = await wsNextMsg(ws);
-    expect(msg.type).toBe("state");
-    expect(msg.models).toBeDefined();
-    expect(Array.isArray(msg.models)).toBe(true);
-    expect(msg.sessionId).toBeDefined();
-    expect(typeof msg.sessionId).toBe("string");
-    ws.close();
+    const { ws, initMsg } = await wsConnect();
+    expect(initMsg.type).toBe("state");
+    expect(initMsg.models).toBeDefined();
+    expect(Array.isArray(initMsg.models)).toBe(true);
+    expect(initMsg.sessionId).toBeDefined();
+    expect(typeof initMsg.sessionId).toBe("string");
+    wsClose(ws);
   });
 
   it("sending {type: 'state'} command returns state", async () => {
-    const ws = await wsReady();
+    const { ws } = await wsConnect();
 
     const respPromise = wsNextMsg(ws);
     ws.send(JSON.stringify({ type: "state" }));
@@ -163,11 +195,11 @@ describe("WebSocket server robustness", () => {
     expect(msg.type).toBe("state");
     expect(msg.models).toBeDefined();
     expect(msg.mode).toBeDefined();
-    ws.close();
+    wsClose(ws);
   });
 
   it("sending an unknown command type does not crash server", async () => {
-    const ws = await wsReady();
+    const { ws } = await wsConnect();
 
     const respPromise = wsNextMsg(ws);
     ws.send(JSON.stringify({ type: "nonexistent_cmd_xyz" }));
@@ -175,18 +207,19 @@ describe("WebSocket server robustness", () => {
 
     expect(msg.type).toBe("error");
     expect(msg.message).toContain("Unknown command");
-    ws.close();
+    wsClose(ws);
 
     // Server must still be functional — connect again
-    const ws2 = await wsReady();
+    const { ws: ws2 } = await wsConnect();
+    expect(ws2).toBeDefined();
     ws2.send(JSON.stringify({ type: "state" }));
     const stateMsg = await wsNextMsg(ws2);
     expect(stateMsg.type).toBe("state");
-    ws2.close();
+    wsClose(ws2);
   });
 
   it("sending {type: 'mute', modelName: 'nonexistent'} does not crash", async () => {
-    const ws = await wsReady();
+    const { ws } = await wsConnect();
 
     const respPromise = wsNextMsg(ws);
     ws.send(JSON.stringify({ type: "mute", modelName: "nonexistent_model_xyz" }));
@@ -194,11 +227,11 @@ describe("WebSocket server robustness", () => {
 
     // Should receive a state response (server returns state after mute)
     expect(msg.type).toBe("state");
-    ws.close();
+    wsClose(ws);
   });
 
   it("sending {type: 'permission', decision: 'allow'} with no pending request does not crash", async () => {
-    const ws = await wsReady();
+    const { ws } = await wsConnect();
 
     const respPromise = wsNextMsg(ws);
     ws.send(JSON.stringify({ type: "permission", decision: "allow" }));
@@ -207,11 +240,11 @@ describe("WebSocket server robustness", () => {
     expect(msg.type).toBe("state");
     // No pending permission → prompt is null
     expect(msg.permissionPrompt).toBeNull();
-    ws.close();
+    wsClose(ws);
   });
 
   it("sending malformed JSON does not crash server", async () => {
-    const ws = await wsReady();
+    const { ws } = await wsConnect();
 
     const respPromise = wsNextMsg(ws);
     ws.send("not valid json{{{{{{");
@@ -219,44 +252,38 @@ describe("WebSocket server robustness", () => {
 
     expect(msg.type).toBe("error");
     expect(msg.message).toContain("Invalid JSON");
-    ws.close();
+    wsClose(ws);
 
     // Server must still be functional
-    const ws2 = await wsReady();
+    const { ws: ws2 } = await wsConnect();
     ws2.send(JSON.stringify({ type: "state" }));
     const stateMsg = await wsNextMsg(ws2);
     expect(stateMsg.type).toBe("state");
-    ws2.close();
+    wsClose(ws2);
   });
 
   it("client disconnect does not crash server — new clients still connect", async () => {
-    const ws1 = await wsReady();
-    ws1.close();
+    const { ws: ws1 } = await wsConnect();
+    wsClose(ws1);
 
     // Small delay to allow server-side cleanup
     await new Promise((r) => setTimeout(r, 100));
 
-    const ws2 = await wsReady();
-    ws2.send(JSON.stringify({ type: "state" }));
-    const msg = await wsNextMsg(ws2);
+    const { ws: ws2, initMsg: msg } = await wsConnect();
     expect(msg.type).toBe("state");
-    ws2.close();
+    wsClose(ws2);
   });
 
   it("multiple concurrent clients each receive their own initial state", async () => {
     const results = await Promise.all([
-      (async () => {
-        const ws = await wsConnect();
-        const msg = await wsNextMsg(ws);
-        ws.close();
-        return msg;
-      })(),
-      (async () => {
-        const ws = await wsConnect();
-        const msg = await wsNextMsg(ws);
-        ws.close();
-        return msg;
-      })(),
+      wsConnect().then(({ ws, initMsg }) => {
+        wsClose(ws);
+        return initMsg;
+      }),
+      wsConnect().then(({ ws, initMsg }) => {
+        wsClose(ws);
+        return initMsg;
+      }),
     ]);
 
     for (const msg of results) {
@@ -269,7 +296,7 @@ describe("WebSocket server robustness", () => {
   it("submit command streams text events and returns final state", async () => {
     (createProvider as any).mockImplementation(mockProvider("Streaming response text"));
 
-    const ws = await wsReady();
+    const { ws } = await wsConnect();
 
     ws.send(JSON.stringify({ type: "submit", text: "Hello", mode: "broadcast" }));
 
@@ -289,7 +316,7 @@ describe("WebSocket server robustness", () => {
     const hasState = events.some((e) => e.type === "state");
     expect(hasStream || hasDone).toBe(true);
     expect(hasState).toBe(true);
-    ws.close();
+    wsClose(ws);
   });
 
   it("__INITIAL_STATE__ is injected into served index.html", async () => {

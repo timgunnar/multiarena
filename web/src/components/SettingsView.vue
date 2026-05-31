@@ -142,7 +142,7 @@ onMounted(() => {
       <!-- ═══ User Models (editable) ═══ -->
       <section v-if="userModels.length > 0" class="settings-section">
         <h3 class="section-heading">{{ t('userModels') }}</h3>
-        <div class="settings-table">
+        <div class="settings-table glass">
           <div class="settings-row settings-hdr">
             <span class="col-nickname">{{ t('nickname') }}</span>
             <span class="col-provider">{{ t('provider') }}</span>
