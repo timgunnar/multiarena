@@ -5,19 +5,19 @@ import { App } from "./ui/app.js";
 import { listSessions } from "./persistence/session.js";
 import { parseArgs, getPkgVersion, HELP } from "./cli/args.js";
 
-const { sessionId, listOnly, showHelp, showVersion } = parseArgs(process.argv.slice(2));
+const args = parseArgs(process.argv.slice(2));
 
-if (showHelp) {
+if (args.showHelp) {
   console.log(HELP);
   process.exit(0);
 }
 
-if (showVersion) {
+if (args.showVersion) {
   console.log(`multiarena v${getPkgVersion()}`);
   process.exit(0);
 }
 
-if (listOnly) {
+if (args.listOnly) {
   const sessions = listSessions();
   if (sessions.length === 0) {
     console.log("No saved sessions.");
@@ -31,4 +31,10 @@ if (listOnly) {
   process.exit(0);
 }
 
-render(React.createElement(App, { sessionId }));
+if (args.webMode) {
+  const { startServer } = await import("./server/index.js");
+  startServer(args.webPort);
+  // Server runs indefinitely
+} else {
+  render(React.createElement(App, { sessionId: args.sessionId }));
+}

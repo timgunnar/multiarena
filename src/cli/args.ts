@@ -32,6 +32,7 @@ Usage:
 Options:
   --new              Start a new session (default)
   --resume <id>      Resume a saved session
+  --web [port]       Start web mode (default port 3000)
   --list             List saved sessions
   --help             Show this help
   --version          Show version`;
@@ -41,15 +42,23 @@ export interface ParsedArgs {
   listOnly: boolean;
   showHelp: boolean;
   showVersion: boolean;
+  webMode: boolean;
+  webPort: number;
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {
   if (argv.includes("--help") || argv.includes("-h")) {
-    return { listOnly: false, showHelp: true, showVersion: false };
+    return { listOnly: false, showHelp: true, showVersion: false, webMode: false, webPort: 3000 };
   }
 
   if (argv.includes("--version") || argv.includes("-v")) {
-    return { listOnly: false, showHelp: false, showVersion: true };
+    return { listOnly: false, showHelp: false, showVersion: true, webMode: false, webPort: 3000 };
+  }
+
+  const webIdx = argv.indexOf("--web");
+  if (webIdx >= 0) {
+    const port = parseInt(argv[webIdx + 1] ?? "3000", 10) || 3000;
+    return { listOnly: false, showHelp: false, showVersion: false, webMode: true, webPort: port };
   }
 
   const resumeIdx = argv.indexOf("--resume");
@@ -59,12 +68,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
       listOnly: false,
       showHelp: false,
       showVersion: false,
+      webMode: false,
+      webPort: 3000,
     };
   }
 
   if (argv.includes("--list") || argv.includes("--list-sessions")) {
-    return { listOnly: true, showHelp: false, showVersion: false };
+    return { listOnly: true, showHelp: false, showVersion: false, webMode: false, webPort: 3000 };
   }
 
-  return { listOnly: false, showHelp: false, showVersion: false };
+  return { listOnly: false, showHelp: false, showVersion: false, webMode: false, webPort: 3000 };
 }

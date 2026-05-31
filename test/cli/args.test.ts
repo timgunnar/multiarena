@@ -4,7 +4,7 @@ import { parseArgs, getPkgVersion, setPkgVersion, HELP } from "../../src/cli/arg
 describe("parseArgs", () => {
   it("returns defaults with no args", () => {
     const r = parseArgs([]);
-    expect(r).toEqual({ listOnly: false, showHelp: false, showVersion: false });
+    expect(r).toEqual({ listOnly: false, showHelp: false, showVersion: false, webMode: false, webPort: 3000 });
   });
 
   it("detects --help", () => {
@@ -50,6 +50,18 @@ describe("parseArgs", () => {
     const r = parseArgs(["--resume", "x", "--list"]);
     expect(r.sessionId).toBe("x");
     expect(r.listOnly).toBe(false);
+  });
+
+  it("detects --web", () => {
+    const r = parseArgs(["--web"]);
+    expect(r.webMode).toBe(true);
+    expect(r.webPort).toBe(3000);
+  });
+
+  it("detects --web with custom port", () => {
+    const r = parseArgs(["--web", "8080"]);
+    expect(r.webMode).toBe(true);
+    expect(r.webPort).toBe(8080);
   });
 });
 
