@@ -338,7 +338,12 @@ function backToBroadcast() {
 .delib-start { text-align: center; padding: 48px 24px; }
 .delib-start-title { font-size: 20px; margin-bottom: 8px; color: var(--text); }
 .delib-start-hint { color: var(--text-dim); margin-bottom: 32px; font-size: 0.9rem; }
-.delib-input-row { display: flex; gap: 12px; align-items: flex-start; max-width: 640px; margin: 0 auto; }
+.delib-input-row { display: flex; gap: 12px; align-items: flex-start; max-width: 100%; }
+@media (max-width: 640px) {
+  .delib-input-row { flex-direction: column; }
+  .delib-submit-btn { width: 100%; }
+  .delib-start { padding: 24px 16px; }
+}
 .delib-textarea { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 15px; resize: vertical; min-height: 80px; font-family: inherit; }
 .delib-submit-btn { background: #7c3aed; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; cursor: pointer; white-space: nowrap; }
 .delib-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }

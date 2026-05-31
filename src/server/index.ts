@@ -152,8 +152,19 @@ export function startServer(port = PORT) {
       return;
     }
 
-    // Static files
+    // Static files — inject initial state into index.html
     const filePath = url === "/" ? "/index.html" : url;
+    if ((url === "/" || url === "/index.html") && STATIC_DIR) {
+      const htmlPath = path.join(STATIC_DIR, "index.html");
+      if (fs.existsSync(htmlPath)) {
+        const html = fs.readFileSync(htmlPath, "utf-8");
+        const stateJson = JSON.stringify({ ...mgr.getState(), sessionId });
+        const injected = html.replace("</body>", `<script>window.__INITIAL_STATE__=${stateJson};</script></body>`);
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.end(injected);
+        return;
+      }
+    }
     serveStatic(res, filePath);
   });
 

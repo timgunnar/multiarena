@@ -121,6 +121,12 @@ export function useWebSocket() {
 
   onMounted(() => {
     mounted = true
+    // Use server-injected initial state if available (instant load)
+    if (window.__INITIAL_STATE__) {
+      updateState(window.__INITIAL_STATE__)
+      delete window.__INITIAL_STATE__
+    }
+    // Then poll for updates
     pollState()
     loadSessions()
   })

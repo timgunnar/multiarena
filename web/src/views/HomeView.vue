@@ -299,15 +299,9 @@ onMounted(() => {
   color: #484f58;
 }
 
-@media (max-width: 520px) {
-  .home-grid {
-    grid-template-columns: 1fr;
-  }
-  .home {
-    padding: 32px 16px 60px;
-  }
-  .home-title {
-    font-size: 1.5rem;
-  }
+@media (max-width: 768px) {
+  .home { padding: 24px 16px 60px; }
+  .home-grid { grid-template-columns: 1fr; }
+  .home-title { font-size: 1.5rem; }
 }
 </style>
