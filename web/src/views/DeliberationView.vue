@@ -11,6 +11,11 @@ function startDeliberation() {
   taskInput.value = ''
 }
 
+function clearDeliberation() {
+  state.deliberation = null
+  taskInput.value = ''
+}
+
 const deliberation = computed(() => state.deliberation)
 const models = computed(() => state.models || [])
 
@@ -132,6 +137,7 @@ const phase = computed(() => {
           @click="startDeliberation"
           :disabled="!taskInput.trim()"
         >{{ t('continueEdit') }}</button>
+        <button class="delib-new-btn" @click="clearDeliberation">{{ t('newConversation') }}</button>
       </div>
     </div>
   </div>
@@ -258,7 +264,9 @@ const phase = computed(() => {
   border: 1px solid var(--card);
   border-radius: 8px;
   padding: 14px;
-  margin: 0;
+  margin: 0 0 0.5rem 0;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .delib-rounds {
