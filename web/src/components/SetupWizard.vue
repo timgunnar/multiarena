@@ -5,12 +5,16 @@ const emit = defineEmits(['complete', 'skip'])
 
 const t = inject('t')
 
+const appState = inject('appState')
 const step = ref(0)
-const models = ref([
-  { name: 'claude-sonnet-4-20250514', provider: 'anthropic', nickname: 'Claude', api_key: '', enabled: true },
-  { name: 'gpt-4o', provider: 'openai', nickname: 'GPT', api_key: '', enabled: true },
-  { name: 'gemini-2.5-pro', provider: 'google', nickname: 'Gemini', api_key: '', enabled: true }
-])
+
+// Load models from server state, or start empty
+const serverModels = window.__INITIAL_STATE__?.models || appState?.state?.models || []
+const models = ref(
+  serverModels.length > 0
+    ? serverModels.map(m => ({ name: m.name, provider: m.provider || 'anthropic', nickname: m.name, api_key: '', enabled: true }))
+    : [] // Empty — user needs to add models
+)
 
 const steps = computed(() => [
   { title: t('welcomeStep0Title'), description: t('welcomeStep0Desc') },
@@ -78,16 +82,20 @@ function prevStep() {
         </div>
 
         <div v-else-if="step === 1" class="wiz-models">
+          <div v-if="models.length === 0" class="wiz-empty-models">
+            <p>{{ t('noModels') }}</p>
+            <p class="wiz-hint">{{ t('addModelHint') }}</p>
+          </div>
           <label
             v-for="(m, i) in models"
-            :key="m.name"
+            :key="m.name || i"
             class="wiz-model-row"
           >
             <input type="checkbox" :checked="m.enabled" @change="toggleModel(i)" />
             <span class="wiz-provider-tag">{{ m.provider }}</span>
             <span class="wiz-model-name">{{ m.name }}</span>
           </label>
-          <p class="wiz-count">{{ t('selected', { n: enabledCount }) }}</p>
+          <p v-if="models.length > 0" class="wiz-count">{{ t('selected', { n: enabledCount }) }}</p>
         </div>
 
         <div v-else class="wiz-ready">
