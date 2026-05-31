@@ -125,6 +125,8 @@ Multiple models collaborate in relay, drafting → revising → polishing → re
 
 **Shared Context:** Team mode uses a unified `teamMessages` thread. The deliberation engine reads from shared history, each round's output is auto-pushed back. Users can enter new requirements to start another round.
 
+**Version History:** Each deliberation round receives ALL previous drafts (with round numbers and author labels), not just the latest one. Models can freely revert to any earlier version — if a later revision drifts off-track, the model can pick up from an earlier, better baseline.
+
 **Adversarial Intensity:** Introduce critical thinking into deliberation to prevent excessive harmony:
 
 | Level | Effect |
