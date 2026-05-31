@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed, watch, provide } from 'vue'
 import { useWebSocket } from './composables/useWebSocket.js'
+import { useI18n } from './composables/useI18n.js'
 import Sidebar from './components/Sidebar.vue'
 import SetupWizard from './components/SetupWizard.vue'
+import SettingsView from './components/SettingsView.vue'
 import PermissionDialog from './components/PermissionDialog.vue'
 import ConnectionBanner from './components/ConnectionBanner.vue'
 import HomeView from './views/HomeView.vue'
@@ -21,6 +23,8 @@ const {
   connect
 } = useWebSocket()
 
+const { t, locale, setLocale, localeLabel } = useI18n()
+
 const sidebarCollapsed = ref(false)
 const showSetup = ref(false)
 
@@ -33,6 +37,10 @@ function toggleSidebar() {
 
 function onSetupComplete() {
   showSetup.value = false
+}
+
+function toggleLocale() {
+  setLocale(locale.value === 'zh' ? 'en' : 'zh')
 }
 
 watch(state, () => {
@@ -54,6 +62,9 @@ provide('appState', {
   sidebarCollapsed,
   toggleSidebar
 })
+
+provide('locale', locale)
+provide('t', t)
 </script>
 
 <template>
@@ -71,6 +82,7 @@ provide('appState', {
           <HomeView v-if="currentView === 'home'" />
           <BroadcastView v-else-if="currentView === 'broadcast'" />
           <DeliberationView v-else-if="currentView === 'deliberation'" />
+          <SettingsView v-else-if="currentView === 'settings'" />
           <div v-else class="view-placeholder">
             <p>Unknown view: {{ currentView }}</p>
           </div>

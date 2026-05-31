@@ -2,6 +2,7 @@
 import { ref, inject, onMounted } from 'vue'
 
 const { state, currentView, sessions, submit, loadSessions, resumeSession } = inject('appState')
+const t = inject('t')
 
 const inputText = ref('')
 
@@ -9,29 +10,29 @@ const taskCards = [
   {
     id: 'code',
     emoji: '&lt;/&gt;',
-    title: 'Write Code',
-    items: ['Refactor', 'New Feature', 'Debug'],
+    title: t('writeCode'),
+    items: [t('refactor'), t('newFeature'), t('debug')],
     prompt: 'Implement a rate-limited API client in TypeScript with exponential backoff retry logic.'
   },
   {
     id: 'write',
     emoji: '&#9998;',
-    title: 'Write Content',
-    items: ['Blog Post', 'Documentation', 'Proposal'],
+    title: t('writeContent'),
+    items: [t('blogPost'), t('documentation'), t('proposal')],
     prompt: 'Write a technical blog post about the benefits of multi-model AI orchestration for software development.'
   },
   {
     id: 'analyze',
     emoji: '&#9881;',
-    title: 'Analyze',
-    items: ['Code Review', 'Architecture', 'Performance'],
+    title: t('analyze'),
+    items: [t('codeReview'), t('architecture'), t('performance')],
     prompt: 'Review this code for security vulnerabilities, race conditions, and memory leaks. Suggest concrete fixes.'
   },
   {
     id: 'plan',
     emoji: '&#9878;',
-    title: 'Plan',
-    items: ['Architecture', 'Migration', 'Roadmap'],
+    title: t('plan'),
+    items: [t('architecture'), t('migration'), t('roadmap')],
     prompt: 'Design a system architecture for a real-time collaborative text editor with offline support.'
   }
 ]
@@ -83,7 +84,7 @@ onMounted(() => {
           v-model="inputText"
           class="home-textarea"
           rows="3"
-          placeholder="Ask all models at once... e.g. Write a function that detects palindrome strings in O(n) time"
+          :placeholder="t('askAllModels')"
           @keydown.enter.exact.prevent="handleSubmit"
         ></textarea>
         <button
@@ -91,16 +92,13 @@ onMounted(() => {
           :disabled="!inputText.trim()"
           @click="handleSubmit"
         >
-          Send to All Models &rarr;
+          {{ t('sendToAll') }}
         </button>
       </div>
-      <p class="mode-hint" v-if="state.models.length > 0">
-        {{ state.mode === 'broadcast' ? 'Broadcast mode — all models receive every message' : 'Directed mode — messages go to selected model only' }}
-      </p>
     </section>
 
     <section v-if="sessions.length > 0" class="home-sessions">
-      <h2 class="section-heading">Previous Sessions</h2>
+      <h2 class="section-heading">{{ t('previousSessions') }}</h2>
       <div class="session-cards">
         <button
           v-for="s in sessions"
@@ -248,13 +246,6 @@ onMounted(() => {
 .home-submit:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.mode-hint {
-  text-align: center;
-  font-size: 0.75rem;
-  color: #484f58;
-  margin-top: 12px;
 }
 
 .home-sessions {

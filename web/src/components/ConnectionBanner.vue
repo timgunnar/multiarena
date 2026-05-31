@@ -2,6 +2,7 @@
 import { inject, ref } from 'vue'
 
 const { state, connectionError, connect } = inject('appState')
+const t = inject('t')
 
 const dismissed = ref(false)
 
@@ -23,8 +24,8 @@ function onReconnect() {
   >
     <span class="conn-msg">{{ connectionError }}</span>
     <div class="conn-actions">
-      <button class="conn-btn retry" @click="onReconnect">Retry</button>
-      <button class="conn-btn dismiss" @click="onDismiss">Dismiss</button>
+      <button class="conn-btn retry" @click="onReconnect">{{ t('retry') }}</button>
+      <button class="conn-btn dismiss" @click="onDismiss">{{ t('dismiss') }}</button>
     </div>
   </div>
 </template>

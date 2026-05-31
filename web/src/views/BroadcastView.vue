@@ -2,6 +2,7 @@
 import { ref, computed, inject, watch, nextTick } from 'vue'
 
 const { state, submit, respondPermission } = inject('appState')
+const t = inject('t')
 
 const inputText = ref('')
 const panelRefs = ref([])
@@ -60,11 +61,11 @@ watch(
     <!-- Top bar -->
     <header class="bc-top">
       <div class="bc-top-left">
-        <span class="bc-mode-badge">{{ state.mode === 'broadcast' ? 'Broadcast' : 'Directed' }}</span>
+        <span class="bc-mode-badge">{{ state.mode === 'broadcast' ? t('broadcast') : t('directed') }}</span>
         <span v-if="state.sessionId" class="bc-session">{{ state.sessionId.slice(0, 8) }}</span>
       </div>
       <div class="bc-top-right">
-        <span class="bc-model-count">{{ models.length }} model{{ models.length !== 1 ? 's' : '' }}</span>
+        <span class="bc-model-count">{{ models.length }} {{ models.length === 1 ? t('statusModel').toLowerCase() : t('models') }}</span>
       </div>
     </header>
 
@@ -86,7 +87,7 @@ watch(
           </div>
           <div class="bc-panel-hdr-r">
             <span v-if="m.usage" class="bc-usage">{{ formatTokens(m.usage) }}</span>
-            <span v-if="m.muted" class="bc-muted-tag">Muted</span>
+            <span v-if="m.muted" class="bc-muted-tag">{{ t('muted') }}</span>
           </div>
         </div>
 
@@ -94,7 +95,7 @@ watch(
           class="bc-panel-body"
           :ref="(el) => setPanelRef(el, idx)"
         >
-          <pre class="bc-buffer">{{ m.buffer || 'Waiting for response...' }}</pre>
+          <pre class="bc-buffer">{{ m.buffer || t('waiting') }}</pre>
           <span v-if="m.isStreaming" class="bc-cursor">&#9612;</span>
         </div>
 
@@ -104,7 +105,7 @@ watch(
             @click="copyBuffer(m)"
             :disabled="!m.buffer"
           >
-            Copy
+            {{ t('copy') }}
           </button>
         </div>
       </div>
@@ -113,14 +114,15 @@ watch(
     <!-- Permission overlay -->
     <div v-if="state.permissionPrompt" class="bc-perm-bar">
       <span class="bc-perm-msg">
-        <strong>{{ state.permissionPrompt.modelName }}</strong> wants to run
+        {{ t('statusModel') }} <strong>{{ state.permissionPrompt.modelName }}</strong>
+        {{ t('wantsToRun').replace(/<[^>]+>/g, '') }}
         <code>{{ state.permissionPrompt.toolName }}</code>
       </span>
       <div class="bc-perm-actions">
-        <button class="bc-perm-btn allow" @click="respondPermission('allow')">Allow</button>
-        <button class="bc-perm-btn allow-always" @click="respondPermission('allow_always')">Always Allow</button>
-        <button class="bc-perm-btn deny" @click="respondPermission('deny')">Deny</button>
-        <button class="bc-perm-btn deny-always" @click="respondPermission('deny_always')">Always Deny</button>
+        <button class="bc-perm-btn allow" @click="respondPermission('allow')">{{ t('allow') }}</button>
+        <button class="bc-perm-btn allow-always" @click="respondPermission('allow_always')">{{ t('allowAlways') }}</button>
+        <button class="bc-perm-btn deny" @click="respondPermission('deny')">{{ t('deny') }}</button>
+        <button class="bc-perm-btn deny-always" @click="respondPermission('deny_always')">{{ t('denyAlways') }}</button>
       </div>
     </div>
 
@@ -130,7 +132,7 @@ watch(
         v-model="inputText"
         class="bc-input"
         rows="1"
-        placeholder="Type a message... (Enter to send)"
+        :placeholder="t('typeMessage')"
         @keydown.enter.exact.prevent="handleSend"
       ></textarea>
       <button
@@ -138,7 +140,7 @@ watch(
         :disabled="!inputText.trim()"
         @click="handleSend"
       >
-        Send
+        {{ t('send') }}
       </button>
     </div>
   </div>

@@ -2,38 +2,39 @@
 import { inject } from 'vue'
 
 const { state, respondPermission } = inject('appState')
+const t = inject('t')
 </script>
 
 <template>
   <Teleport to="body">
     <div v-if="state.permissionPrompt" class="perm-overlay" @click.self="respondPermission('deny')">
       <div class="perm-dialog">
-        <h3 class="perm-title">Permission Required</h3>
+        <h3 class="perm-title">{{ t('permissionRequired') }}</h3>
 
         <div class="perm-model">
-          <span class="perm-label">Model</span>
+          <span class="perm-label">{{ t('statusModel') }}</span>
           <span class="perm-value">{{ state.permissionPrompt.modelName }}</span>
         </div>
 
         <div class="perm-tool">
-          <span class="perm-label">Tool</span>
+          <span class="perm-label">{{ t('tool') }}</span>
           <code class="perm-tool-name">{{ state.permissionPrompt.toolName }}</code>
         </div>
 
         <div v-if="state.permissionPrompt.args" class="perm-args">
-          <span class="perm-label">Arguments</span>
+          <span class="perm-label">{{ t('arguments') }}</span>
           <pre class="perm-args-text">{{ JSON.stringify(state.permissionPrompt.args, null, 2) }}</pre>
         </div>
 
         <div class="perm-actions">
           <button class="perm-btn allow" @click="respondPermission('allow')">
-            Allow Once
+            {{ t('allowOnce') }}
           </button>
           <button class="perm-btn allow-always" @click="respondPermission('allow_always')">
-            Always Allow
+            {{ t('allowAlways') }}
           </button>
           <button class="perm-btn deny" @click="respondPermission('deny')">
-            Deny
+            {{ t('deny') }}
           </button>
         </div>
       </div>

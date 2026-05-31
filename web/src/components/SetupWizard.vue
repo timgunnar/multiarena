@@ -4,6 +4,7 @@ import { ref, computed, inject } from 'vue'
 const emit = defineEmits(['complete', 'skip'])
 
 const { connect } = inject('appState')
+const t = inject('t')
 
 const step = ref(0)
 const models = ref([
@@ -13,9 +14,9 @@ const models = ref([
 ])
 
 const steps = [
-  { title: 'Welcome', description: 'Compare multiple AI models side-by-side in real time.' },
-  { title: 'Models', description: 'Choose which models to include in your arena.' },
-  { title: 'Ready', description: 'You\'re all set. Start a conversation to see models respond simultaneously.' }
+  { title: t('welcomeStep0Title'), description: t('welcomeStep0Desc') },
+  { title: t('welcomeStep1Title'), description: t('welcomeStep1Desc') },
+  { title: t('welcomeStep2Title'), description: t('welcomeStep2Desc') }
 ]
 
 const enabledCount = computed(() => models.value.filter(m => m.enabled).length)
@@ -60,10 +61,10 @@ function prevStep() {
       <div class="wiz-body">
         <div v-if="step === 0" class="wiz-welcome">
           <ul class="wiz-features">
-            <li>Run multiple AI models simultaneously</li>
-            <li>Compare responses side-by-side in real time</li>
-            <li>Toggle between broadcast and directed mode</li>
-            <li>Independent file workspaces per model</li>
+            <li>{{ t('feature1') }}</li>
+            <li>{{ t('feature2') }}</li>
+            <li>{{ t('feature3') }}</li>
+            <li>{{ t('feature4') }}</li>
           </ul>
         </div>
 
@@ -77,21 +78,21 @@ function prevStep() {
             <span class="wiz-provider-tag">{{ m.provider }}</span>
             <span class="wiz-model-name">{{ m.name }}</span>
           </label>
-          <p class="wiz-count">{{ enabledCount }} selected</p>
+          <p class="wiz-count">{{ t('selected', { n: enabledCount }) }}</p>
         </div>
 
         <div v-else class="wiz-ready">
-          <p><strong>{{ enabledCount }} model{{ enabledCount !== 1 ? 's' : '' }}</strong> ready.</p>
-          <p>Type a prompt and press <kbd>Enter</kbd> to begin.</p>
+          <p v-html="t('readyModels', { n: enabledCount })"></p>
+          <p v-html="t('readyPrompt')"></p>
         </div>
       </div>
 
       <div class="wiz-footer">
-        <button class="wiz-btn sec" @click="emit('skip')">Skip</button>
+        <button class="wiz-btn sec" @click="emit('skip')">{{ t('skip') }}</button>
         <div class="wiz-nav">
-          <button v-if="step > 0" class="wiz-btn sec" @click="prevStep">Back</button>
+          <button v-if="step > 0" class="wiz-btn sec" @click="prevStep">{{ t('back') }}</button>
           <button class="wiz-btn pri" @click="nextStep">
-            {{ step === steps.length - 1 ? 'Start' : 'Next' }}
+            {{ step === steps.length - 1 ? t('start') : t('next') }}
           </button>
         </div>
       </div>

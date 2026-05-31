@@ -12,6 +12,15 @@ const {
   toggleSidebar
 } = inject('appState')
 
+const t = inject('t')
+const locale = inject('locale')
+const localeLabel = computed(() => locale.value === 'zh' ? 'EN' : '中')
+
+function toggleLocale() {
+  locale.value = locale.value === 'zh' ? 'en' : 'zh'
+  localStorage.setItem('multiarena-locale', locale.value)
+}
+
 const sessionsLoaded = ref(false)
 
 const modelCount = computed(() => state.models.length)
@@ -38,17 +47,25 @@ function onResumeSession(id) {
       <button
         class="toggle-btn"
         @click="toggleSidebar"
-        :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        :title="sidebarCollapsed ? t('expandSidebar') : t('collapseSidebar')"
       >
         <span v-if="sidebarCollapsed">&#9776;</span>
         <span v-else>&#10005;</span>
       </button>
       <span v-if="!sidebarCollapsed" class="brand">multiarena</span>
+      <button
+        v-if="!sidebarCollapsed"
+        class="lang-btn"
+        @click="toggleLocale"
+        :title="t('languageSwitch')"
+      >
+        {{ localeLabel }}
+      </button>
     </div>
 
     <div v-if="!sidebarCollapsed" class="sidebar-body">
       <section class="nav-section">
-        <h3 class="section-title">Views</h3>
+        <h3 class="section-title">{{ t('views') }}</h3>
         <nav class="nav-links">
           <button
             class="nav-link"
@@ -56,7 +73,7 @@ function onResumeSession(id) {
             @click="navTo('home')"
           >
             <span class="nav-icon">&#8962;</span>
-            Home
+            {{ t('home') }}
           </button>
           <button
             class="nav-link"
@@ -65,7 +82,7 @@ function onResumeSession(id) {
             :disabled="modelCount === 0"
           >
             <span class="nav-icon">&#9654;</span>
-            Broadcast
+            {{ t('broadcast') }}
           </button>
           <button
             class="nav-link"
@@ -74,13 +91,21 @@ function onResumeSession(id) {
             :disabled="!state.deliberation"
           >
             <span class="nav-icon">&#9881;</span>
-            Deliberation
+            {{ t('deliberation') }}
+          </button>
+          <button
+            class="nav-link"
+            :class="{ active: currentView === 'settings' }"
+            @click="navTo('settings')"
+          >
+            <span class="nav-icon">&#9874;</span>
+            {{ t('settings') }}
           </button>
         </nav>
       </section>
 
       <section v-if="modelCount > 0" class="models-section">
-        <h3 class="section-title">Models ({{ activeModels }}/{{ modelCount }})</h3>
+        <h3 class="section-title">{{ t('models') }} ({{ activeModels }}/{{ modelCount }})</h3>
         <ul class="model-list">
           <li
             v-for="model in state.models"
@@ -90,7 +115,7 @@ function onResumeSession(id) {
           >
             <span class="model-status" :class="{ active: model.isStreaming }"></span>
             <span class="model-name">{{ model.name }}</span>
-            <span v-if="model.muted" class="muted-badge">muted</span>
+            <span v-if="model.muted" class="muted-badge">{{ t('muted') }}</span>
             <span v-if="model.usage" class="usage-badge">
               {{ model.usage.inputTokens || 0 }}+{{ model.usage.outputTokens || 0 }}
             </span>
@@ -100,14 +125,14 @@ function onResumeSession(id) {
 
       <section class="sessions-section">
         <h3 class="section-title">
-          Sessions
-          <button class="refresh-btn" @click="loadSessions" title="Refresh sessions">
+          {{ t('sessions') }}
+          <button class="refresh-btn" @click="loadSessions" :title="t('refresh')">
             &#8635;
           </button>
         </h3>
-        <div v-if="!sessionsLoaded" class="sessions-loading">Loading...</div>
+        <div v-if="!sessionsLoaded" class="sessions-loading">{{ t('loading') }}</div>
         <div v-else-if="sessions.length === 0" class="sessions-empty">
-          No saved sessions
+          {{ t('noSessions') }}
         </div>
         <ul v-else class="session-list">
           <li
@@ -132,10 +157,10 @@ function onResumeSession(id) {
       <section class="status-section">
         <div class="connection-status" :class="{ connected: isConnected }">
           <span class="status-dot"></span>
-          {{ isConnected ? 'Connected' : 'Disconnected' }}
+          {{ isConnected ? t('connected') : t('disconnected') }}
         </div>
         <div v-if="state.mode" class="mode-badge">
-          {{ state.mode === 'directed' ? 'Directed' : 'Broadcast' }}
+          {{ state.mode === 'directed' ? t('directed') : t('broadcast') }}
         </div>
       </section>
     </div>
@@ -187,6 +212,25 @@ function onResumeSession(id) {
   font-size: 1rem;
   color: #58a6ff;
   white-space: nowrap;
+  flex: 1;
+}
+
+.lang-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #30363d;
+  color: #8b949e;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.lang-btn:hover {
+  color: #c9d1d9;
+  border-color: #58a6ff;
 }
 
 .sidebar-body {

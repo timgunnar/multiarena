@@ -2,6 +2,7 @@
 import { computed, inject } from 'vue'
 
 const { state, currentView } = inject('appState')
+const t = inject('t')
 
 const deliberation = computed(() => state.deliberation)
 
@@ -40,14 +41,14 @@ function backToBroadcast() {
 <template>
   <div class="delib">
     <header class="delib-top">
-      <button class="delib-back" @click="backToBroadcast">&larr; Back</button>
-      <span class="delib-title">Deliberation</span>
+      <button class="delib-back" @click="backToBroadcast">{{ t('back') }}</button>
+      <span class="delib-title">{{ t('deliberation') }}</span>
       <div class="delib-phase-badge" :class="phase">{{ phase }}</div>
     </header>
 
     <div v-if="!deliberation" class="delib-empty">
-      <p>No active deliberation.</p>
-      <p class="delib-empty-hint">Deliberation starts when models complete their responses and a structured comparison begins.</p>
+      <p>{{ t('noDeliberation') }}</p>
+      <p class="delib-empty-hint">{{ t('deliberationHint') }}</p>
     </div>
 
     <div v-else class="delib-content">
@@ -55,13 +56,13 @@ function backToBroadcast() {
       <div class="delib-progress-bar">
         <div class="delib-progress-fill" :style="{ width: progressPct + '%' }"></div>
       </div>
-      <div class="delib-progress-label">{{ progressPct }}% complete</div>
+      <div class="delib-progress-label">{{ t('percentComplete', { pct: progressPct }) }}</div>
 
       <!-- Think text -->
       <section v-if="thinkText" class="delib-section">
         <h3 class="delib-section-hdr">
           <span class="delib-section-icon">&#9881;</span>
-          Thinking
+          {{ t('thinking') }}
         </h3>
         <pre class="delib-think">{{ thinkText }}</pre>
       </section>
@@ -70,7 +71,7 @@ function backToBroadcast() {
       <section v-if="rounds.length > 0" class="delib-section">
         <h3 class="delib-section-hdr">
           <span class="delib-section-icon">&#9744;</span>
-          Rounds ({{ rounds.length }})
+          {{ t('roundsLabel', { n: rounds.length }) }}
         </h3>
         <div class="delib-rounds">
           <div
@@ -79,12 +80,12 @@ function backToBroadcast() {
             class="delib-round"
           >
             <div class="delib-round-hdr">
-              <span class="delib-round-num">Round {{ idx + 1 }}</span>
+              <span class="delib-round-num">{{ t('roundN', { n: idx + 1 }) }}</span>
               <span class="delib-round-type">{{ r.type || 'compare' }}</span>
             </div>
             <div v-if="r.summary" class="delib-round-summary">{{ r.summary }}</div>
             <div v-if="r.decision" class="delib-round-decision">
-              <strong>Decision:</strong> {{ r.decision }}
+              <strong>{{ t('decision') }}:</strong> {{ r.decision }}
             </div>
           </div>
         </div>
@@ -94,7 +95,7 @@ function backToBroadcast() {
       <section v-if="documentPreview" class="delib-section">
         <h3 class="delib-section-hdr">
           <span class="delib-section-icon">&#9776;</span>
-          Document Preview
+          {{ t('documentPreview') }}
         </h3>
         <pre class="delib-doc">{{ documentPreview }}</pre>
       </section>
