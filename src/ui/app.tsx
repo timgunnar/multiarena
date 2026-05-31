@@ -824,6 +824,11 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
           setModelStates([...session.models]);
         }
 
+        // Store assistant response into message history
+        if (tm.buffer) {
+          session.teamMessages.push({ role: "assistant", content: tm.buffer } as any);
+        }
+
         await wtManager.cleanup(taskId);
         saveCurrentSession();
         return;
@@ -940,6 +945,14 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
           }
         }),
       );
+
+      // Store assistant responses into message history so they persist across turns
+      for (const t of targets) {
+        if (t.buffer) {
+          t.messages.push({ role: "assistant", content: t.buffer } as any);
+        }
+      }
+      setModelStates([...session.models]);
 
       // ── Worktree cleanup (keep none by default) ─────────────────
       await worktreeManager.cleanup(taskId);

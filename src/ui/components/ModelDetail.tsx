@@ -9,31 +9,32 @@ interface Props {
 }
 
 export const ModelDetail: React.FC<Props> = ({ model, scrollOffset }) => {
-  // Build conversation lines from message history + current streaming buffer
+  // Build conversation lines: user messages from history, assistant from buffer
+  const bufferLines = model.buffer ? model.buffer.split("\n") : [];
   const conversationLines: string[] = [];
+
   for (const msg of model.messages) {
     if (msg.role === "user") {
-      conversationLines.push("");
+      if (conversationLines.length > 0) conversationLines.push("");
       conversationLines.push(`> ${msg.content}`);
-    } else if (msg.role === "assistant") {
-      // assistant content already shown via buffer; skip if buffer matches
-      // Otherwise show it (for resumed sessions where buffer may be empty)
-      if (msg.content) {
-        conversationLines.push("");
-        for (const line of msg.content.split("\n")) {
-          conversationLines.push(line);
-        }
-      }
     }
-    // tool results are informational — skip
   }
 
-  // If streaming, the buffer has the latest incomplete response not yet in messages
-  const hasHistory = conversationLines.length > 0;
-  const bufferLines = model.buffer ? model.buffer.split("\n") : [];
-  const allLines = hasHistory
-    ? [...conversationLines, ...(model.isStreaming ? ["", ...bufferLines] : [])]
-    : bufferLines;
+  // If buffer has content, it's the current/latest assistant response.
+  // If buffer is empty (resumed session), fall back to assistant messages in history.
+  const allLines: string[] = [...conversationLines];
+  if (bufferLines.length > 0) {
+    if (allLines.length > 0) allLines.push("");
+    allLines.push(...bufferLines);
+  } else {
+    // Resumed session: show assistant responses from history
+    for (const msg of model.messages) {
+      if (msg.role === "assistant" && msg.content) {
+        if (allLines.length > 0) allLines.push("");
+        allLines.push(...msg.content.split("\n"));
+      }
+    }
+  }
 
   const visibleLines = allLines.slice(scrollOffset);
   const totalTokens = model.usage.input + model.usage.output;
