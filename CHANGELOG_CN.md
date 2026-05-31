@@ -6,7 +6,7 @@
 
 ### 关键升级
 
-- **Web 模式** — `multiarena` 直接启动 Vue 3 Web 界面（HTTP + SSE）。设置向导、中英文切换、任务卡片、流式面板、审议流程。非技术用户零配置上手。
+- **Web 模式** — `multiarena` 直接启动 Vue 3 Web 界面（HTTP + WebSocket）。设置向导、中英文切换、任务卡片、流式面板、审议流程。非技术用户零配置上手。
 - **对抗审议** — off/low/medium/high 四级对抗强度。六种批判视角（质疑者/务实派/用户视角/反方/乐观派/综合者）。镜像对抗轮次。
 - **审议版本历史** — 每轮可见所有历史版本，模型可回退到任意早期版本。
 - **CLI 启动引导** — 无参数启动自动进 Web 界面。`multiarena web` / `multiarena terminal` 快捷命令。`?` 帮助别名。
@@ -18,7 +18,7 @@
 - 2 模型 high 对抗模式反向循环为空 — 已修正
 - 用户历史消息不可见 — ModelDetail/BroadcastSummary 渲染完整对话
 - 助手回复因 buffer 清空丢失 — 流完成后存入 messages
-- Web SSE 断开 — submit 结果广播到所有 SSE 客户端
+- Web WebSocket 断开 — submit 结果广播到所有 WebSocket 客户端
 - Web 侧栏审议链接不可点击 — 移除错误 disabled 状态
 - Web SettingsView 空白 — 修复与 SetupWizard 的 localStorage 数据格式不匹配
 - Web 首页英文硬编码 — i18n 全覆盖
@@ -29,7 +29,7 @@
 - 新增 120+ E2E 测试（广播 7、审议 11、持久化 7、清理 4、权限 6、合并 5、团队聊天 5、App 分支 35、安装 1、跨环境 5）
 - 服务器测试 12 个 + Web 组件测试 4 个
 - 全部 43 文件、441 测试通过（主）+ 4 测试（Web）
-- 服务器测试 12 个（HTTP + SSE）
+- 服务器测试 12 个（HTTP + WebSocket）
 - 全部 42 文件、440 测试通过
 
 ## v0.1.8

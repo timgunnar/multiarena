@@ -110,7 +110,7 @@ multiarena
            │                  │
            ▼                  ▼
 ┌──────────────────┐ ┌─────────────────────────────┐
-│   CLI UI         │ │   Web 服务器 (HTTP + SSE)    │
+│   CLI UI         │ │   Web 服务器 (HTTP+WebSocket) │
 │   (Ink/React)    │ │   src/server/                │
 │   src/ui/        │ └──────────────┬──────────────┘
 └────────┬─────────┘                │
@@ -135,7 +135,7 @@ multiarena
 | 层 | 目录 | 职责 |
 |----|------|------|
 | CLI UI | `src/ui/` | 终端界面（Ink/React） |
-| Web 服务器 | `src/server/` | HTTP + SSE，消息路由 |
+| Web 服务器 | `src/server/` | HTTP + WebSocket，消息路由 |
 | Web 前端 | `src/web/` | Vue 3 浏览器界面 |
 | 核心层 | `src/core/` | 会话、流式、审议引擎 |
 | Provider 层 | `src/provider/` | 6 家 LLM API 适配 |
@@ -380,14 +380,6 @@ multiarena web                           # 后端 :3000
 
 Vite 自动代理 `/api` 请求到后端。
 
-```bash
-cd web && npm install && npm run dev    # 启动 Vite 开发服务器
-# 另一个终端：
-multiarena web                           # 启动后端
-```
-
-打开 `http://localhost:5173`（Vite 自动代理 API 到后端）。
-
 ---
 
 ## 8. 会话管理
@@ -519,7 +511,7 @@ multiarena -r mygrz3
 
 ### Web 模式显示空白页
 
-运行 `npm run build:web` 编译 Vue 前端。Web UI 从 v0.3.0 起可用。
+运行 `npm run build:web` 编译 Vue 前端。Web UI 从 v0.2.0 起可用。
 
 ### 会话恢复失败
 

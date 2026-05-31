@@ -1,13 +1,19 @@
 /**
- * HTTP server for multiarena --web mode.
+ * HTTP + WebSocket server for multiarena --web mode.
  *
- * Zero extra dependencies — uses Node.js built-in http module.
- * Initial state is injected into index.html. Streaming responses via NDJSON on /api/cmd submit.
+ * WebSocket (ws://127.0.0.1:PORT/ws) handles ALL real-time communication:
+ * submit, permission, mute, reset, mode, save, resume — with streaming responses.
+ *
+ * HTTP endpoints (/api/config, /api/sessions, /api/health) remain for
+ * non-streaming operations and backward compatibility.
+ *
+ * Initial state is injected into index.html for instant page load.
  */
 import * as http from "node:http";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { WebSocketServer, WebSocket } from "ws";
 import { loadConfig } from "../config/loader.js";
 import { SessionManager } from "./sessionManager.js";
 
@@ -56,13 +62,13 @@ function serveStatic(res: http.ServerResponse, filePath: string) {
 
 export function startServer(port = PORT) {
   const config = loadConfig();
-  const mgr = new SessionManager(config);
+  let mgr = new SessionManager(config);
   let sessionId = Date.now().toString(36);
 
   const server = http.createServer((req, res) => {
     const url = req.url ?? "/";
 
-    // POST endpoint for commands
+    // POST endpoint for commands (backward compatibility)
     if (url === "/api/cmd" && req.method === "POST") {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
@@ -131,7 +137,131 @@ export function startServer(port = PORT) {
     serveStatic(res, filePath);
   });
 
-  // ── Command handler ──────────────────────────────────────────
+  // ── WebSocket ───────────────────────────────────────────────
+
+  const wss = new WebSocketServer({ server });
+
+  wss.on("connection", (ws: WebSocket) => {
+    // Send initial state on connect
+    safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+
+    ws.on("message", (data: Buffer) => {
+      let msg: any;
+      try {
+        msg = JSON.parse(data.toString());
+      } catch {
+        safeSend(ws, { type: "error", message: "Invalid JSON" });
+        return;
+      }
+      handleWsMessage(ws, msg);
+    });
+
+    ws.on("error", (err: Error) => {
+      console.error("[ws] Connection error:", err.message);
+    });
+  });
+
+  // ── WebSocket message handler ───────────────────────────────
+
+  async function handleWsMessage(ws: WebSocket, msg: any) {
+    const { type, ...payload } = msg;
+
+    switch (type) {
+      case "submit": {
+        const text = payload.text ?? "";
+        const mode = payload.mode ?? "broadcast";
+        try {
+          let stream: AsyncGenerator<any>;
+          if (mode === "deliberation") {
+            stream = mgr.deliberate(text);
+          } else if (mode === "team_chat" && payload.modelName) {
+            stream = mgr.teamChat(payload.modelName, text);
+          } else {
+            stream = mgr.broadcast(text);
+          }
+
+          for await (const event of stream) {
+            safeSend(ws, event);
+          }
+          // Send updated state after completion
+          safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        } catch (err: any) {
+          console.error("[ws] Submit error:", err.message || err);
+          safeSend(ws, { type: "error", message: err.message || String(err) });
+          safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        }
+        break;
+      }
+
+      case "permission": {
+        mgr.respondPermission(payload.decision);
+        safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        break;
+      }
+
+      case "mute": {
+        mgr.toggleMute(payload.modelName);
+        safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        break;
+      }
+
+      case "reset": {
+        mgr.resetModel(payload.modelName);
+        safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        break;
+      }
+
+      case "mode": {
+        mgr.setTarget(payload.mode, payload.modelName);
+        safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        break;
+      }
+
+      case "save": {
+        const saved = mgr.save(sessionId);
+        safeSend(ws, { type: "saved", session: saved });
+        break;
+      }
+
+      case "resume": {
+        const restored = SessionManager.resume(payload.sessionId, config);
+        if (!restored) {
+          safeSend(ws, { type: "error", message: "Session not found" });
+          return;
+        }
+        // Replace the session manager with the restored one
+        mgr = restored;
+        sessionId = payload.sessionId;
+        safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        break;
+      }
+
+      case "state": {
+        safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+        break;
+      }
+
+      default:
+        safeSend(ws, { type: "error", message: `Unknown command: ${type}` });
+    }
+  }
+
+  // ── Helper: send JSON, ignore closed-socket errors ─────────
+
+  function safeSend(ws: WebSocket, payload: any) {
+    try {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(payload));
+      }
+    } catch (err: any) {
+      // Connection may have closed mid-stream — silently drop
+      if (!err.message?.includes("CLOSED") && !err.message?.includes("CLOSING")) {
+        console.error("[ws] Send error:", err.message || err);
+      }
+    }
+  }
+
+  // ── HTTP command handler (backward compatibility) ───────────
 
   /** Build a .multiarenarc TOML string from web UI config. */
   function buildConfigTOML(cfg: any): string {
@@ -222,6 +352,7 @@ export function startServer(port = PORT) {
           res.end(JSON.stringify({ error: "Session not found" }));
           return;
         }
+        mgr = restored;
         sessionId = payload.sessionId;
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(restored.getState()));

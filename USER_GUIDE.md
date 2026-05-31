@@ -110,7 +110,7 @@ multiarena
            │                  │
            ▼                  ▼
 ┌──────────────────┐ ┌─────────────────────────────┐
-│   CLI UI         │ │   Web Server (HTTP + SSE)    │
+│   CLI UI         │ │   Web Server (HTTP+WebSocket) │
 │   (Ink/React)    │ │   src/server/                │
 │   src/ui/        │ └──────────────┬──────────────┘
 └────────┬─────────┘                │
@@ -135,7 +135,7 @@ multiarena
 | Layer | Directory | Purpose |
 |-------|-----------|---------|
 | CLI UI | `src/ui/` | Terminal interface (Ink/React) |
-| Web Server | `src/server/` | HTTP + SSE, WebSocket message routing |
+| Web Server | `src/server/` | HTTP + WebSocket message routing |
 | Web Frontend | `src/web/` | Vue 3 browser UI |
 | Core | `src/core/` | Session, streaming, deliberation engine |
 | Provider | `src/provider/` | 6 LLM API adapters |
