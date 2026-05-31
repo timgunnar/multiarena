@@ -205,11 +205,11 @@ ${finalRoundBlock}
 ${task}
 ${constraintBlock}
 
-## ${draftAuthor ?? "起草者"} 的初稿
+## 文档版本历史
 ${previousDocument}
 
 ## 要求
-- 在初稿基础上修订，不要推倒重写
+- 你可以在任意历史版本的基础上修订——如果后面的改动不如之前的版本，直接回到早期版本继续
 - 对照约束文档，逐条检查违规项并修正
 - 补充你发现遗漏的要点
 - 改进表达不清或逻辑不严谨的地方
@@ -235,11 +235,11 @@ ${finalRoundBlock}
 ${task}
 ${constraintBlock}
 
-## 经过修订的文档
+## 文档版本历史
 ${previousDocument}
 
 ## 要求
-- 在现有基础上最终润色
+- 你可以在任意历史版本的基础上润色——如果后面版本质量不如早期版本，回到早期版本继续
 - 再次对照约束文档做合规检查
 - 优化语言流畅度和可读性
 ${isFinalRound
@@ -256,10 +256,11 @@ ${isFinalRound
 ${task}
 ${constraintBlock}
 
-## 经过多轮修改的文档
+## 文档版本历史
 ${previousDocument}
 
 ## 要求
+- 你可以选择任意历史版本作为终稿基础——不要被最新版本绑定
 - 审查是否有修改偏离了原意
 - 对照约束文档逐条再过一遍
 - 清理所有 [修订:] 和 [补充:] 等过程标注，输出干净的最终版
@@ -403,9 +404,15 @@ export async function* runDeliberation(
 
   for (let i = 0; i < roundConfigs.length; i++) {
     const rc = roundConfigs[i];
-    const previousDocument = i > 0 ? documents[i - 1] : undefined;
     const draftAuthor = i > 0 ? roundConfigs[0].modelName : undefined;
     const isFinalRound = i === roundConfigs.length - 1;
+
+    // Build version history so models can reference or revert to any earlier draft
+    const previousDocument = i > 0
+      ? documents.map((doc, idx) =>
+          `## 第 ${idx + 1} 轮 (${roundConfigs[idx].modelName} · ${roundLabel(roundConfigs[idx].role)})\n\n${doc}`
+        ).join("\n\n---\n\n")
+      : undefined;
 
     yield {
       type: "round_start",
