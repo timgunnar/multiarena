@@ -436,16 +436,28 @@ describe("autoAssignRounds adversarial", () => {
     const models: Record<string, ModelConfig> = { A: modelCfg, B: modelCfg, C: modelCfg };
     const result = autoAssignRounds(["A", "B", "C"], models, "high");
     // Forward: A(draft) B(revise) C(polish) = 3
-    // Reverse with high: B(revise) B(polish) A(review) = 3
-    // Total: 6 (vs 5 for off/low/medium)
-    expect(result.length).toBeGreaterThan(5);
-    expect(result.length).toBe(6);
+    // Reverse with high: C(revise) C(polish) B(revise) B(polish) A(review) = 5
+    // Total: 8 (vs 5 for off/low/medium)
+    expect(result.length).toBeGreaterThan(6);
+    expect(result.length).toBe(8);
     // Final round is always review by first model
     expect(result[result.length - 1].role).toBe("review");
     expect(result[result.length - 1].modelName).toBe("A");
-    // Check reverse double: B appears twice in reverse
+    // Check reverse double: C and B both appear twice in reverse
     const reverseRoles = result.slice(3).map(r => r.role);
-    expect(reverseRoles.some(r => r === "polish")).toBe(true);
+    const polishCount = reverseRoles.filter(r => r === "polish").length;
+    expect(polishCount).toBe(2); // C and B each get a polish round
+  });
+
+  it("high mode works with 2 models (was broken — empty reverse loop)", () => {
+    const models: Record<string, ModelConfig> = { A: modelCfg, B: modelCfg };
+    const result = autoAssignRounds(["A", "B"], models, "high");
+    // Forward: A(draft) B(revise) = 2
+    // Reverse with high: B(revise) B(polish) A(review) = 3
+    // Total: 5 (vs 3 for off/low/medium)
+    expect(result.length).toBe(5);
+    expect(result[result.length - 1].role).toBe("review");
+    expect(result[result.length - 1].modelName).toBe("A");
   });
 });
 

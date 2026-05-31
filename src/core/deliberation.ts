@@ -620,10 +620,12 @@ export function autoAssignRounds(
     });
   }
 
-  // Reverse pass: middle models revise again, first model reviews
+  // Reverse pass: all non-first models revise again, first model reviews.
+  // For adversarial=high, include the last forward model and double each reverse.
+  // For off/low/medium, skip the last forward model (it just polished/reviewed).
   if (active.length >= 2) {
-    // Middle models in reverse (skip first and last of forward pass)
-    for (let i = fwdCount - 2; i >= 1; i--) {
+    const reverseStart = adversarialLevel === "high" ? fwdCount - 1 : fwdCount - 2;
+    for (let i = reverseStart; i >= 1; i--) {
       result.push({
         modelName: active[i],
         role: "revise",
