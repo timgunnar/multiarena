@@ -64,8 +64,9 @@ export function useWebSocket() {
     } catch (e) {
       console.error('[poll] fetch failed:', e.message)
       pollFailures++
-      state.connected = false
-      if (pollFailures >= 3) {
+      // Only show disconnected after 5+ consecutive failures (avoid transient glitches)
+      if (pollFailures >= 5) {
+        state.connected = false
         connectionError.value = 'Cannot connect to server'
       }
     }
@@ -89,11 +90,7 @@ export function useWebSocket() {
   }
 
   async function submit(text, mode = 'broadcast', modelName = null) {
-    // Fire-and-forget: server processes and state updates via polling
-    sendCommand('submit', { text, mode, modelName })
-    // Immediately poll for updates
-    setTimeout(() => pollState(), 500)
-    setTimeout(() => pollState(), 1500)
+    await sendCommand('submit', { text, mode, modelName })
   }
 
   async function respondPermission(decision) {
