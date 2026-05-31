@@ -158,64 +158,25 @@ export function startServer(port = PORT) {
 
     switch (type) {
       case "submit": {
-        // Stream results directly back — same pattern as CLI's runTurn()
-        res.writeHead(200, {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Transfer-Encoding": "chunked",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "X-Content-Type-Options": "nosniff",
-        });
-        res.flushHeaders();
-        res.write(JSON.stringify({ type: "connected" }) + "\n");
-
-        let closed = false;
-        const safeWrite = (data: string) => {
-          if (closed) return;
-          try {
-            res.write(data);
-          } catch {
-            closed = true;
-          }
-        };
-
-        res.on("close", () => {
-          closed = true;
-          clearTimeout(timeout);
-        });
-
-        const timeout = setTimeout(() => {
-          console.error("[submit] Timeout after 60s");
-          safeWrite(JSON.stringify({ type: "error", message: "Request timeout after 60s" }) + "\n");
-          if (!res.writableEnded) res.end();
-        }, 60_000);
+        // Return immediately; process in background. Client polls /api/cmd state.
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "ok" }));
 
         const text = payload.text ?? "";
         const mode = payload.mode ?? "broadcast";
-        try {
-          if (mode === "deliberation") {
-            for await (const event of mgr.deliberate(text)) {
-              if (closed) break;
-              safeWrite(JSON.stringify({ type: "deliberation", event }) + "\n");
+        (async () => {
+          try {
+            if (mode === "deliberation") {
+              for await (const _event of mgr.deliberate(text)) { /* consumed */ }
+            } else if (mode === "team_chat" && payload.modelName) {
+              for await (const _event of mgr.teamChat(payload.modelName, text)) { /* consumed */ }
+            } else {
+              for await (const _event of mgr.broadcast(text)) { /* consumed */ }
             }
-          } else if (mode === "team_chat" && payload.modelName) {
-            for await (const event of mgr.teamChat(payload.modelName, text)) {
-              if (closed) break;
-              safeWrite(JSON.stringify(event) + "\n");
-            }
-          } else {
-            for await (const event of mgr.broadcast(text)) {
-              if (closed) break;
-              safeWrite(JSON.stringify(event) + "\n");
-            }
+          } catch (err: any) {
+            console.error("[submit bg]", err.message);
           }
-          clearTimeout(timeout);
-          safeWrite(JSON.stringify({ type: "state", ...mgr.getState(), sessionId }) + "\n");
-        } catch (err: any) {
-          clearTimeout(timeout);
-          console.error("[submit] Error:", err.message || err);
-          safeWrite(JSON.stringify({ type: "error", message: err.message || String(err) }) + "\n");
-        }
-        if (!res.writableEnded) res.end();
+        })();
         break;
       }
 

@@ -70,54 +70,23 @@ export function useWebSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'submit', text, mode, modelName })
       })
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '')
-        throw new Error(`HTTP ${res.status}${errText ? ': ' + errText : ''}`)
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (mounted) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-        for (const line of lines) {
-          if (!line.trim()) continue
-          try {
-            const event = JSON.parse(line)
-            if (event.type === 'state') {
-              updateState(event)
-            } else if (event.type === 'stream') {
-              const m = state.models.find(mm => mm.name === event.modelName)
-              if (m) m.buffer += event.text || ''
-            } else if (event.type === 'stream_end') {
-              const m = state.models.find(mm => mm.name === event.modelName)
-              if (m) { m.isStreaming = false; if (event.usage) m.usage = event.usage }
-            } else if (event.type === 'deliberation') {
-              state.deliberation = event.event
-              currentView.value = 'deliberation'
-            } else if (event.type === 'permission_required') {
-              state.permissionPrompt = event
-            } else if (event.type === 'error') {
-              connectionError.value = event.message || 'Server error'
-            }
-          } catch (err) {
-              console.error('[useWebSocket] Stream JSON parse error:', line.slice(0, 100), err)
-            }
-        }
+      // Poll for updates while models are streaming
+      let polling = true
+      while (polling) {
+        await new Promise(r => setTimeout(r, 500))
+        const data = await sendCommand('state')
+        if (!data) { polling = false; break }
+        updateState(data)
+        // Stop if no models are streaming
+        polling = data.models?.some(m => m.isStreaming) ?? false
       }
-      // Refresh state after submit completes
+      // Final refresh
       const data = await sendCommand('state')
       if (data) updateState(data)
     } catch (e) {
-      const detail = e instanceof TypeError && e.message === 'Failed to fetch'
-        ? ' (server unreachable — is multiarena running?)'
-        : ''
-      connectionError.value = 'Submit failed: ' + e.message + detail
+      connectionError.value = 'Submit failed: ' + e.message
       console.error('[submit]', e)
     }
   }
