@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, provide } from 'vue'
+import { ref, computed, watch, provide, onMounted } from 'vue'
 import { useWebSocket } from './composables/useWebSocket.js'
 import { useI18n } from './composables/useI18n.js'
 import Sidebar from './components/Sidebar.vue'
@@ -39,6 +39,20 @@ function onSetupComplete() {
   showSetup.value = false
 }
 
+const darkMode = ref(localStorage.getItem('multiarena-theme') !== 'light')
+
+function applyTheme() {
+  document.documentElement.dataset.theme = darkMode.value ? 'dark' : 'light'
+}
+
+function toggleTheme() {
+  darkMode.value = !darkMode.value
+  localStorage.setItem('multiarena-theme', darkMode.value ? 'dark' : 'light')
+  applyTheme()
+}
+
+onMounted(applyTheme)
+
 function toggleLocale() {
   setLocale(locale.value === 'zh' ? 'en' : 'zh')
 }
@@ -64,6 +78,8 @@ provide('appState', {
 })
 
 provide('locale', locale)
+provide('darkMode', darkMode)
+provide('toggleTheme', toggleTheme)
 provide('t', t)
 </script>
 

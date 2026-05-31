@@ -14,6 +14,8 @@ const {
 
 const t = inject('t')
 const locale = inject('locale')
+const darkMode = inject('darkMode')
+const toggleTheme = inject('toggleTheme')
 const localeLabel = computed(() => locale.value === 'zh' ? 'EN' : '中')
 
 function toggleLocale() {
@@ -53,6 +55,14 @@ function onResumeSession(id) {
         <span v-else>&#10005;</span>
       </button>
       <span v-if="!sidebarCollapsed" class="brand">multiarena</span>
+      <button
+        v-if="!sidebarCollapsed"
+        class="lang-btn"
+        @click="toggleTheme"
+        :title="darkMode ? 'Light' : 'Dark'"
+      >
+        {{ darkMode ? '☀' : '🌙' }}
+      </button>
       <button
         v-if="!sidebarCollapsed"
         class="lang-btn"

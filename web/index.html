@@ -5,27 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>multiarena</title>
     <style>
-      *, *::before, *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body, #app { height: 100%; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+      /* Dark theme (default) */
+      :root, [data-theme="dark"] {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --card: #21262d;
+        --border: #30363d;
+        --text: #c9d1d9;
+        --text-dim: #8b949e;
+        --primary: #7c3aed;
+        --primary-hover: #6d28d9;
+        --accent: #10b981;
+        --error: #ef4444;
       }
-      html, body, #app {
-        height: 100%;
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background: #0d1117;
-        color: #c9d1d9;
+      /* Light theme */
+      [data-theme="light"] {
+        --bg: #fafbfc;
+        --surface: #ffffff;
+        --card: #f3f4f6;
+        --border: #d1d5db;
+        --text: #1a1a2e;
+        --text-dim: #6b7280;
+        --primary: #7c3aed;
+        --primary-hover: #6d28d9;
+        --accent: #059669;
+        --error: #dc2626;
       }
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #161b22;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #30363d;
-        border-radius: 4px;
-      }
+
+      html { background: var(--bg); color: var(--text); }
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: var(--surface); }
+      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     </style>
   </head>
   <body>

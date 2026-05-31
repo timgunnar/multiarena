@@ -15,15 +15,15 @@ function loadConfig() {
   if (raw) {
     try {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) {
-        modelConfigs.value = parsed.map(m => ({
-          nickname: m.nickname || m.name || '',
-          provider: m.provider || 'Anthropic',
-          apiKey: m.apiKey || '',
-          modelId: m.modelId || m.name || '',
-        }))
-        return
-      }
+      // Handle both {models: [...]} and plain array formats
+      const list = Array.isArray(parsed) ? parsed : (parsed.models ?? [])
+      modelConfigs.value = list.map(m => ({
+        nickname: m.nickname || m.name || '',
+        provider: m.provider || 'Anthropic',
+        apiKey: m.api_key || m.apiKey || '',
+        modelId: m.modelId || m.name || '',
+      }))
+      return
     } catch (e) {
       console.error('[Settings] Failed to parse config:', e)
     }
