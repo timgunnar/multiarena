@@ -136,7 +136,18 @@ export function useWebSocket() {
           })
         }
         if (evt.type === 'done') d.document = evt.document || d.document
-        if (evt.type) d.phase = evt.type
+        // Map raw event types to user-friendly phase labels
+        if (evt.type) {
+          const phaseMap = {
+            think_start: 'thinking',
+            think_text: 'thinking',
+            round_start: 'writing',
+            text: 'writing',
+            round_end: 'reviewing',
+            done: 'complete'
+          }
+          d.phase = phaseMap[evt.type] || evt.type
+        }
         break
       }
 

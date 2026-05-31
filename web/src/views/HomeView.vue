@@ -36,6 +36,13 @@ function onCardClick(card) {
   inputText.value = ''
 }
 
+function handleInput() {
+  // Reset placeholder to default when user starts typing
+  if (inputText.value.trim()) {
+    currentPlaceholder.value = t('askAllModels')
+  }
+}
+
 function handleSubmit() {
   const text = inputText.value.trim()
   if (!text) return
@@ -80,6 +87,7 @@ onMounted(() => {
           class="home-textarea"
           rows="3"
           :placeholder="currentPlaceholder"
+          @input="handleInput"
           @keydown.enter.exact.prevent="handleSubmit"
         ></textarea>
         <button
