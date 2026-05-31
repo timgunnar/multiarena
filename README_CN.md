@@ -2,70 +2,60 @@
 
 [English](./README.md) | [中文](./README_CN.md)
 
-终端原生多模型 AI 协作工具。一键提问，多个大模型同时回答；多模型接力审议，产出经过多重打磨的文档。
+**别只听一个 AI 的。** multiarena 让你同时和多个大模型对话 — Claude、GPT、Gemini、DeepSeek 等 — 对比它们的回答，让它们相互辩论，产出一个 AI 给不了的答案。
+
+---
+
+### 你遇到的问题
+
+每个 AI 模型都有盲区。让一个模型写品牌故事，你得到一份还行的初稿。让一个模型分析决策，你只看到一个角度。最好的成果来自多元视角 — 但在聊天标签页之间来回切换太痛苦了。
+
+### multiarena 怎么解决
+
+multiarena 把多个模型放进同一个房间。广播一个问题，所有模型的回答分栏呈现。切换到团队模式，模型接力协作 — 起草、修订、润色、终审 — 产出一份经过 4 双眼睛审视的文档，而不是一双。
+
+---
+
+## 能做什么
+
+| 场景 | multiarena 怎么帮你 |
+|------|--------------------|
+| **写更好的文案** | 3 个模型起草品牌故事 → 互相挑刺 → 交付一篇精致文案 |
+| **辅助决策** | 所有模型同时评估一个方案 → 对比推理过程 → 发现共识和盲区 |
+| **文档审查** | 模型轮番从不同角度批判你的草稿（质疑者、务实派、用户视角） |
+| **头脑风暴** | 广播一个提示 → 4 个模型各出独特角度 → 合并成一份完整文档 |
+
+---
+
+## 怎么工作
+
+```
+广播模式                              团队模式 (Shift+Tab)
+─────────────────────                ─────────────────────
+你: "评估这个方案"                    你: "帮我写品牌故事"
+     ↓                                    ↓
+┌─claude──┐ ┌─gpt─────┐ ┌─ds───┐    第1轮: minimax 起草
+│ ...     │ │ ...     │ │ ...  │    第2轮: deepseek 修订
+└─────────┘ └─────────┘ └──────┘    第3轮: minimax 润色
+     ↓                               第4轮: deepseek 终审
+分栏对比，选出最好的答案               第5轮: minimax 最终审查
+                                           ↓
+                                    一篇经得起推敲的交付文档
+```
+
+**团队审议不只是接力 — 它是对抗性的。** 模型相互质疑假设、暴露漏洞、辩护选择。最终产出的文档经过了真正的审视。
+
+---
 
 ## 快速开始
 
 ```bash
 npm install -g multiarena
-multiarena                # 启动 Web 界面（推荐）
-multiarena terminal       # 启动终端模式（开发者）
+multiarena                # 浏览器中打开 Web 界面
+multiarena terminal       # 终端模式（喜欢命令行的开发者）
 ```
 
-## 模式系统
-
-| 模式 | 触发 | 行为 |
-|------|------|------|
-| **广播** | 默认 | 消息发给所有模型，分栏并排查看 |
-| **团队** | `Shift+Tab` | 多模型接力：起草 → 修订 → 润色 → 终审 |
-
-### 输入栏前缀
-
-| 前缀 | 位置 |
-|------|------|
-| `[all]` | 广播 — 所有模型 |
-| `[模型名]` | 广播 — 定向到该模型 |
-| `[team]` | 团队 — 总览 |
-| `[team:模型名]` | 团队 — 定向到该模型 |
-
-### 模式切换
-
-```
-          Shift+Tab (仅在总览时)
-广播总览 ←────────────────────────→ 团队总览
-   ↑ Tab                               ↑ Tab
-广播定向                             团队定向
-   ↑                                   ↑
-   └─── Esc ───────────────────────────┘
-```
-
-**Tab** — 模式内循环。**Shift+Tab** — 切换模式。**Esc** — 返回总览。**d** — 对比模式。
-
-## 安装
-
-### npm
-
-```bash
-npm install -g multiarena
-```
-
-### 源码安装
-
-```bash
-git clone git@github.com:timgunnar/multiarena.git
-cd multiarena && npm install && npm run build && npm link
-```
-
-### 卸载
-
-```bash
-npm uninstall -g multiarena
-rm -rf ~/.multiarena   # 可选：清除会话数据
-```
-
-## 配置
-
-`.multiarenarc`（TOML 格式），放在项目根目录或 `~/.multiarenarc`：
+没配 config？没关系。Web 界面有设置向导引导你完成。或者手动创建 `.multiarenarc`：
 
 ```toml
 [models.claude]
@@ -80,53 +70,28 @@ api_key = "${OPENAI_API_KEY}"
 
 [defaults]
 active = ["claude", "gpt"]
-
-[deliberation]
-adversarial = "high"        # off | low | medium | high
-
-[[deliberation.rounds]]
-model = "claude"
-role = "draft"
 ```
 
-会话保存至 `~/.multiarena/sessions/`。使用 `multiarena --resume <id>` 恢复。
-
-详细配置 → [用户手册](./USER_GUIDE_CN.md#4-配置详解)
-
-## 支持的 Provider
-
-| Provider | 模型系列 |
-|----------|---------|
-| `anthropic` | Claude Sonnet / Opus / Haiku |
-| `openai` | GPT-4o、GPT-4.1 |
-| `google` | Gemini 系列 |
-| `deepseek` | DeepSeek-V3、DeepSeek-R1 |
-| `minimax` | MiniMax-M2 系列 |
-| `ollama` | 任意本地模型 |
-
-## CLI 命令
+## 安装
 
 ```bash
-multiarena              # 启动 Web 界面
-multiarena terminal     # 启动终端模式
-multiarena web          # Web 模式（默认端口）
+npm install -g multiarena          # 推荐
+git clone git@github.com:timgunnar/multiarena.git  # 源码安装
+```
+
+## 支持的模型
+
+Anthropic (Claude) · OpenAI (GPT-4o) · Google (Gemini) · DeepSeek · MiniMax · Ollama (本地模型)
+
+## CLI
+
+```bash
+multiarena              # Web 界面（无需参数）
+multiarena terminal     # 终端模式
 multiarena -r <id>      # 恢复会话
 multiarena -l           # 列出会话
 multiarena -h           # 帮助
 ```
-
-## 快捷键
-
-| 按键 | 功能 | 说明 |
-|------|------|------|
-| `Tab` | 当前模式内循环切换 | 不切换模式 |
-| `Shift+Tab` | 广播 ↔ 团队 | 仅在总览 |
-| `Esc` | 总览 / 退出 / 中止 | |
-| `d` | 对比两个模型 | 输入为空 |
-| `m` | 静音/取消静音 | 定向模式 |
-| `r` | 重置上下文 | 定向模式 |
-| `↑ ↓` | 历史 / 滚动 | |
-| `q` | 退出（自动保存）| |
 
 ## License
 
@@ -134,4 +99,4 @@ MIT
 
 ---
 
-📖 **[用户手册](./USER_GUIDE_CN.md)** — 安装卸载、架构、Web UI、会话管理、故障排查
+📖 **[用户手册](./USER_GUIDE_CN.md)** — 完整文档：架构、配置、Web UI、会话管理、故障排查
