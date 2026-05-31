@@ -97,14 +97,14 @@ const t = inject('t')
 .perm-tool-name {
   font-size: 0.85rem;
   background: var(--card);
-  color: #d2a8ff;
+  color: var(--primary-hover);
   padding: 3px 8px;
   border-radius: 4px;
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
 .perm-args-text {
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.75rem;
   color: var(--text-dim);
   background: var(--bg);
@@ -143,14 +143,14 @@ const t = inject('t')
 }
 
 .perm-btn.allow {
-  background: #238636;
-  border-color: #2ea043;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
 }
 
 .perm-btn.allow-always {
-  background: #1f6feb;
-  border-color: #388bfd;
+  background: var(--primary);
+  border-color: var(--primary-hover);
   color: #fff;
 }
 

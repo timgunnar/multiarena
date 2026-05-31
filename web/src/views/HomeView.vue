@@ -12,28 +12,28 @@ const taskCards = computed(() => [
     emoji: '&lt;/&gt;',
     title: t('writeCode'),
     items: [t('refactor'), t('newFeature'), t('debug')],
-    prompt: 'Implement a rate-limited API client in TypeScript with exponential backoff retry logic.'
+    prompt: t('promptCode'),
   },
   {
     id: 'write',
     emoji: '&#9998;',
     title: t('writeContent'),
     items: [t('blogPost'), t('documentation'), t('proposal')],
-    prompt: 'Write a technical blog post about the benefits of multi-model AI orchestration for software development.'
+    prompt: t('promptWrite'),
   },
   {
     id: 'analyze',
     emoji: '&#9881;',
     title: t('analyze'),
     items: [t('codeReview'), t('architecture'), t('performance')],
-    prompt: 'Review this code for security vulnerabilities, race conditions, and memory leaks. Suggest concrete fixes.'
+    prompt: t('promptAnalyze'),
   },
   {
     id: 'plan',
     emoji: '&#9878;',
     title: t('plan'),
     items: [t('architecture'), t('migration'), t('roadmap')],
-    prompt: 'Design a system architecture for a real-time collaborative text editor with offline support.'
+    prompt: t('promptPlan'),
   }
 ])
 

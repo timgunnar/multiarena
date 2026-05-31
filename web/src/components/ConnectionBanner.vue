@@ -30,8 +30,8 @@ function onDismiss() {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: #da363322;
-  border-bottom: 1px solid #da363366;
+  background: var(--error-alpha);
+  border-bottom: 1px solid var(--error);
   flex-shrink: 0;
   gap: 12px;
   flex-wrap: wrap;
@@ -39,7 +39,7 @@ function onDismiss() {
 
 .conn-msg {
   font-size: 0.8rem;
-  color: #f85149;
+  color: var(--error);
   flex: 1;
   min-width: 0;
 }
