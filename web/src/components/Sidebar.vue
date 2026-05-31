@@ -87,6 +87,14 @@ function onResumeSession(id) {
           </button>
           <button
             class="nav-link"
+            :class="{ active: currentView === 'broadcast' }"
+            @click="navTo('broadcast')"
+          >
+            <span class="nav-icon">&#9654;</span>
+            {{ t('broadcast') }}
+          </button>
+          <button
+            class="nav-link"
             :class="{ active: currentView === 'deliberation' }"
             @click="navTo('deliberation')"
           >

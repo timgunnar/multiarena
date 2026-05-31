@@ -162,8 +162,11 @@ export function startServer(port = PORT) {
         res.writeHead(200, {
           "Content-Type": "text/plain; charset=utf-8",
           "Transfer-Encoding": "chunked",
-          "Cache-Control": "no-cache",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "X-Content-Type-Options": "nosniff",
         });
+        res.flushHeaders();
+        res.write(JSON.stringify({ type: "connected" }) + "\n");
 
         let closed = false;
         const safeWrite = (data: string) => {
