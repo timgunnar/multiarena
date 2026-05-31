@@ -1,0 +1,161 @@
+<script setup>
+import { inject } from 'vue'
+
+const { state, respondPermission } = inject('appState')
+</script>
+
+<template>
+  <Teleport to="body">
+    <div v-if="state.permissionPrompt" class="perm-overlay" @click.self="respondPermission('deny')">
+      <div class="perm-dialog">
+        <h3 class="perm-title">Permission Required</h3>
+
+        <div class="perm-model">
+          <span class="perm-label">Model</span>
+          <span class="perm-value">{{ state.permissionPrompt.modelName }}</span>
+        </div>
+
+        <div class="perm-tool">
+          <span class="perm-label">Tool</span>
+          <code class="perm-tool-name">{{ state.permissionPrompt.toolName }}</code>
+        </div>
+
+        <div v-if="state.permissionPrompt.args" class="perm-args">
+          <span class="perm-label">Arguments</span>
+          <pre class="perm-args-text">{{ JSON.stringify(state.permissionPrompt.args, null, 2) }}</pre>
+        </div>
+
+        <div class="perm-actions">
+          <button class="perm-btn allow" @click="respondPermission('allow')">
+            Allow Once
+          </button>
+          <button class="perm-btn allow-always" @click="respondPermission('allow_always')">
+            Always Allow
+          </button>
+          <button class="perm-btn deny" @click="respondPermission('deny')">
+            Deny
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+</template>
+
+<style scoped>
+.perm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(2px);
+}
+
+.perm-dialog {
+  width: 440px;
+  max-width: 92vw;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+}
+
+.perm-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f0f6fc;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #21262d;
+}
+
+.perm-model,
+.perm-tool,
+.perm-args {
+  margin-bottom: 14px;
+}
+
+.perm-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #484f58;
+  margin-bottom: 4px;
+}
+
+.perm-value {
+  font-size: 0.9rem;
+  color: #c9d1d9;
+  font-weight: 600;
+}
+
+.perm-tool-name {
+  font-size: 0.85rem;
+  background: #21262d;
+  color: #d2a8ff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
+.perm-args-text {
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: #8b949e;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+
+.perm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #21262d;
+}
+
+.perm-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  transition: opacity 0.15s;
+  text-align: center;
+}
+
+.perm-btn:hover {
+  opacity: 0.85;
+}
+
+.perm-btn.allow {
+  background: #238636;
+  border-color: #2ea043;
+  color: #fff;
+}
+
+.perm-btn.allow-always {
+  background: #1f6feb;
+  border-color: #388bfd;
+  color: #fff;
+}
+
+.perm-btn.deny {
+  background: #21262d;
+  border-color: #30363d;
+  color: #c9d1d9;
+}
+</style>

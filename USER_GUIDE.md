@@ -210,12 +210,15 @@ role = "revise"
 ### Basic Usage
 
 ```bash
-multiarena                           # Start new session
+multiarena                           # Start Web UI (recommended, no args needed)
+multiarena terminal                  # Start terminal mode (developers)
+multiarena web                       # Start web mode with default port
+multiarena web 8080                  # Start web mode on custom port
+multiarena --web [port]              # Same as above
 multiarena --help, -h, ?             # Show help
 multiarena --version, -v             # Show version
 multiarena --list, -l                # List saved sessions
 multiarena --resume, -r <id>         # Resume saved session
-multiarena --web [port]              # Start web mode (default :3000)
 ```
 
 ### In-App Commands
@@ -349,9 +352,17 @@ Opens automatically in your browser.
 - API keys never leave the server process
 - No authentication required (local-only)
 
-### Prerequisites
+### Current Status
 
-Web UI is available from v0.3.0. Requires `npm run build:web` to compile.
+Web UI is under active development (target v0.3.0). The server layer is complete — `multiarena web` starts the HTTP + SSE backend. The Vue frontend is in progress. To try the current version:
+
+```bash
+cd web && npm install && npm run dev    # Start Vite dev server
+# In another terminal:
+multiarena web                           # Start backend
+```
+
+Open `http://localhost:5173` (Vite proxies API calls to the backend).
 
 ---
 

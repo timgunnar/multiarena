@@ -1,0 +1,316 @@
+<script setup>
+import { computed, inject } from 'vue'
+
+const { state, currentView } = inject('appState')
+
+const deliberation = computed(() => state.deliberation)
+
+const rounds = computed(() => {
+  if (!deliberation.value) return []
+  return deliberation.value.rounds || []
+})
+
+const thinkText = computed(() => {
+  if (!deliberation.value) return ''
+  return deliberation.value.thinkText || deliberation.value.thinking || ''
+})
+
+const documentPreview = computed(() => {
+  if (!deliberation.value) return ''
+  const doc = deliberation.value.document
+  if (!doc) return ''
+  return typeof doc === 'string' ? doc : JSON.stringify(doc, null, 2)
+})
+
+const progressPct = computed(() => {
+  if (!deliberation.value) return 0
+  return Math.round((deliberation.value.progress || 0) * 100)
+})
+
+const phase = computed(() => {
+  if (!deliberation.value) return 'idle'
+  return deliberation.value.phase || 'thinking'
+})
+
+function backToBroadcast() {
+  currentView.value = 'broadcast'
+}
+</script>
+
+<template>
+  <div class="delib">
+    <header class="delib-top">
+      <button class="delib-back" @click="backToBroadcast">&larr; Back</button>
+      <span class="delib-title">Deliberation</span>
+      <div class="delib-phase-badge" :class="phase">{{ phase }}</div>
+    </header>
+
+    <div v-if="!deliberation" class="delib-empty">
+      <p>No active deliberation.</p>
+      <p class="delib-empty-hint">Deliberation starts when models complete their responses and a structured comparison begins.</p>
+    </div>
+
+    <div v-else class="delib-content">
+      <!-- Progress -->
+      <div class="delib-progress-bar">
+        <div class="delib-progress-fill" :style="{ width: progressPct + '%' }"></div>
+      </div>
+      <div class="delib-progress-label">{{ progressPct }}% complete</div>
+
+      <!-- Think text -->
+      <section v-if="thinkText" class="delib-section">
+        <h3 class="delib-section-hdr">
+          <span class="delib-section-icon">&#9881;</span>
+          Thinking
+        </h3>
+        <pre class="delib-think">{{ thinkText }}</pre>
+      </section>
+
+      <!-- Rounds -->
+      <section v-if="rounds.length > 0" class="delib-section">
+        <h3 class="delib-section-hdr">
+          <span class="delib-section-icon">&#9744;</span>
+          Rounds ({{ rounds.length }})
+        </h3>
+        <div class="delib-rounds">
+          <div
+            v-for="(r, idx) in rounds"
+            :key="idx"
+            class="delib-round"
+          >
+            <div class="delib-round-hdr">
+              <span class="delib-round-num">Round {{ idx + 1 }}</span>
+              <span class="delib-round-type">{{ r.type || 'compare' }}</span>
+            </div>
+            <div v-if="r.summary" class="delib-round-summary">{{ r.summary }}</div>
+            <div v-if="r.decision" class="delib-round-decision">
+              <strong>Decision:</strong> {{ r.decision }}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Document preview -->
+      <section v-if="documentPreview" class="delib-section">
+        <h3 class="delib-section-hdr">
+          <span class="delib-section-icon">&#9776;</span>
+          Document Preview
+        </h3>
+        <pre class="delib-doc">{{ documentPreview }}</pre>
+      </section>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.delib {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0d1117;
+  overflow-y: auto;
+}
+
+.delib-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.delib-back {
+  background: none;
+  border: none;
+  color: #58a6ff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.delib-back:hover {
+  background: #1f6feb22;
+}
+
+.delib-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c9d1d9;
+  flex: 1;
+}
+
+.delib-phase-badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  background: #21262d;
+  color: #8b949e;
+}
+
+.delib-phase-badge.thinking {
+  background: #9a670022;
+  color: #d29922;
+}
+
+.delib-phase-badge.writing {
+  background: #1f6feb22;
+  color: #58a6ff;
+}
+
+.delib-phase-badge.reviewing {
+  background: #7c3aed22;
+  color: #a371f7;
+}
+
+.delib-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: #8b949e;
+}
+
+.delib-empty p {
+  margin-bottom: 8px;
+}
+
+.delib-empty-hint {
+  font-size: 0.85rem;
+  color: #484f58;
+  max-width: 400px;
+}
+
+.delib-content {
+  padding: 20px 24px;
+}
+
+.delib-progress-bar {
+  height: 4px;
+  background: #21262d;
+  border-radius: 2px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.delib-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #58a6ff, #a371f7);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.delib-progress-label {
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin-bottom: 24px;
+}
+
+.delib-section {
+  margin-bottom: 28px;
+}
+
+.delib-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c9d1d9;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #21262d;
+}
+
+.delib-section-icon {
+  font-size: 0.9rem;
+}
+
+.delib-think {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #8b949e;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 14px;
+  margin: 0;
+}
+
+.delib-rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.delib-round {
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.delib-round-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.delib-round-num {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #c9d1d9;
+}
+
+.delib-round-type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  background: #21262d;
+  color: #8b949e;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.delib-round-summary {
+  font-size: 0.82rem;
+  color: #8b949e;
+  line-height: 1.5;
+}
+
+.delib-round-decision {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: #3fb950;
+}
+
+.delib-doc {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 14px;
+  margin: 0;
+  max-height: 500px;
+  overflow-y: auto;
+}
+</style>

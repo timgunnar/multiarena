@@ -210,12 +210,15 @@ role = "revise"
 ### 基本用法
 
 ```bash
-multiarena                           # 启动新会话
+multiarena                           # 启动 Web 界面（推荐，无需参数）
+multiarena terminal                  # 启动终端模式（开发者）
+multiarena web                       # 启动 Web 模式（默认端口）
+multiarena web 8080                  # 启动 Web 模式（自定义端口）
+multiarena --web [port]              # 同上
 multiarena --help, -h, ?             # 显示帮助
 multiarena --version, -v             # 显示版本
 multiarena --list, -l                # 列出已保存会话
 multiarena --resume, -r <id>         # 恢复已保存会话
-multiarena --web [port]              # 启动 Web 模式（默认 :3000）
 ```
 
 ### 应用内命令
@@ -349,9 +352,17 @@ multiarena --web 8080     # 自定义端口
 - API key 永不离开服务端进程
 - 无需认证（仅本地访问）
 
-### 前置
+### 当前状态
 
-Web UI 从 v0.3.0 开始提供。需运行 `npm run build:web` 编译前端。
+Web UI 正在开发中（目标 v0.3.0）。服务端已完成 — `multiarena web` 即可启动 HTTP + SSE 后端。Vue 前端开发中。当前可试：
+
+```bash
+cd web && npm install && npm run dev    # 启动 Vite 开发服务器
+# 另一个终端：
+multiarena web                           # 启动后端
+```
+
+打开 `http://localhost:5173`（Vite 自动代理 API 到后端）。
 
 ---
 
