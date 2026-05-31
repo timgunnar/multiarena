@@ -27,23 +27,62 @@ multiarena puts multiple models in the same room. Broadcast a question, see ever
 
 ---
 
-## How It Works
+## Web UI
+
+Clean, intuitive interface for non-technical users. Zero config — start with a setup wizard.
 
 ```
-Broadcast Mode                        Team Mode (Shift+Tab)
-─────────────────────                ─────────────────────
-You: "Evaluate this approach"        You: "Write our brand story"
-     ↓                                    ↓
-┌─claude──┐ ┌─gpt─────┐ ┌─ds───┐    Round 1: minimax drafts
-│ ...     │ │ ...     │ │ ...  │    Round 2: deepseek revises
-└─────────┘ └─────────┘ └──────┘    Round 3: minimax polishes
-     ↓                                Round 4: deepseek reviews
-Compare side-by-side,                 Round 5: minimax final review
-pick the best answer                       ↓
-                                    Polished document, 4 perspectives
+┌──────────────────────────────────────────────────────────┐
+│  ⚡ multiarena                           [⚙] [🌙] [中]  │
+│──────────────────────────────────────────────────────────│
+│                                                          │
+│                   下午好，Tim 👋                           │
+│                  今天想做什么？                             │
+│                                                          │
+│  ┌── ✍️ 写文案 ──┐ ┌── 📊 分析数据 ──┐                   │
+│  │ 品牌故事      │ │ 对比方案         │                   │
+│  │ 广告语        │ │ 分析报告         │                   │
+│  │ 产品介绍      │ │ 数据解读         │                   │
+│  └──────────────┘ └─────────────────┘                   │
+│                                                          │
+│  ┌── 💡 出主意 ──┐ ┌── 🔍 审文档 ──┐                   │
+│  │ 产品名        │ │ 找漏洞           │                   │
+│  │ Slogan        │ │ 改措辞           │                   │
+│  │ 活动创意      │ │ 润色             │                   │
+│  └──────────────┘ └─────────────────┘                   │
+│                                                          │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │  帮我写精品咖啡烘焙商的品牌故事，用在官网About页…  │   │
+│  └──────────────────────────────────────────────────┘   │
+│                              [让 AI 团队开始 →]          │
+└──────────────────────────────────────────────────────────┘
 ```
 
-**Team deliberation is not just relay — it's adversarial.** Models challenge each other's assumptions, expose blind spots, and defend their choices. The result is a document that has survived real scrutiny.
+→ `multiarena` (no args needed)
+
+## CLI
+
+Terminal-native for developers. Keyboard-driven, fast, stays in your workflow.
+
+```
+┌─ claude ──────────────────┐ ┌─ gpt ─────────────────────┐
+│                           │ │                           │
+│  我来详细分析这个方案：     │ │  建议从三个维度评估：       │
+│                           │ │                           │
+│  优点：                    │ │  1. 技术可行性             │
+│  1. 四层架构清晰           │ │  2. 维护成本              │
+│  2. Provider 接口简洁      │ │  3. 扩展空间              │
+│                           │ │                           │
+│  2K/200K · 15 lines · done│ │  1K/128K · 12 lines · done│
+└───────────────────────────┘ └───────────────────────────┘
+──────────────────────────────────────────────────────────
+ claude ●  gpt ●  — Tab:model d:compare m:mute q:quit
+[all] > ▊
+```
+
+→ `multiarena terminal`
+
+**Team deliberation: models challenge each other.** Draft → Revise → Polish → Review — 4 perspectives fight over every sentence. The result survives real scrutiny.
 
 ---
 
