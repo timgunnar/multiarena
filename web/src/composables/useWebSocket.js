@@ -129,10 +129,10 @@ export function useWebSocket() {
             role: evt.role || '',
             changeCount: evt.changeCount,
             changeSamples: evt.changeSamples,
-            // UI-friendly aliases for DeliberationView template
-            type: evt.role || 'compare',
-            summary: evt.changeSamples ? String(evt.changeSamples).slice(0, 200) : (evt.modelName ? `${evt.modelName} completed analysis` : ''),
-            decision: evt.changeCount != null ? `${evt.changeCount} change(s) proposed` : ''
+            // UI-friendly aliases
+            type: evt.role || evt.type || 'round',
+            summary: evt.changeCount != null ? `${evt.changeCount} changes` : '',
+            decision: evt.changeSamples?.length ? evt.changeSamples[0] : ''
           })
         }
         if (evt.type === 'done') d.document = evt.document || d.document
