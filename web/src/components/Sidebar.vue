@@ -52,7 +52,7 @@ function onResumeSession(id) {
         :title="sidebarCollapsed ? t('expandSidebar') : t('collapseSidebar')"
       >
         <span v-if="sidebarCollapsed">&#9776;</span>
-        <span v-else>&#10005;</span>
+        <span v-else>&#171;</span>
       </button>
       <span v-if="!sidebarCollapsed" class="brand">multiarena</span>
       <button
