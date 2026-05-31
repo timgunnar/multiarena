@@ -125,6 +125,22 @@ const phase = computed(() => {
         </h3>
         <pre class="delib-doc">{{ documentPreview }}</pre>
       </section>
+
+      <!-- Follow-up edit after completion -->
+      <div v-if="phase === 'complete' || phase === 'done'" class="delib-followup">
+        <textarea
+          v-model="taskInput"
+          class="delib-textarea"
+          :placeholder="t('followUp')"
+          rows="2"
+          @keydown.enter.exact.prevent="startDeliberation"
+        ></textarea>
+        <button
+          class="delib-submit-btn"
+          @click="startDeliberation"
+          :disabled="!taskInput.trim()"
+        >{{ t('continueEdit') }}</button>
+      </div>
     </div>
   </div>
 </template>
@@ -329,4 +345,5 @@ const phase = computed(() => {
 .delib-submit-btn { background: var(--primary); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .delib-submit-btn:hover:not(:disabled) { background: var(--primary-hover); }
 .delib-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.delib-followup { display: flex; gap: 12px; align-items: flex-start; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
 </style>
