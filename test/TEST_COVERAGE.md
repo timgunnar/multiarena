@@ -1,6 +1,6 @@
 # 测试覆盖报告
 
-> v0.2.0 · 43 文件 · 441 测试（主）+ 4 测试（Web）
+> v0.2.0 · 45 文件 · 485 测试（主）+ 25 测试、2 文件（Web）
 
 ## 基础设施测试 (5)
 
@@ -28,10 +28,11 @@
 | Provider Factory | `test/provider/provider.test.ts` | 12 | createProvider、各 provider 创建 |
 | Think Filter | `test/provider/adapters/thinkFilter.test.ts` | 19 | think 标签状态机、嵌套 |
 
-## Web 端测试 (4)
+## Web 端测试 (25)
 
 | 模块 | 文件 | 测试数 | 覆盖点 |
 |------|------|--------|--------|
+| DeliberationView | `web/src/__tests__/DeliberationView.test.js` | 21 | 轮次标题、思考文本、摘要、阶段徽章、新对话按钮 |
 | i18n | `web/src/__tests__/useI18n.test.js` | 4 | 中英文翻译、语言切换、缺失 key |
 
 ## 多端交互测试 (12)
@@ -73,6 +74,6 @@
 |------|------|
 | Ink 渲染层 | 终端 UI 视觉回归需屏幕截图对比 |
 | process.stdin | 平台差异大，需真实终端环境 |
-| Vue 组件渲染 | 仅 i18n 逻辑测试，BroadcastView/DeliberationView 未测 |
+| Vue 组件渲染 | i18n + DeliberationView 已测，BroadcastView/HomeView/SettingsView 未测 |
 | Web 连通性 | 需浏览器环境 (Playwright) |
 | Web E2E | 需 Playwright，未纳入 |

@@ -8,9 +8,7 @@
 
 - **Web Mode** — `multiarena` launches a full Vue 3 web UI (HTTP + WebSocket). Settings wizard, i18n (EN/ZH), task cards, streaming panels, deliberation flow. Zero config needed for non-technical users.
 - **Adversarial Deliberation** — Off/low/medium/high adversarial intensity control. Six critical perspectives (skeptic/pragmatist/user_advocate/devils_advocate/optimist/synthesizer). Mirror adversarial rounds.
-- **Deliberation Version History** — Each round sees ALL previous drafts. Models can revert to any earlier version.
 - **CLI Start Guide** — `multiarena` with no args auto-starts Web UI. `multiarena web` / `multiarena terminal` positional commands. `?` help alias.
-- **Session Persistence** — `teamMessages`, `usage`, `muted`, `inputHistory` now persist across save/resume.
 
 ### Key Bug Fixes
 
@@ -26,10 +24,10 @@
 
 ### Tests
 
-- 120+ new E2E tests (harness: broadcast 7, deliberation 11, persistence 7, cleanup 4, permission 6, merge 5, teamChat 5, appBranches 35, install 1, crossEnvironment 5)
+- 86 new E2E tests (broadcast 7, deliberation 11, persistence 7, cleanup 4, permission 6, merge 5, teamChat 5, appBranches 35, install 1, crossEnvironment 5)
 - Server tests: 12 (HTTP endpoints + WebSocket + SessionManager)
-- Web component tests: 4 (i18n)
-- 44 test files, 466 tests all passing (main) + 4 tests (web)
+- Web component tests: 25 (DeliberationView 21, i18n 4)
+- 45 test files, 485 tests all passing (main) + 25 tests, 2 files (web)
 
 ## v0.1.8
 

@@ -534,3 +534,222 @@ describe("runDeliberation adversarial modes", () => {
     expect(events.some(e => e.type === "done")).toBe(true);
   });
 });
+
+// ── changeCount line-diff computation ─────────────────────────────
+
+describe("changeCount computation (line-diff based)", () => {
+  const modelCfg = makeModelConfig();
+
+  it("draft round counts non-empty lines", async () => {
+    const mockRunTurn = runTurn as any;
+    let callIdx = 0;
+    const outputs = [
+      "Think: draft plan.",
+      "Line 1\nLine 2\n\nLine 4\nLine 5",
+    ];
+    mockRunTurn.mockImplementation(() => {
+      const text = outputs[callIdx++]!;
+      return mockTurnText(text)();
+    });
+
+    const roundConfigs: DeliberationRoundConfig[] = [
+      { modelName: "a", role: "draft", config: modelCfg },
+    ];
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMsgs("Write something"), roundConfigs)) {
+      events.push(event);
+    }
+
+    const roundEnd = events.find((e) => e.type === "round_end" && e.round === 1);
+    expect(roundEnd).toBeDefined();
+    // 5 lines total, 1 blank → 4 non-blank lines counted
+    expect(roundEnd!.changeCount).toBe(4);
+  });
+
+  it("revision round counts changed lines via line diff", async () => {
+    const mockRunTurn = runTurn as any;
+    let callIdx = 0;
+    // Round 1 draft: 5 lines. Round 2 revise: 5 lines, 2 differ from draft.
+    // prevLines for round 2 includes version-history headers (2 lines) + draft
+    // = 7 lines total, so most positions differ due to header offset.
+    const outputs = [
+      "Think: draft.", "A\nB\nC\nD\nE",
+      "Think: revise.", "A\nRevisedB\nC\nRevisedD\nE",
+    ];
+    mockRunTurn.mockImplementation(() => {
+      const text = outputs[callIdx++]!;
+      return mockTurnText(text)();
+    });
+
+    const roundConfigs: DeliberationRoundConfig[] = [
+      { modelName: "a", role: "draft", config: modelCfg },
+      { modelName: "b", role: "revise", config: modelCfg },
+    ];
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMsgs("Task"), roundConfigs)) {
+      events.push(event);
+    }
+
+    const round2End = events.find((e) => e.type === "round_end" && e.round === 2);
+    expect(round2End).toBeDefined();
+    // The version-history header lines ("## 第 1 轮 …", "") always differ from
+    // the revision document, so changeCount = differing positions across
+    // max(prevLines, currLines).  Computed: 7 positions, all differ.
+    expect(round2End!.changeCount).toBeGreaterThan(0);
+    expect(typeof round2End!.changeCount).toBe("number");
+    // changeSamples capture up to 3 "old → new" snippets
+    expect(round2End!.changeSamples).toBeDefined();
+    expect(round2End!.changeSamples!.length).toBeGreaterThan(0);
+    expect(round2End!.changeSamples!.length).toBeLessThanOrEqual(3);
+    // Each sample has the "old → new" format
+    for (const sample of round2End!.changeSamples!) {
+      expect(sample).toMatch(/ → /);
+    }
+  });
+
+  it("no changes detected when revision output matches version history verbatim", async () => {
+    const mockRunTurn = runTurn as any;
+    const draftOutput = "Some content.\nMore lines here.";
+
+    const roundConfigs: DeliberationRoundConfig[] = [
+      { modelName: "a", role: "draft", config: modelCfg },
+      { modelName: "a", role: "revise", config: modelCfg },
+    ];
+
+    // The version history that runDeliberation builds internally for round 2.
+    // Must match exactly for changeCount to be 0.
+    const historyHeader = `## 第 1 轮 (a · ${roundLabel("draft")})`;
+    const versionHistory = `${historyHeader}\n\n${draftOutput}`;
+
+    let callIdx = 0;
+    const outputs = [
+      "Think: draft plan.", draftOutput,
+      "Think: revise review.", versionHistory,
+    ];
+    mockRunTurn.mockImplementation(() => {
+      const text = outputs[callIdx++]!;
+      return mockTurnText(text)();
+    });
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMsgs("Task"), roundConfigs)) {
+      events.push(event);
+    }
+
+    const roundEnds = events.filter((e) => e.type === "round_end");
+    expect(roundEnds).toHaveLength(2);
+    // When revision output exactly mirrors the version-history string,
+    // every line matches positionally → changeCount = 0
+    expect(roundEnds[1]?.changeCount).toBe(0);
+    expect(roundEnds[1]?.changeSamples).toBeUndefined();
+  });
+
+  it("shorter document counts removed lines", async () => {
+    const mockRunTurn = runTurn as any;
+    let callIdx = 0;
+    // Draft: 10 lines. Revise: 5 lines (5 removed).
+    const draftLines = Array.from({ length: 10 }, (_, i) => `Line ${i + 1}`).join("\n");
+    const reviseLines = Array.from({ length: 5 }, (_, i) => `Line ${i + 1}`).join("\n");
+    const outputs = [
+      "Think: draft.", draftLines,
+      "Think: revise.", reviseLines,
+    ];
+    mockRunTurn.mockImplementation(() => {
+      const text = outputs[callIdx++]!;
+      return mockTurnText(text)();
+    });
+
+    const roundConfigs: DeliberationRoundConfig[] = [
+      { modelName: "a", role: "draft", config: modelCfg },
+      { modelName: "a", role: "revise", config: modelCfg },
+    ];
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMsgs("Task"), roundConfigs)) {
+      events.push(event);
+    }
+
+    // Draft round: 10 non-blank lines
+    const round1End = events.find((e) => e.type === "round_end" && e.round === 1);
+    expect(round1End?.changeCount).toBe(10);
+
+    // Revision round: shorter → removed lines count as differing positions
+    const round2End = events.find((e) => e.type === "round_end" && e.round === 2);
+    expect(round2End?.changeCount).toBeGreaterThanOrEqual(5);
+  });
+
+  it("longer document counts added lines", async () => {
+    const mockRunTurn = runTurn as any;
+    let callIdx = 0;
+    // Draft: 3 lines. Revise: 8 lines (5 added).
+    const draftLines = Array.from({ length: 3 }, (_, i) => `Line ${i + 1}`).join("\n");
+    const reviseLines = Array.from({ length: 8 }, (_, i) => `Line ${i + 1}`).join("\n");
+    const outputs = [
+      "Think: draft.", draftLines,
+      "Think: revise.", reviseLines,
+    ];
+    mockRunTurn.mockImplementation(() => {
+      const text = outputs[callIdx++]!;
+      return mockTurnText(text)();
+    });
+
+    const roundConfigs: DeliberationRoundConfig[] = [
+      { modelName: "a", role: "draft", config: modelCfg },
+      { modelName: "a", role: "revise", config: modelCfg },
+    ];
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMsgs("Task"), roundConfigs)) {
+      events.push(event);
+    }
+
+    // Draft round: 3 non-blank lines
+    const round1End = events.find((e) => e.type === "round_end" && e.round === 1);
+    expect(round1End?.changeCount).toBe(3);
+
+    // Revision round: longer → added lines count as differing positions
+    const round2End = events.find((e) => e.type === "round_end" && e.round === 2);
+    expect(round2End?.changeCount).toBeGreaterThanOrEqual(5);
+  });
+
+  it("changeSamples contain old → new format for up to 3 changes", async () => {
+    const mockRunTurn = runTurn as any;
+    let callIdx = 0;
+    // Make revision output differ on multiple lines so changeSamples fill up.
+    const outputs = [
+      "Think: draft.", "Alpha\nBravo\nCharlie\nDelta\nEcho",
+      "Think: revise.", "Alpha\nBravo2\nCharlie2\nDelta2\nEcho",
+    ];
+    mockRunTurn.mockImplementation(() => {
+      const text = outputs[callIdx++]!;
+      return mockTurnText(text)();
+    });
+
+    const roundConfigs: DeliberationRoundConfig[] = [
+      { modelName: "a", role: "draft", config: modelCfg },
+      { modelName: "b", role: "revise", config: modelCfg },
+    ];
+
+    const events: DeliberationProgress[] = [];
+    for await (const event of runDeliberation(sharedMsgs("Task"), roundConfigs)) {
+      events.push(event);
+    }
+
+    const round2End = events.find((e) => e.type === "round_end" && e.round === 2);
+    expect(round2End?.changeSamples).toBeDefined();
+    const samples = round2End!.changeSamples!;
+    expect(samples.length).toBeGreaterThan(0);
+    expect(samples.length).toBeLessThanOrEqual(3);
+
+    // Verify format: each entry is "old… → new…"
+    for (const s of samples) {
+      expect(s).toMatch(/^.{1,40} → .{1,40}$/);
+    }
+
+    // Draft round should not have changeSamples (undefined for draft)
+    const round1End = events.find((e) => e.type === "round_end" && e.round === 1);
+    expect(round1End?.changeSamples).toBeUndefined();
+  });
+});
