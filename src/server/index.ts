@@ -195,32 +195,35 @@ export function startServer(port = PORT) {
 
     switch (type) {
       case "submit": {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "ok" }));
+        // Stream results directly back — same pattern as CLI's runTurn()
+        res.writeHead(200, {
+          "Content-Type": "application/x-ndjson",
+          "Transfer-Encoding": "chunked",
+          "Cache-Control": "no-cache",
+        });
 
-        // Process submission and broadcast events via SSE
         const text = payload.text ?? "";
         const mode = payload.mode ?? "broadcast";
-        (async () => {
-          try {
-            if (mode === "deliberation") {
-              for await (const event of mgr.deliberate(text)) {
-                broadcastSSE("deliberation", { event });
-              }
-            } else if (mode === "team_chat" && payload.modelName) {
-              for await (const event of mgr.teamChat(payload.modelName, text)) {
-                broadcastSSE("stream", event);
-              }
-            } else {
-              for await (const event of mgr.broadcast(text)) {
-                broadcastSSE("stream", event);
-              }
+        try {
+          if (mode === "deliberation") {
+            for await (const event of mgr.deliberate(text)) {
+              res.write(JSON.stringify({ type: "deliberation", event }) + "\n");
             }
-            broadcastSSE("state", { ...mgr.getState(), sessionId });
-          } catch (err: any) {
-            broadcastSSE("error", { message: err.message });
+          } else if (mode === "team_chat" && payload.modelName) {
+            for await (const event of mgr.teamChat(payload.modelName, text)) {
+              res.write(JSON.stringify(event) + "\n");
+            }
+          } else {
+            for await (const event of mgr.broadcast(text)) {
+              res.write(JSON.stringify(event) + "\n");
+            }
           }
-        })();
+          // Send final state
+          res.write(JSON.stringify({ type: "state", ...mgr.getState(), sessionId }) + "\n");
+        } catch (err: any) {
+          res.write(JSON.stringify({ type: "error", message: err.message }) + "\n");
+        }
+        res.end();
         break;
       }
 

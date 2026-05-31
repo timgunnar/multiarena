@@ -90,7 +90,51 @@ export function useWebSocket() {
   }
 
   async function submit(text, mode = 'broadcast', modelName = null) {
-    await sendCommand('submit', { text, mode, modelName })
+    try {
+      const res = await fetch('/api/cmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'submit', text, mode, modelName })
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      // Read streamed NDJSON response — same pattern as CLI's for-await
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) {
+          if (!line.trim()) continue
+          try {
+            const event = JSON.parse(line)
+            if (event.type === 'state') {
+              updateState(event)
+            } else if (event.type === 'stream') {
+              const m = state.models.find(mm => mm.name === event.modelName)
+              if (m) m.buffer += event.text || ''
+            } else if (event.type === 'stream_end') {
+              const m = state.models.find(mm => mm.name === event.modelName)
+              if (m) { m.isStreaming = false; if (event.usage) m.usage = event.usage }
+            } else if (event.type === 'deliberation') {
+              state.deliberation = event.event
+              currentView.value = 'deliberation'
+            } else if (event.type === 'permission_required') {
+              state.permissionPrompt = event
+            } else if (event.type === 'done' || event.type === 'error') {
+              // handled
+            }
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.error('[submit]', e.message)
+    }
   }
 
   async function respondPermission(decision) {
