@@ -67,11 +67,12 @@ Terminal-native for developers. Keyboard-driven, fast, stays in your workflow.
 ```
 ┌─ claude ──────────────────┐ ┌─ gpt ─────────────────────┐
 │                           │ │                           │
-│  我来详细分析这个方案：     │ │  建议从三个维度评估：       │
+│  Let me analyze this      │ │  I'd evaluate this from   │
+│  approach in detail:      │ │  three angles:            │
 │                           │ │                           │
-│  优点：                    │ │  1. 技术可行性             │
-│  1. 四层架构清晰           │ │  2. 维护成本              │
-│  2. Provider 接口简洁      │ │  3. 扩展空间              │
+│  Strengths:               │ │  1. Technical feasibility │
+│  1. Clean four-layer arch │ │  2. Maintenance cost      │
+│  2. Simple Provider API   │ │  3. Room for expansion    │
 │                           │ │                           │
 │  2K/200K · 15 lines · done│ │  1K/128K · 12 lines · done│
 └───────────────────────────┘ └───────────────────────────┘

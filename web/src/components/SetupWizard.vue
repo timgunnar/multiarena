@@ -13,11 +13,11 @@ const models = ref([
   { name: 'gemini-2.5-pro', provider: 'Google', enabled: true }
 ])
 
-const steps = [
+const steps = computed(() => [
   { title: t('welcomeStep0Title'), description: t('welcomeStep0Desc') },
   { title: t('welcomeStep1Title'), description: t('welcomeStep1Desc') },
   { title: t('welcomeStep2Title'), description: t('welcomeStep2Desc') }
-]
+])
 
 const enabledCount = computed(() => models.value.filter(m => m.enabled).length)
 
@@ -26,7 +26,7 @@ function toggleModel(idx) {
 }
 
 function nextStep() {
-  if (step.value < steps.length - 1) {
+  if (step.value < steps.value.length - 1) {
     step.value++
   } else {
     localStorage.setItem('multiarena-setup-done', '1')

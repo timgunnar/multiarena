@@ -1,12 +1,12 @@
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, computed, inject, onMounted } from 'vue'
 
 const { state, currentView, sessions, submit, loadSessions, resumeSession } = inject('appState')
 const t = inject('t')
 
 const inputText = ref('')
 
-const taskCards = [
+const taskCards = computed(() => [
   {
     id: 'code',
     emoji: '&lt;/&gt;',
@@ -35,7 +35,7 @@ const taskCards = [
     items: [t('architecture'), t('migration'), t('roadmap')],
     prompt: 'Design a system architecture for a real-time collaborative text editor with offline support.'
   }
-]
+])
 
 function onCardClick(card) {
   inputText.value = card.prompt
@@ -73,7 +73,7 @@ onMounted(() => {
         <div class="card-emoji" v-html="card.emoji"></div>
         <h3 class="card-title">{{ card.title }}</h3>
         <ul class="card-tags">
-          <li v-for="t in card.items" :key="t">{{ t }}</li>
+          <li v-for="item in card.items" :key="item">{{ item }}</li>
         </ul>
       </div>
     </section>
