@@ -89,7 +89,6 @@ function onResumeSession(id) {
             class="nav-link"
             :class="{ active: currentView === 'broadcast' }"
             @click="navTo('broadcast')"
-            :disabled="modelCount === 0"
           >
             <span class="nav-icon">&#9654;</span>
             {{ t('broadcast') }}
