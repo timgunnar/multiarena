@@ -38,7 +38,7 @@
 
 | 模块 | 文件 | 测试数 | 覆盖点 |
 |------|------|--------|--------|
-| Server HTTP | `test/server/server.test.ts` | 5 | SS E headers、state/mute/reset/permission 命令 |
+| Server HTTP | `test/server/server.test.ts` | 5 | state/mute/reset/permission 命令、错误处理 |
 | SessionManager | `test/server/sessionManager.test.ts` | 7 | 构造/静音/setTarget/reset/perm/对抗/save |
 | Cross-Env | `test/harness/crossEnvironment.test.ts` | 5 | CLI→Web 会话恢复/对抗配置共享/teamMessages/权限/静音共享 |
 
@@ -74,5 +74,5 @@
 | Ink 渲染层 | 终端 UI 视觉回归需屏幕截图对比 |
 | process.stdin | 平台差异大，需真实终端环境 |
 | Vue 组件渲染 | 仅 i18n 逻辑测试，BroadcastView/DeliberationView 未测 |
-| Web SSE 连通性 | 需浏览器环境 (Playwright) |
-| Web E2E | 需 Playwright/Cypress，未纳入 |
+| Web 连通性 | 需浏览器环境 (Playwright) |
+| Web E2E | 需 Playwright，未纳入 |

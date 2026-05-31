@@ -417,14 +417,14 @@ watch(
 
 .bc-input {
   flex: 1;
-  padding: 8px 12px;
-  background: var(--bg);
+  padding: 12px;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 15px;
   font-family: inherit;
-  resize: none;
+  resize: vertical;
   outline: none;
   min-height: 38px;
   max-height: 120px;
@@ -440,12 +440,12 @@ watch(
 }
 
 .bc-send {
-  padding: 8px 18px;
-  background: #238636;
-  border: 1px solid #2ea043;
+  padding: 10px 24px;
+  background: #7c3aed;
+  border: none;
   color: #fff;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
@@ -453,11 +453,11 @@ watch(
 }
 
 .bc-send:hover:not(:disabled) {
-  background: #2ea043;
+  background: #6d28d9;
 }
 
 .bc-send:disabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 

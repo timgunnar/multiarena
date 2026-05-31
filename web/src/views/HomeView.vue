@@ -209,16 +209,17 @@ onMounted(() => {
 
 .home-textarea {
   width: 100%;
-  padding: 10px 0;
-  border: none;
-  background: transparent;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 15px;
   font-family: inherit;
   resize: vertical;
   min-height: 72px;
   line-height: 1.6;
   outline: none;
+  border-radius: 8px;
 }
 
 .home-textarea::placeholder {
@@ -227,23 +228,23 @@ onMounted(() => {
 
 .home-submit {
   align-self: flex-end;
-  padding: 8px 20px;
-  background: #238636;
-  border: 1px solid #2ea043;
+  padding: 10px 24px;
+  background: #7c3aed;
+  border: none;
   color: #fff;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .home-submit:hover:not(:disabled) {
-  background: #2ea043;
+  background: #6d28d9;
 }
 
 .home-submit:disabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 

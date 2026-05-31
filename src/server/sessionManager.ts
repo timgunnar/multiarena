@@ -20,6 +20,7 @@ import { saveSession, loadSession, listSessions, type SavedSession } from "../pe
 
 export interface ModelSnapshot {
   name: string;
+  provider: string;
   buffer: string;
   isStreaming: boolean;
   usage: { input: number; output: number };
@@ -68,6 +69,7 @@ export class SessionManager {
       targetModel: this.session.targetMode.type === "directed" ? this.session.targetMode.modelName : null,
       models: this.session.models.map((m) => ({
         name: m.name,
+        provider: m.provider,
         buffer: m.buffer,
         isStreaming: m.isStreaming,
         usage: { ...m.usage },

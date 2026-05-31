@@ -1,8 +1,8 @@
 /**
- * HTTP + SSE server for multiarena --web mode.
+ * HTTP server for multiarena --web mode.
  *
  * Zero extra dependencies — uses Node.js built-in http module.
- * SSE for server→client streaming, HTTP POST for client→server commands.
+ * Initial state is injected into index.html. Streaming responses via NDJSON on /api/cmd submit.
  */
 import * as http from "node:http";
 import * as fs from "node:fs";
@@ -13,20 +13,6 @@ import { SessionManager } from "./sessionManager.js";
 
 const PORT = parseInt(process.env.MULTIARENA_PORT ?? "3000", 10);
 const HOST = "127.0.0.1";
-
-// ── SSE Helpers ─────────────────────────────────────────────────
-
-const SSE_HEADERS = {
-  "Content-Type": "text/event-stream; charset=utf-8",
-  "Cache-Control": "no-cache, no-transform",
-  Connection: "keep-alive",
-  "X-Accel-Buffering": "no",
-  "Access-Control-Allow-Origin": "*",
-};
-
-function sendSSE(res: http.ServerResponse, event: string, data: unknown) {
-  res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-}
 
 // ── Static file serving ────────────────────────────────────────
 
@@ -73,41 +59,8 @@ export function startServer(port = PORT) {
   const mgr = new SessionManager(config);
   let sessionId = Date.now().toString(36);
 
-  // Connected SSE clients — broadcast events to all
-  const sseClients = new Set<http.ServerResponse>();
-
-  function broadcastSSE(event: string, data: unknown) {
-    for (const client of sseClients) {
-      try { sendSSE(client, event, data); } catch {}
-    }
-  }
-
   const server = http.createServer((req, res) => {
     const url = req.url ?? "/";
-
-    // SSE stream endpoint
-    if (url === "/api/stream" && req.method === "GET") {
-      res.writeHead(200, SSE_HEADERS);
-      res.flushHeaders(); // Critical: flush headers immediately for SSE
-      sseClients.add(res);
-
-      // Send initial state + immediate comment to flush
-      sendSSE(res, "state", { ...mgr.getState(), sessionId });
-      res.write(":\n\n"); // flush
-
-      // Keep alive every 5s (browsers may close idle connections >15s)
-      const keepAlive = setInterval(() => {
-        try { res.write(":\n\n"); } catch { clearInterval(keepAlive); sseClients.delete(res); }
-      }, 5000);
-
-      req.on("close", () => {
-        clearInterval(keepAlive);
-        sseClients.delete(res);
-        try { res.end(); } catch {}
-      });
-
-      return;
-    }
 
     // POST endpoint for commands
     if (url === "/api/cmd" && req.method === "POST") {

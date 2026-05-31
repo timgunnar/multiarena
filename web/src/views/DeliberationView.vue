@@ -344,7 +344,7 @@ function backToBroadcast() {
   .delib-submit-btn { width: 100%; }
   .delib-start { padding: 24px 16px; }
 }
-.delib-textarea { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 15px; resize: vertical; min-height: 80px; font-family: inherit; }
-.delib-submit-btn { background: #7c3aed; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; cursor: pointer; white-space: nowrap; }
+.delib-textarea { flex: 1; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 15px; resize: vertical; min-height: 80px; font-family: inherit; }
+.delib-submit-btn { background: #7c3aed; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .delib-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

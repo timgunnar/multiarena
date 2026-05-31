@@ -3,7 +3,6 @@ import { ref, computed, inject } from 'vue'
 
 const emit = defineEmits(['complete', 'skip'])
 
-const { connect } = inject('appState')
 const t = inject('t')
 
 const step = ref(0)
@@ -40,11 +39,9 @@ function nextStep() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config)
     }).then(() => {
-      connect()
       emit('complete')
     }).catch(() => {
       // Server might not be ready — still proceed with localStorage config
-      connect()
       emit('complete')
     })
   }

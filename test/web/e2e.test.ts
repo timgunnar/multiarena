@@ -25,11 +25,10 @@ test("page loads with title", async ({ page }) => {
   await expect(page).toHaveTitle("multiarena");
 });
 
-test("SSE connects and shows connected state", async ({ page }) => {
+test("page loads without connection error", async ({ page }) => {
   await page.goto(BASE);
-  // Wait for SSE to connect — the sidebar should show "connected"
-  await page.waitForSelector("text=Connected", { timeout: 10000 }).catch(() => {});
-  // At minimum, the page should have loaded without connection error
+  // Connection is implicit — initial state is injected into index.html.
+  // The page should have loaded without connection error.
   const errorBanner = page.locator(".connection-banner");
   await expect(errorBanner).not.toBeVisible({ timeout: 5000 });
 });

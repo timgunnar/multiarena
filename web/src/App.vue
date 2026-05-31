@@ -20,7 +20,6 @@ const {
   respondPermission,
   loadSessions,
   resumeSession,
-  connect
 } = useWebSocket()
 
 const { t, locale, setLocale, localeLabel } = useI18n()
@@ -72,7 +71,6 @@ provide('appState', {
   respondPermission,
   loadSessions,
   resumeSession,
-  connect,
   sidebarCollapsed,
   toggleSidebar
 })

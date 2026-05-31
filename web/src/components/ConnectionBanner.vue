@@ -1,7 +1,7 @@
 <script setup>
 import { inject, ref } from 'vue'
 
-const { state, connectionError, connect } = inject('appState')
+const { connectionError } = inject('appState')
 const t = inject('t')
 
 const dismissed = ref(false)
@@ -9,11 +9,6 @@ const dismissed = ref(false)
 function onDismiss() {
   dismissed.value = true
   setTimeout(() => { dismissed.value = false }, 30000)
-}
-
-function onReconnect() {
-  dismissed.value = false
-  connect()
 }
 </script>
 
@@ -24,7 +19,6 @@ function onReconnect() {
   >
     <span class="conn-msg">{{ connectionError }}</span>
     <div class="conn-actions">
-      <button class="conn-btn retry" @click="onReconnect">{{ t('retry') }}</button>
       <button class="conn-btn dismiss" @click="onDismiss">{{ t('dismiss') }}</button>
     </div>
   </div>
@@ -68,12 +62,6 @@ function onReconnect() {
 
 .conn-btn:hover {
   opacity: 0.85;
-}
-
-.conn-btn.retry {
-  background: #238636;
-  border-color: #2ea043;
-  color: #fff;
 }
 
 .conn-btn.dismiss {
