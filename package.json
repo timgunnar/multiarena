@@ -1,6 +1,6 @@
 {
   "name": "multiarena",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "Terminal-native multi-model content generation — N models collaborate to produce the best document, analysis, script, or strategy",
   "type": "module",
   "license": "MIT",

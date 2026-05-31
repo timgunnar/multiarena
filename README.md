@@ -33,28 +33,29 @@ Clean, intuitive interface for non-technical users. Zero config — start with a
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  ⚡ multiarena                           [⚙] [🌙] [中]  │
+│  ⚡ multiarena                           [⚙] [🌙] [EN]  │
 │──────────────────────────────────────────────────────────│
 │                                                          │
-│                   下午好，Tim 👋                           │
-│                  今天想做什么？                             │
+│               Good afternoon, Tim 👋                      │
+│          What would you like to do today?                 │
 │                                                          │
-│  ┌── ✍️ 写文案 ──┐ ┌── 📊 分析数据 ──┐                   │
-│  │ 品牌故事      │ │ 对比方案         │                   │
-│  │ 广告语        │ │ 分析报告         │                   │
-│  │ 产品介绍      │ │ 数据解读         │                   │
-│  └──────────────┘ └─────────────────┘                   │
+│  ┌── ✍️ Write ────┐ ┌── 📊 Analyze ────┐               │
+│  │ Brand story    │ │ Compare options  │               │
+│  │ Ad copy        │ │ Analysis report  │               │
+│  │ Product intro  │ │ Data insights    │               │
+│  └───────────────┘ └──────────────────┘               │
 │                                                          │
-│  ┌── 💡 出主意 ──┐ ┌── 🔍 审文档 ──┐                   │
-│  │ 产品名        │ │ 找漏洞           │                   │
-│  │ Slogan        │ │ 改措辞           │                   │
-│  │ 活动创意      │ │ 润色             │                   │
-│  └──────────────┘ └─────────────────┘                   │
+│  ┌── 💡 Ideate ───┐ ┌── 🔍 Review ─────┐               │
+│  │ Product name   │ │ Find gaps         │               │
+│  │ Slogan         │ │ Improve wording   │               │
+│  │ Campaign ideas │ │ Polish            │               │
+│  └───────────────┘ └──────────────────┘               │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │  帮我写精品咖啡烘焙商的品牌故事，用在官网About页…  │   │
+│  │  Write a brand story for my specialty coffee     │   │
+│  │  roastery, for our website About page…           │   │
 │  └──────────────────────────────────────────────────┘   │
-│                              [让 AI 团队开始 →]          │
+│                              [Start AI Team →]           │
 └──────────────────────────────────────────────────────────┘
 ```
 
