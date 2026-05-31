@@ -8,9 +8,9 @@ const t = inject('t')
 
 const step = ref(0)
 const models = ref([
-  { name: 'claude-sonnet-4-20250514', provider: 'Anthropic', enabled: true },
-  { name: 'gpt-4o', provider: 'OpenAI', enabled: true },
-  { name: 'gemini-2.5-pro', provider: 'Google', enabled: true }
+  { name: 'claude-sonnet-4-20250514', provider: 'anthropic', nickname: 'Claude', api_key: '', enabled: true },
+  { name: 'gpt-4o', provider: 'openai', nickname: 'GPT', api_key: '', enabled: true },
+  { name: 'gemini-2.5-pro', provider: 'google', nickname: 'Gemini', api_key: '', enabled: true }
 ])
 
 const steps = computed(() => [
@@ -29,12 +29,24 @@ function nextStep() {
   if (step.value < steps.value.length - 1) {
     step.value++
   } else {
+    const enabled = models.value.filter(m => m.enabled)
+    const config = { models: enabled }
+    // Save to localStorage for UI persistence
+    localStorage.setItem('multiarena-config', JSON.stringify(config))
     localStorage.setItem('multiarena-setup-done', '1')
-    localStorage.setItem('multiarena-models', JSON.stringify(
-      models.value.filter(m => m.enabled).map(m => ({ name: m.name, provider: m.provider }))
-    ))
-    connect()
-    emit('complete')
+    // Also save to server (.multiarenarc) so CLI and future Web sessions share config
+    fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    }).then(() => {
+      connect()
+      emit('complete')
+    }).catch(() => {
+      // Server might not be ready — still proceed with localStorage config
+      connect()
+      emit('complete')
+    })
   }
 }
 

@@ -108,6 +108,27 @@ export function startServer(port = PORT) {
       return;
     }
 
+    // Config save endpoint — SetupWizard writes models to .multiarenarc
+    if (url === "/api/config" && req.method === "POST") {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => {
+        try {
+          const cfg = JSON.parse(body);
+          const toml = buildConfigTOML(cfg);
+          const fs = require("node:fs");
+          const configPath = require("node:path").join(require("node:os").homedir(), ".multiarenarc");
+          fs.writeFileSync(configPath, toml, "utf-8");
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ status: "ok", path: configPath }));
+        } catch (err: any) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+    }
+
     // Session list
     if (url === "/api/sessions" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -121,6 +142,26 @@ export function startServer(port = PORT) {
   });
 
   // ── Command handler ──────────────────────────────────────────
+
+  /** Build a .multiarenarc TOML string from web UI config. */
+  function buildConfigTOML(cfg: any): string {
+    let toml = "";
+    const names: string[] = [];
+    for (const m of cfg.models ?? []) {
+      const name = (m.nickname || m.name || "model").replace(/[^a-zA-Z0-9_-]/g, "_");
+      names.push(name);
+      toml += `[models.${name}]\n`;
+      toml += `provider = "${m.provider ?? "openai"}"\n`;
+      toml += `model = "${m.model ?? m.name ?? name}"\n`;
+      toml += `api_key = "${m.api_key ?? ""}"\n`;
+      if (m.endpoint) toml += `endpoint = "${m.endpoint}"\n`;
+      toml += "\n";
+    }
+    toml += "[defaults]\n";
+    toml += `active = [${names.map((n) => `"${n}"`).join(", ")}]\n`;
+    toml += "broadcast = true\n";
+    return toml;
+  }
 
   async function handleCommand(msg: any, res: http.ServerResponse) {
     const { type, ...payload } = msg;
