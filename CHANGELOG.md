@@ -2,6 +2,14 @@
 
 [English](./CHANGELOG.md) | [中文](./CHANGELOG_CN.md)
 
+## v0.1.8
+
+- **Deliberation version history** — Each round now sees ALL previous drafts (with round numbers and author labels), enabling models to revert to any earlier version instead of being locked to the latest
+- **Session persistence fixes** — `teamMessages`, `usage` stats, `muted` state, and `inputHistory` now correctly persist across session save/restore
+- **Message history visibility** — User messages now appear in chat history (`> text` prefix in grey), and assistant responses no longer vanish when a new message clears the buffer
+- **Adversarial intensity fixes** — 2-model high mode reverse loop fixed, `-a` flag stripped from model context, `/team -a high` shortcut from broadcast mode
+- **Test infrastructure** — New `Harness` class for programmatic E2E testing (broadcast, deliberation, persistence, cleanup), 28 new E2E tests, 368 total
+
 ## v0.1.7
 
 - **README/CHANGELOG language restructure** — English is now the default (`README.md`, `CHANGELOG.md`), Chinese provided as `_CN` variants with language switcher links
