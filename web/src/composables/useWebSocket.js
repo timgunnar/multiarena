@@ -1,4 +1,8 @@
-import { reactive, ref, onMounted, onUnmounted } from 'vue'
+/**
+ * Server communication via fetch + SSE streaming.
+ * Uses fetch with ReadableStream instead of EventSource for reliability.
+ */
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 
 export function useWebSocket() {
   const state = reactive({
@@ -7,37 +11,27 @@ export function useWebSocket() {
     models: [],
     deliberation: null,
     permissionPrompt: null,
-    connected: false
+    connected: false,
   })
 
   const currentView = ref('home')
   const sessions = ref([])
   const connectionError = ref(null)
-  let eventSource = null
-  let reconnectTimer = null
-  let reconnectAttempts = 0
-  const maxReconnectAttempts = 10
   let mounted = true
-
-  function findModel(name) {
-    return state.models.find(m => m.name === name)
-  }
+  let abortController = null
+  let pollTimer = null
 
   function ensureModel(name) {
-    let model = findModel(name)
-    if (!model) {
-      const entry = {
-        name,
-        buffer: '',
-        isStreaming: false,
-        usage: null,
-        muted: false,
-        messages: []
-      }
-      state.models.push(entry)
-      return entry
+    let m = state.models.find(mm => mm.name === name)
+    if (!m) {
+      m = { name, buffer: '', isStreaming: false, usage: null, muted: false, messages: [] }
+      state.models.push(m)
     }
-    return model
+    return m
+  }
+
+  function findModel(name) {
+    return state.models.find(mm => mm.name === name)
   }
 
   function handleEvent(eventType, data) {
@@ -66,15 +60,13 @@ export function useWebSocket() {
             })
           }
 
-          currentView.value = s.sessionId ? 'broadcast' : 'home'
+          if (!state.sessionId) currentView.value = 'home'
           break
         }
 
         case 'stream': {
           const model = ensureModel(payload.modelName)
-          if (payload.text) {
-            model.buffer += payload.text
-          }
+          if (payload.text) model.buffer += payload.text
           model.isStreaming = true
           if (currentView.value === 'home' && state.models.length > 0) {
             currentView.value = 'broadcast'
@@ -86,14 +78,7 @@ export function useWebSocket() {
           const model = findModel(payload.modelName)
           if (model) {
             model.isStreaming = false
-            if (payload.usage) {
-              model.usage = payload.usage
-            }
-            model.messages.push({
-              role: 'assistant',
-              content: model.buffer,
-              usage: payload.usage || null
-            })
+            if (payload.usage) model.usage = payload.usage
           }
           break
         }
@@ -115,7 +100,6 @@ export function useWebSocket() {
         }
 
         case 'error': {
-          console.error('[SSE] Server error:', payload.message)
           connectionError.value = payload.message
           break
         }
@@ -126,71 +110,60 @@ export function useWebSocket() {
           state.permissionPrompt = null
           break
         }
-
-        default:
-          console.warn('[SSE] Unknown event type:', eventType, payload)
       }
     } catch (e) {
-      console.error('[SSE] Failed to parse event data:', e, data)
+      console.error('[SSE] Parse error:', e)
     }
   }
 
-  function connect() {
+  async function connect() {
     if (!mounted) return
-    if (eventSource) {
-      eventSource.close()
-      eventSource = null
+    if (abortController) abortController.abort()
+    abortController = new AbortController()
+    connectionError.value = null
+
+    try {
+      const res = await fetch('/api/stream', {
+        signal: abortController.signal,
+        headers: { 'Accept': 'text/event-stream' }
+      })
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      state.connected = true
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (mounted) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const parts = buffer.split('\n\n')
+        buffer = parts.pop() || ''
+
+        for (const part of parts) {
+          if (!part.trim() || part.trim() === ':') continue
+          const eventMatch = part.match(/^event: (.+)$/m)
+          const dataMatch = part.match(/^data: (.+)$/m)
+          if (eventMatch && dataMatch) {
+            handleEvent(eventMatch[1], dataMatch[1])
+          }
+        }
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.error('[fetch] SSE error:', e.message)
+      }
     }
 
-    connectionError.value = null
     state.connected = false
 
-    const sourceUrl = '/api/stream'
-    const es = new EventSource(sourceUrl)
-    eventSource = es
-
-    es.onopen = () => {
-      state.connected = true
-      reconnectAttempts = 0
-      connectionError.value = null
+    // Reconnect after 2s
+    if (mounted) {
+      pollTimer = setTimeout(connect, 2000)
     }
-
-    const addListener = (name) => {
-      es.addEventListener(name, (e) => {
-        handleEvent(name, e.data)
-      })
-    }
-
-    addListener('state')
-    addListener('stream')
-    addListener('stream_end')
-    addListener('deliberation')
-    addListener('permission_required')
-    addListener('error')
-    addListener('done')
-
-    es.onerror = () => {
-      state.connected = false
-      // EventSource auto-reconnects — don't close manually
-    }
-  }
-
-  function scheduleReconnect() {
-    if (!mounted) return
-    if (reconnectTimer) return
-    if (reconnectAttempts >= maxReconnectAttempts) {
-      connectionError.value = 'Connection lost. Maximum reconnect attempts reached.'
-      return
-    }
-
-    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000)
-    reconnectAttempts++
-    connectionError.value = `Connection lost. Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${reconnectAttempts}/${maxReconnectAttempts})`
-
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null
-      connect()
-    }, delay)
   }
 
   async function sendCommand(type, payload = {}) {
@@ -201,65 +174,53 @@ export function useWebSocket() {
         body: JSON.stringify({ type, ...payload })
       })
       if (!res.ok) {
-        const text = await res.text()
-        throw new Error(`Server error (${res.status}): ${text}`)
+        throw new Error(`Server error (${res.status})`)
       }
-      return await res.json().catch(() => ({}))
+      return await res.json()
     } catch (e) {
-      console.error('[CMD] Failed:', e)
-      connectionError.value = e.message
-      throw e
+      console.error('[cmd] Error:', e.message)
+      return null
     }
   }
 
-  async function submit(text) {
-    await sendCommand('submit', { text })
-    currentView.value = 'broadcast'
+  async function submit(text, mode = 'broadcast', modelName = null) {
+    await sendCommand('submit', { text, mode, modelName })
   }
 
   async function respondPermission(decision) {
-    if (!state.permissionPrompt) return
-    const requestId = state.permissionPrompt.requestId
+    await sendCommand('permission', { decision })
     state.permissionPrompt = null
-    await sendCommand('permission', { decision, requestId })
   }
 
   async function loadSessions() {
     try {
       const res = await fetch('/api/sessions')
-      if (res.ok) {
-        sessions.value = await res.json()
-      }
-    } catch (e) {
-      console.error('[Sessions] Failed to load:', e)
-    }
+      if (res.ok) sessions.value = await res.json()
+    } catch {}
   }
 
   async function resumeSession(id) {
-    await sendCommand('resume', { sessionId: id })
-    currentView.value = 'broadcast'
+    const data = await sendCommand('resume', { sessionId: id })
+    if (data) {
+      await sendCommand('state')
+      currentView.value = 'broadcast'
+    }
+    return data
   }
 
   function disconnect() {
     mounted = false
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
-    if (eventSource) {
-      eventSource.close()
-      eventSource = null
-    }
-    state.connected = false
+    if (abortController) abortController.abort()
+    if (pollTimer) clearTimeout(pollTimer)
   }
 
   onMounted(() => {
+    mounted = true
     connect()
+    loadSessions()
   })
 
-  onUnmounted(() => {
-    disconnect()
-  })
+  onUnmounted(disconnect)
 
   return {
     state,

@@ -334,4 +334,3 @@ function backToBroadcast() {
   max-height: 500px;
   overflow-y: auto;
 }
-</style>
