@@ -4,7 +4,9 @@
 
 ## v0.2.1
 
-- **npm 包纳入 web/dist/** — Web 前端随包发布，`multiarena` 开箱即用
+### 关键升级
+
+- **npm 包纳入 web/dist/** — Web 前端随包发布，`multiarena` 开箱即用，无需从源码构建
 
 ## v0.2.0
 
