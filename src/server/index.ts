@@ -17,9 +17,10 @@ const HOST = "127.0.0.1";
 // ── SSE Helpers ─────────────────────────────────────────────────
 
 const SSE_HEADERS = {
-  "Content-Type": "text/event-stream",
-  "Cache-Control": "no-cache",
+  "Content-Type": "text/event-stream; charset=utf-8",
+  "Cache-Control": "no-cache, no-transform",
   Connection: "keep-alive",
+  "X-Accel-Buffering": "no",
   "Access-Control-Allow-Origin": "*",
 };
 
@@ -90,8 +91,9 @@ export function startServer(port = PORT) {
       res.flushHeaders(); // Critical: flush headers immediately for SSE
       sseClients.add(res);
 
-      // Send initial state
+      // Send initial state + immediate comment to flush
       sendSSE(res, "state", { ...mgr.getState(), sessionId });
+      res.write(":\n\n"); // flush
 
       // Keep alive every 5s (browsers may close idle connections >15s)
       const keepAlive = setInterval(() => {

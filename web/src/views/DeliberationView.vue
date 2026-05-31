@@ -50,7 +50,7 @@ function backToBroadcast() {
     <header class="delib-top">
       <button class="delib-back" @click="backToBroadcast">{{ t('back') }}</button>
       <span class="delib-title">{{ t('deliberation') }}</span>
-      <div class="delib-phase-badge" :class="phase">{{ phase }}</div>
+      <div v-if="deliberation" class="delib-phase-badge" :class="phase">{{ phase }}</div>
     </header>
 
     <div v-if="!deliberation" class="delib-start">
