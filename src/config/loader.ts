@@ -64,8 +64,14 @@ export function loadConfig(): ArenaConfig {
 
   for (const p of candidates) {
     if (fs.existsSync(p)) {
-      const raw = TOML.parse(fs.readFileSync(p, "utf-8"));
-      resolved = resolveConfig(raw);
+      try {
+        const raw = TOML.parse(fs.readFileSync(p, "utf-8"));
+        resolved = resolveConfig(raw);
+      } catch (err: any) {
+        console.error(`[config] Failed to parse ${p}:`, err.message || err);
+        // Continue to next candidate instead of crashing
+        continue;
+      }
       break;
     }
   }

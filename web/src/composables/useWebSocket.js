@@ -50,8 +50,14 @@ export function useWebSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, ...payload })
       })
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        console.error(`[sendCommand] ${type} HTTP ${res.status}:`, errText)
+        return null
+      }
       return await res.json()
-    } catch {
+    } catch (e) {
+      console.error(`[sendCommand] ${type} failed:`, e)
       return null
     }
   }
@@ -64,7 +70,10 @@ export function useWebSocket() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'submit', text, mode, modelName })
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        throw new Error(`HTTP ${res.status}${errText ? ': ' + errText : ''}`)
+      }
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
@@ -93,15 +102,23 @@ export function useWebSocket() {
               currentView.value = 'deliberation'
             } else if (event.type === 'permission_required') {
               state.permissionPrompt = event
+            } else if (event.type === 'error') {
+              connectionError.value = event.message || 'Server error'
             }
-          } catch {}
+          } catch (err) {
+              console.error('[useWebSocket] Stream JSON parse error:', line.slice(0, 100), err)
+            }
         }
       }
       // Refresh state after submit completes
       const data = await sendCommand('state')
       if (data) updateState(data)
     } catch (e) {
-      connectionError.value = 'Submit failed: ' + e.message
+      const detail = e instanceof TypeError && e.message === 'Failed to fetch'
+        ? ' (server unreachable — is multiarena running?)'
+        : ''
+      connectionError.value = 'Submit failed: ' + e.message + detail
+      console.error('[submit]', e)
     }
   }
 
@@ -114,7 +131,9 @@ export function useWebSocket() {
     try {
       const res = await fetch('/api/sessions')
       if (res.ok) sessions.value = await res.json()
-    } catch {}
+    } catch (err) {
+      console.error('[useWebSocket] loadSessions failed:', err)
+    }
   }
 
   async function resumeSession(id) {
@@ -128,7 +147,11 @@ export function useWebSocket() {
     mounted = true
     // Server injects initial state into HTML — load instantly
     if (window.__INITIAL_STATE__) {
-      updateState(window.__INITIAL_STATE__)
+      try {
+        updateState(window.__INITIAL_STATE__)
+      } catch (err) {
+        console.error('[useWebSocket] Failed to parse __INITIAL_STATE__:', err)
+      }
       delete window.__INITIAL_STATE__
     }
     loadSessions()

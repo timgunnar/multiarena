@@ -100,4 +100,88 @@ describe("SessionManager", () => {
     expect(saved.models[0].messages).toHaveLength(1);
     expect(saved.teamMessages).toBeDefined();
   });
+
+  // ── Robustness ─────────────────────────────────────────────
+
+  it("constructs with empty model list without crashing", () => {
+    const mgr = new SessionManager(makeConfig([]));
+    const state = mgr.getState();
+    expect(state.models).toHaveLength(0);
+    expect(state.mode).toBe("broadcast");
+    expect(state.permissionPrompt).toBeNull();
+  });
+
+  it("broadcast with no active models yields only done event", async () => {
+    const mgr = new SessionManager(makeConfig([]));
+    const events: any[] = [];
+    for await (const e of mgr.broadcast("test")) {
+      events.push(e);
+    }
+    // Should yield a single "done" event — no models to run
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe("done");
+  });
+
+  it("broadcast handles provider creation failure gracefully", async () => {
+    const mgr = new SessionManager(makeConfig(["A"]));
+    (createProvider as any).mockImplementation(() => {
+      throw new Error("Provider creation failed");
+    });
+
+    const events: any[] = [];
+    for await (const e of mgr.broadcast("test")) {
+      events.push(e);
+    }
+
+    // Should yield an error event + done, not crash
+    const errEvent = events.find((e) => e.type === "error");
+    expect(errEvent).toBeDefined();
+    expect(errEvent.message).toContain("Provider creation failed");
+
+    // Model streaming should be reset
+    expect(mgr.session.models[0].isStreaming).toBe(false);
+
+    // Should still yield done
+    expect(events.some((e) => e.type === "done")).toBe(true);
+  });
+
+  it("teamChat handles provider failure gracefully", async () => {
+    const mgr = new SessionManager(makeConfig(["A"]));
+    (createProvider as any).mockImplementation(() => {
+      throw new Error("Provider creation failed");
+    });
+
+    const events: any[] = [];
+    for await (const e of mgr.teamChat("A", "test")) {
+      events.push(e);
+    }
+
+    const errEvent = events.find((e) => e.type === "error");
+    expect(errEvent).toBeDefined();
+    expect(errEvent.message).toContain("Provider creation failed");
+    expect(mgr.session.models[0].isStreaming).toBe(false);
+    expect(events.some((e) => e.type === "done")).toBe(true);
+  });
+
+  it("teamChat with nonexistent model yields error", async () => {
+    const mgr = new SessionManager(makeConfig(["A"]));
+    const events: any[] = [];
+    for await (const e of mgr.teamChat("nonexistent", "test")) {
+      events.push(e);
+    }
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe("error");
+    expect(events[0].message).toContain("not found");
+  });
+
+  it("deliberate with no active models handles gracefully", async () => {
+    const mgr = new SessionManager(makeConfig(["A"]));
+    mgr.toggleMute("A"); // mute all models
+    const events: any[] = [];
+    for await (const e of mgr.deliberate("test")) {
+      events.push(e);
+    }
+    // Should complete without crashing (may yield a done or have empty output)
+    expect(events.some((e) => e.type === "done")).toBe(true);
+  });
 });

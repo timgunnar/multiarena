@@ -40,7 +40,15 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
 
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      provider = createProvider(ctx.config);
+      try {
+        provider = createProvider(ctx.config);
+      } catch (err: any) {
+        yield {
+          type: "error",
+          message: `Failed to create provider for ${ctx.modelName}: ${err.message || String(err)}`,
+        };
+        return;
+      }
 
       const request = {
         messages: [...ctx.messages],
@@ -76,7 +84,10 @@ export async function* runTurn(ctx: TurnContext): AsyncGenerator<StreamEvent> {
             return;
 
           case "done":
-            lastUsage = event.usage;
+            lastUsage = {
+              input: Number.isFinite(event.usage?.input) ? event.usage.input : 0,
+              output: Number.isFinite(event.usage?.output) ? event.usage.output : 0,
+            };
             break;
         }
       }

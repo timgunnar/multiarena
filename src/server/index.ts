@@ -71,8 +71,9 @@ export function startServer(port = PORT) {
           const msg = JSON.parse(body);
           await handleCommand(msg, res);
         } catch (err: any) {
+          console.error("[api/cmd] Parse/handle error:", err.message || err);
           res.writeHead(400);
-          res.end(JSON.stringify({ error: err.message }));
+          res.end(JSON.stringify({ error: err.message || "Bad request" }));
         }
       });
       return;
@@ -91,10 +92,19 @@ export function startServer(port = PORT) {
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ status: "ok", path: configPath }));
         } catch (err: any) {
+          console.error("[api/config] Error:", err.message || err);
           res.writeHead(400);
-          res.end(JSON.stringify({ error: err.message }));
+          res.end(JSON.stringify({ error: err.message || "Bad config request" }));
         }
       });
+      return;
+    }
+
+    // Health check
+    if (url === "/api/health" && req.method === "GET") {
+      const modelCount = Object.keys(config.models).length;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok", models: modelCount }));
       return;
     }
 
@@ -150,34 +160,59 @@ export function startServer(port = PORT) {
       case "submit": {
         // Stream results directly back — same pattern as CLI's runTurn()
         res.writeHead(200, {
-          "Content-Type": "application/x-ndjson",
+          "Content-Type": "text/plain; charset=utf-8",
           "Transfer-Encoding": "chunked",
           "Cache-Control": "no-cache",
         });
+
+        let closed = false;
+        const safeWrite = (data: string) => {
+          if (closed) return;
+          try {
+            res.write(data);
+          } catch {
+            closed = true;
+          }
+        };
+
+        res.on("close", () => {
+          closed = true;
+          clearTimeout(timeout);
+        });
+
+        const timeout = setTimeout(() => {
+          console.error("[submit] Timeout after 60s");
+          safeWrite(JSON.stringify({ type: "error", message: "Request timeout after 60s" }) + "\n");
+          if (!res.writableEnded) res.end();
+        }, 60_000);
 
         const text = payload.text ?? "";
         const mode = payload.mode ?? "broadcast";
         try {
           if (mode === "deliberation") {
             for await (const event of mgr.deliberate(text)) {
-              res.write(JSON.stringify({ type: "deliberation", event }) + "\n");
+              if (closed) break;
+              safeWrite(JSON.stringify({ type: "deliberation", event }) + "\n");
             }
           } else if (mode === "team_chat" && payload.modelName) {
             for await (const event of mgr.teamChat(payload.modelName, text)) {
-              res.write(JSON.stringify(event) + "\n");
+              if (closed) break;
+              safeWrite(JSON.stringify(event) + "\n");
             }
           } else {
             for await (const event of mgr.broadcast(text)) {
-              res.write(JSON.stringify(event) + "\n");
+              if (closed) break;
+              safeWrite(JSON.stringify(event) + "\n");
             }
           }
-          // Send final state
-          res.write(JSON.stringify({ type: "state", ...mgr.getState(), sessionId }) + "\n");
+          clearTimeout(timeout);
+          safeWrite(JSON.stringify({ type: "state", ...mgr.getState(), sessionId }) + "\n");
         } catch (err: any) {
+          clearTimeout(timeout);
           console.error("[submit] Error:", err.message || err);
-          res.write(JSON.stringify({ type: "error", message: err.message || String(err) }) + "\n");
+          safeWrite(JSON.stringify({ type: "error", message: err.message || String(err) }) + "\n");
         }
-        res.end();
+        if (!res.writableEnded) res.end();
         break;
       }
 

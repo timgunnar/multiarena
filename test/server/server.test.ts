@@ -22,10 +22,12 @@ afterAll(() => {
 
 function post(path: string, payload: any): Promise<{ status: number; data: any }> {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify(payload);
+    const body = typeof payload === "string" ? payload : JSON.stringify(payload);
     const req = http.request(`${BASE}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      headers: typeof payload === "string"
+        ? { "Content-Type": "text/plain", "Content-Length": Buffer.byteLength(body) }
+        : { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
     }, (res) => {
       let data = "";
       res.on("data", (chunk) => (data += chunk));
@@ -36,6 +38,21 @@ function post(path: string, payload: any): Promise<{ status: number; data: any }
     });
     req.on("error", reject);
     req.write(body);
+    req.end();
+  });
+}
+
+function get(path: string): Promise<{ status: number; data: any }> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(`${BASE}${path}`, { method: "GET" }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try { resolve({ status: res.statusCode ?? 0, data: JSON.parse(data) }); }
+        catch { resolve({ status: res.statusCode ?? 0, data }); }
+      });
+    });
+    req.on("error", reject);
     req.end();
   });
 }
@@ -83,5 +100,48 @@ describe("Web Server", () => {
 
     const { status } = await post("/api/cmd", { type: "reset", modelName });
     expect(status).toBe(200);
+  });
+
+  // ── Robustness ──────────────────────────────────────────────
+
+  it("POST /api/cmd with empty body returns 400", async () => {
+    const { status, data } = await post("/api/cmd", "");
+    expect(status).toBe(400);
+    expect(data.error).toBeDefined();
+  });
+
+  it("POST /api/cmd with malformed JSON returns 400", async () => {
+    const { status, data } = await post("/api/cmd", "not json{{");
+    expect(status).toBe(400);
+    expect(data.error).toBeDefined();
+  });
+
+  it("POST /api/cmd with missing type returns 400", async () => {
+    const { status, data } = await post("/api/cmd", { foo: "bar" });
+    expect(status).toBe(400);
+    expect(data.error).toBeDefined();
+    expect(data.error).toContain("Unknown command");
+  });
+
+  it("POST /api/config with malformed body returns 400", async () => {
+    const { status, data } = await post("/api/config", "bad json");
+    expect(status).toBe(400);
+    expect(data.error).toBeDefined();
+  });
+
+  it("POST /api/config with valid body returns 200", async () => {
+    const { status, data } = await post("/api/config", {
+      models: [{ nickname: "Test", provider: "openai", name: "gpt-4o", api_key: "sk-test" }],
+    });
+    expect(status).toBe(200);
+    expect(data.status).toBe("ok");
+    expect(data.path).toBeDefined();
+  });
+
+  it("GET /api/health returns model count", async () => {
+    const { status, data } = await get("/api/health");
+    expect(status).toBe(200);
+    expect(data.status).toBe("ok");
+    expect(typeof data.models).toBe("number");
   });
 });

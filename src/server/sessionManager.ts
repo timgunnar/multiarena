@@ -109,47 +109,56 @@ export class SessionManager {
       const mc = this.config.models[m.name];
       if (!mc) continue;
 
-      const stream = runTurn({
-        modelName: m.name,
-        config: mc,
-        messages: [...m.messages],
-        systemPrompt: `You are a helpful AI assistant. You are the "${m.name}" model. Respond directly.`,
-        tools: this.toolRegistry.getDefinitions(),
-        registry: this.toolRegistry,
-        permission: this.permissionManager,
-        worktreePath: process.cwd(),
-      });
+      try {
+        const stream = runTurn({
+          modelName: m.name,
+          config: mc,
+          messages: [...m.messages],
+          systemPrompt: `You are a helpful AI assistant. You are the "${m.name}" model. Respond directly.`,
+          tools: this.toolRegistry.getDefinitions(),
+          registry: this.toolRegistry,
+          permission: this.permissionManager,
+          worktreePath: process.cwd(),
+        });
 
-      for await (const event of stream) {
-        if (event.type === "text") {
-          m.buffer += event.content;
-          yield { type: "stream" as const, modelName: m.name, text: event.content };
-        } else if (event.type === "done") {
-          m.usage.input += event.usage.input;
-          m.usage.output += event.usage.output;
-          m.isStreaming = false;
-          yield { type: "stream_end" as const, modelName: m.name, usage: event.usage };
-        } else if (event.type === "error") {
-          m.buffer += `\n[Error: ${event.message}]`;
-          m.isStreaming = false;
-          yield { type: "error" as const, message: event.message };
-        } else if (event.type === "permission_required") {
-          const active = this.permissionManager.getActiveRequest();
-          if (active && active.requestId === event.requestId) {
-            yield {
-              type: "permission_required" as const,
-              requestId: event.requestId,
-              toolName: event.toolName,
-              args: event.args,
-              modelName: event.modelName,
-            };
+        for await (const event of stream) {
+          if (event.type === "text") {
+            m.buffer += event.content;
+            yield { type: "stream" as const, modelName: m.name, text: event.content };
+          } else if (event.type === "done") {
+            m.usage.input += event.usage.input;
+            m.usage.output += event.usage.output;
+            m.isStreaming = false;
+            yield { type: "stream_end" as const, modelName: m.name, usage: event.usage };
+          } else if (event.type === "error") {
+            m.buffer += `\n[Error: ${event.message}]`;
+            m.isStreaming = false;
+            yield { type: "error" as const, message: event.message };
+          } else if (event.type === "permission_required") {
+            const active = this.permissionManager.getActiveRequest();
+            if (active && active.requestId === event.requestId) {
+              yield {
+                type: "permission_required" as const,
+                requestId: event.requestId,
+                toolName: event.toolName,
+                args: event.args,
+                modelName: event.modelName,
+              };
+            }
           }
         }
-      }
 
-      // Store assistant response
-      if (m.buffer) {
-        m.messages.push({ role: "assistant", content: m.buffer });
+        // Store assistant response
+        if (m.buffer) {
+          m.messages.push({ role: "assistant", content: m.buffer });
+        }
+      } catch (err: any) {
+        console.error(`[broadcast] Error for ${m.name}:`, err.message || err);
+        m.buffer += `\n[Error: ${err.message || String(err)}]`;
+        m.isStreaming = false;
+        yield { type: "error" as const, message: err.message || String(err) };
+      } finally {
+        m.isStreaming = false;
       }
     }
 
@@ -161,34 +170,39 @@ export class SessionManager {
     const advLevel = adversarial ?? this.adversarialOverride ?? this.config.deliberation?.adversarial ?? "off";
     this.inputHistory.push(text);
 
-    const cleanText = text.replace(/\s*(?:--adversarial=\w+|-a\s+\w+)\s*/gi, " ").trim();
-    this.session.teamMessages.push({ role: "user", content: cleanText });
+    try {
+      const cleanText = text.replace(/\s*(?:--adversarial=\w+|-a\s+\w+)\s*/gi, " ").trim();
+      this.session.teamMessages.push({ role: "user", content: cleanText });
 
-    const activeModels = this.session.models.filter((m) => !m.muted).map((m) => m.name);
+      const activeModels = this.session.models.filter((m) => !m.muted).map((m) => m.name);
 
-    let perspectives: Record<string, string> | undefined;
-    if (advLevel === "high") {
-      perspectives = assignPerspectives(activeModels) as Record<string, string>;
-    }
+      let perspectives: Record<string, string> | undefined;
+      if (advLevel === "high") {
+        perspectives = assignPerspectives(activeModels) as Record<string, string>;
+      }
 
-    const roundConfigs = autoAssignRounds(
-      activeModels,
-      this.config.models,
-      advLevel,
-      perspectives as any,
-    );
+      const roundConfigs = autoAssignRounds(
+        activeModels,
+        this.config.models,
+        advLevel,
+        perspectives as any,
+      );
 
-    const stream = runDeliberation(
-      this.session.teamMessages,
-      roundConfigs,
-      undefined, // constraint
-      undefined, // worktreePath
-      advLevel,
-      perspectives as any,
-    );
+      const stream = runDeliberation(
+        this.session.teamMessages,
+        roundConfigs,
+        undefined, // constraint
+        undefined, // worktreePath
+        advLevel,
+        perspectives as any,
+      );
 
-    for await (const event of stream) {
-      yield { type: "deliberation" as const, event };
+      for await (const event of stream) {
+        yield { type: "deliberation" as const, event };
+      }
+    } catch (err: any) {
+      console.error("[deliberate] Error:", err.message || err);
+      yield { type: "error" as const, message: err.message || String(err) };
     }
 
     yield { type: "done" as const };
@@ -209,38 +223,47 @@ export class SessionManager {
     m.isStreaming = true;
     m.buffer = "";
 
-    const stream = runTurn({
-      modelName,
-      config: mc,
-      messages: [...this.session.teamMessages],
-      systemPrompt: `You are a helpful AI assistant. You are the "${modelName}" model.`,
-      tools: this.toolRegistry.getDefinitions(),
-      registry: this.toolRegistry,
-      permission: this.permissionManager,
-      worktreePath: process.cwd(),
-    });
+    try {
+      const stream = runTurn({
+        modelName,
+        config: mc,
+        messages: [...this.session.teamMessages],
+        systemPrompt: `You are a helpful AI assistant. You are the "${modelName}" model.`,
+        tools: this.toolRegistry.getDefinitions(),
+        registry: this.toolRegistry,
+        permission: this.permissionManager,
+        worktreePath: process.cwd(),
+      });
 
-    for await (const event of stream) {
-      if (event.type === "text") {
-        m.buffer += event.content;
-        yield { type: "stream" as const, modelName, text: event.content };
-      } else if (event.type === "done") {
-        m.usage.input += event.usage.input;
-        m.usage.output += event.usage.output;
-        m.isStreaming = false;
-      } else if (event.type === "error") {
-        m.buffer += `\n[Error: ${event.message}]`;
-        m.isStreaming = false;
-      } else if (event.type === "permission_required") {
-        const active = this.permissionManager.getActiveRequest();
-        if (active && active.requestId === event.requestId) {
-          yield { type: "permission_required" as const, requestId: event.requestId, toolName: event.toolName, args: event.args, modelName: event.modelName };
+      for await (const event of stream) {
+        if (event.type === "text") {
+          m.buffer += event.content;
+          yield { type: "stream" as const, modelName, text: event.content };
+        } else if (event.type === "done") {
+          m.usage.input += event.usage.input;
+          m.usage.output += event.usage.output;
+          m.isStreaming = false;
+        } else if (event.type === "error") {
+          m.buffer += `\n[Error: ${event.message}]`;
+          m.isStreaming = false;
+        } else if (event.type === "permission_required") {
+          const active = this.permissionManager.getActiveRequest();
+          if (active && active.requestId === event.requestId) {
+            yield { type: "permission_required" as const, requestId: event.requestId, toolName: event.toolName, args: event.args, modelName: event.modelName };
+          }
         }
       }
-    }
 
-    if (m.buffer) {
-      this.session.teamMessages.push({ role: "assistant", content: m.buffer });
+      if (m.buffer) {
+        this.session.teamMessages.push({ role: "assistant", content: m.buffer });
+      }
+    } catch (err: any) {
+      console.error(`[teamChat] Error for ${modelName}:`, err.message || err);
+      m.buffer += `\n[Error: ${err.message || String(err)}]`;
+      m.isStreaming = false;
+      yield { type: "error" as const, message: err.message || String(err) };
+    } finally {
+      m.isStreaming = false;
     }
 
     yield { type: "done" as const };
