@@ -17,7 +17,18 @@ export const BroadcastSummary: React.FC<Props> = ({ models, terminalWidth }) => 
   return (
     <Box flexDirection="row" flexGrow={1}>
       {activeModels.map((m, idx) => {
-        const rawLines = m.buffer ? m.buffer.split("\n") : [];
+        // Build display lines from conversation history
+        const rawLines: string[] = [];
+        for (const msg of m.messages) {
+          if (msg.role === "user") {
+            rawLines.push(`> ${msg.content}`);
+          }
+        }
+        // Add buffer lines (assistant output)
+        if (m.buffer) {
+          rawLines.push(...m.buffer.split("\n"));
+        }
+
         const totalLines = rawLines.length;
         const isEmpty = totalLines === 0 || (totalLines === 1 && rawLines[0].trim() === "");
         const displayLines = rawLines.slice(-PANEL_LINES);
@@ -43,8 +54,9 @@ export const BroadcastSummary: React.FC<Props> = ({ models, terminalWidth }) => 
                   </Text>
                 );
               }
+              const isUserMsg = line.startsWith("> ");
               return (
-                <Text key={i} wrap="truncate">
+                <Text key={i} wrap="truncate" dimColor={isUserMsg}>
                   {line || " "}
                 </Text>
               );
