@@ -538,6 +538,7 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       }>;
 
       if (delibConfig?.rounds && delibConfig.rounds.length > 0) {
+        // Manual rounds: adversarial affects system prompts but not round structure
         roundConfigs = delibConfig.rounds
           .filter((r) => activeModels.includes(r.model) && config.models[r.model])
           .map((r) => ({
@@ -545,6 +546,11 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
             role: r.role,
             config: config.models[r.model],
           }));
+        // Assign perspectives for manual rounds too (high mode)
+        if (adversarial === "high" && !perspectives) {
+          const manualModels = roundConfigs.map((r) => r.modelName);
+          perspectives = assignPerspectives(manualModels) as Record<string, string>;
+        }
       } else {
         roundConfigs = autoAssignRounds(activeModels, config.models, adversarial, perspectives as any);
       }
@@ -741,8 +747,10 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         historyIdxRef.current = -1;
         setInput("");
 
+        // Strip adversarial flag from message so models don't see it
+        const cleanContent = trimmed.replace(/\s*(?:--adversarial=\w+|-a\s+\w+)\s*/gi, " ").trim();
         // All team interactions share session.teamMessages as context.
-        session.teamMessages.push({ role: "user", content: trimmed });
+        session.teamMessages.push({ role: "user", content: cleanContent || trimmed });
 
         if (r.action === "deliberate") {
           setDeliberationDocument("");
@@ -822,7 +830,12 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
       }
 
       // ── Team mode toggle ────────────────────────────────────
-      if (trimmed === "/team" || trimmed === "/t") {
+      if (trimmed.startsWith("/team") || trimmed.startsWith("/t ")) {
+        // Parse adversarial from toggle command: /team -a high
+        const advMatch = trimmed.match(/(?:--adversarial=|-a\s+)(off|low|medium|high)/i);
+        if (advMatch) {
+          adversarialOverrideRef.current = advMatch[1].toLowerCase() as AdversarialLevel;
+        }
         inputHistoryRef.current.push(trimmed);
         historyIdxRef.current = -1;
         setInput("");
