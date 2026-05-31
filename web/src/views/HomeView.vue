@@ -119,9 +119,8 @@ onMounted(() => {
 
 <style scoped>
 .home {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 48px 24px 80px;
+  width: 100%;
+  padding: 48px 32px 80px;
   overflow-y: auto;
   height: 100%;
 }

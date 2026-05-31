@@ -23,10 +23,11 @@ export function useWebSocket() {
   let pollFailures = 0
 
   function updateState(payload) {
-    if (!payload) return
+    if (!payload) { console.warn('[poll] empty payload'); return }
     state.connected = true
     pollFailures = 0
     connectionError.value = null
+    console.log('[poll] got state, models:', payload.models?.length, 'sessionId:', payload.sessionId)
 
     state.sessionId = payload.sessionId || ''
     state.mode = payload.mode || 'broadcast'
@@ -51,6 +52,7 @@ export function useWebSocket() {
   async function pollState() {
     if (!mounted) return
     try {
+      console.log('[poll] fetching state...')
       const res = await fetch('/api/cmd', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,6 +62,7 @@ export function useWebSocket() {
       const data = await res.json()
       updateState(data)
     } catch (e) {
+      console.error('[poll] fetch failed:', e.message)
       pollFailures++
       state.connected = false
       if (pollFailures >= 3) {
