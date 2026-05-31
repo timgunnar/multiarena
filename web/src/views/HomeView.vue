@@ -223,7 +223,7 @@ onMounted(() => {
 .home-submit {
   align-self: flex-end;
   padding: 10px 24px;
-  background: #7c3aed;
+  background: var(--primary);
   border: none;
   color: #fff;
   border-radius: 8px;
@@ -234,7 +234,7 @@ onMounted(() => {
 }
 
 .home-submit:hover:not(:disabled) {
-  background: #6d28d9;
+  background: var(--primary-hover);
 }
 
 .home-submit:disabled {
@@ -282,16 +282,16 @@ onMounted(() => {
 }
 
 .sess-id {
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.8rem;
-  color: #58a6ff;
+  color: var(--primary);
 }
 
 .sess-meta {
   display: flex;
   justify-content: space-between;
   font-size: 0.72rem;
-  color: #484f58;
+  color: var(--text-dim);
 }
 
 @media (max-width: 768px) {

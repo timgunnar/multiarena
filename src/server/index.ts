@@ -202,9 +202,12 @@ export function startServer(port = PORT) {
             } else {
               stream = mgr.broadcast(text);
             }
+            let eventCount = 0;
             for await (const event of stream) {
+              eventCount++;
               safeSend(ws, event);
             }
+            console.log(`[ws] Submit complete: ${eventCount} events, mode=${mode}`);
             safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
           } catch (err: any) {
             console.error("[ws] Submit error:", err.message || err);

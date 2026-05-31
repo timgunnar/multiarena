@@ -187,7 +187,7 @@ watch(
 }
 
 .bc-panel--live {
-  border-color: #1f6feb44;
+  border-color: var(--primary-alpha);
 }
 
 .bc-panel--muted {
@@ -214,13 +214,13 @@ watch(
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #484f58;
+  background: var(--text-dim);
   flex-shrink: 0;
 }
 
 .bc-dot.live {
-  background: #3fb950;
-  box-shadow: 0 0 4px #3fb950;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
 }
 
 .bc-model-name {
@@ -241,13 +241,13 @@ watch(
 
 .bc-usage {
   font-size: 0.65rem;
-  color: #58a6ff;
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  color: var(--primary);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
 .bc-muted-tag {
   font-size: 0.6rem;
-  color: #484f58;
+  color: var(--text-dim);
   background: var(--card);
   padding: 1px 5px;
   border-radius: 3px;
@@ -263,7 +263,7 @@ watch(
 }
 
 .bc-buffer {
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.8rem;
   line-height: 1.6;
   color: var(--text);
@@ -273,7 +273,7 @@ watch(
 }
 
 .bc-cursor {
-  color: #58a6ff;
+  color: var(--primary);
   animation: blink 0.9s step-end infinite;
 }
 
@@ -316,9 +316,9 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: #da363322;
-  border-top: 1px solid #da3633;
-  border-bottom: 1px solid #da3633;
+  background: var(--error-alpha);
+  border-top: 1px solid var(--error);
+  border-bottom: 1px solid var(--error);
   flex-shrink: 0;
   gap: 12px;
   flex-wrap: wrap;
@@ -326,7 +326,7 @@ watch(
 
 .bc-perm-msg {
   font-size: 0.82rem;
-  color: #f85149;
+  color: var(--error);
 }
 
 .bc-perm-msg code {
@@ -357,19 +357,19 @@ watch(
 }
 
 .bc-perm-btn.allow {
-  background: #238636; border-color: #2ea043; color: #fff;
+  background: var(--accent); border-color: var(--accent); color: #000;
 }
 
 .bc-perm-btn.allow-always {
-  background: #1f6feb; border-color: #388bfd; color: #fff;
+  background: var(--primary); border-color: var(--primary-hover); color: #fff;
 }
 
 .bc-perm-btn.deny {
-  background: #da3633; border-color: #f85149; color: #fff;
+  background: var(--error); border-color: var(--error); color: #fff;
 }
 
 .bc-perm-btn.deny-always {
-  background: #6e7681; border-color: var(--text-dim); color: #fff;
+  background: var(--text-dim); border-color: var(--text-dim); color: #fff;
 }
 
 /* Input bar */
@@ -398,16 +398,16 @@ watch(
 }
 
 .bc-input:focus {
-  border-color: #58a6ff;
+  border-color: var(--primary);
 }
 
 .bc-input::placeholder {
-  color: #484f58;
+  color: var(--text-dim);
 }
 
 .bc-send {
   padding: 10px 24px;
-  background: #7c3aed;
+  background: var(--primary);
   border: none;
   color: #fff;
   border-radius: 8px;
@@ -419,7 +419,7 @@ watch(
 }
 
 .bc-send:hover:not(:disabled) {
-  background: #6d28d9;
+  background: var(--primary-hover);
 }
 
 .bc-send:disabled {

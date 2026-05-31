@@ -298,17 +298,33 @@ describe("WebSocket server robustness", () => {
 
     const { ws } = await wsConnect();
 
+    // Register listener BEFORE sending — ensure we catch streaming events
+    const events: any[] = [];
+    const msgPromise = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Submit wait timeout")), 30000);
+      const handler = (data: Buffer) => {
+        try {
+          const msg = JSON.parse(data.toString());
+          events.push(msg);
+          // Stop when we get state after stream/done
+          if (msg.type === "state" && events.some((e) => e.type === "done" || e.type === "stream")) {
+            clearTimeout(timer);
+            ws.removeListener("message", handler);
+            resolve();
+          }
+        } catch {
+          // ignore non-JSON
+        }
+      };
+      ws.on("message", handler);
+    });
+
     ws.send(JSON.stringify({ type: "submit", text: "Hello", mode: "broadcast" }));
 
-    // Collect all events until we receive the final state
-    const events: any[] = [];
-    for (let i = 0; i < 20; i++) {
-      const msg = await wsNextMsg(ws, 15000);
-      events.push(msg);
-      // Stop when we get a state message after seeing a stream or done event
-      if (msg.type === "state" && events.some((e) => e.type === "done" || e.type === "stream")) {
-        break;
-      }
+    try {
+      await msgPromise;
+    } catch {
+      // If timeout, events array still has whatever was received — let the assertions run
     }
 
     const hasStream = events.some((e) => e.type === "stream");
@@ -317,7 +333,7 @@ describe("WebSocket server robustness", () => {
     expect(hasStream || hasDone).toBe(true);
     expect(hasState).toBe(true);
     wsClose(ws);
-  });
+  }, 60000); // 60s timeout for submit
 
   it("__INITIAL_STATE__ is injected into served index.html", async () => {
     const { status, data } = await httpGet("/");

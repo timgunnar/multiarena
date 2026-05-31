@@ -67,7 +67,7 @@ const t = inject('t')
 .perm-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #f0f6fc;
+  color: var(--text);
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--card);
@@ -84,7 +84,7 @@ const t = inject('t')
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #484f58;
+  color: var(--text-dim);
   margin-bottom: 4px;
 }
 

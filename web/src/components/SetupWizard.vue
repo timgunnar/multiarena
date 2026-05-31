@@ -131,10 +131,10 @@ function prevStep() {
 .wiz-dot {
   flex: 1; height: 3px; border-radius: 2px; background: var(--card);
 }
-.wiz-dot.active { background: #58a6ff; }
-.wiz-dot.done { background: #3fb950; }
+.wiz-dot.active { background: var(--primary); }
+.wiz-dot.done { background: var(--accent); }
 .wiz-title {
-  font-size: 1.3rem; color: #f0f6fc; margin-bottom: 6px;
+  font-size: 1.3rem; color: var(--text); margin-bottom: 6px;
 }
 .wiz-desc {
   font-size: 0.85rem; color: var(--text-dim); margin-bottom: 24px;
@@ -146,7 +146,7 @@ function prevStep() {
   padding-left: 20px; position: relative; font-size: 0.88rem; color: var(--text-dim);
 }
 .wiz-features li::before {
-  content: '\2713'; position: absolute; left: 0; color: #3fb950; font-weight: 700;
+  content: '\2713'; position: absolute; left: 0; color: var(--accent); font-weight: 700;
 }
 .wiz-models { display: flex; flex-direction: column; gap: 8px; }
 .wiz-model-row {
@@ -155,14 +155,14 @@ function prevStep() {
   border: 1px solid var(--card); border-radius: 8px; cursor: pointer;
 }
 .wiz-model-row:hover { border-color: var(--border); }
-.wiz-model-row input { accent-color: #238636; }
+.wiz-model-row input { accent-color: var(--accent); }
 .wiz-provider-tag {
-  font-size: 0.65rem; text-transform: uppercase; color: #484f58;
+  font-size: 0.65rem; text-transform: uppercase; color: var(--text-dim);
   letter-spacing: 0.05em; min-width: 80px;
 }
 .wiz-model-name {
   font-size: 0.85rem; color: var(--text);
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 .wiz-count { font-size: 0.78rem; color: var(--text-dim); text-align: center; margin-top: 8px; }
 .wiz-ready p { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 8px; }
@@ -170,7 +170,7 @@ function prevStep() {
 kbd {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 3px; padding: 1px 5px; font-size: 0.8rem;
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 .wiz-footer {
   display: flex; justify-content: space-between; align-items: center;
@@ -183,6 +183,6 @@ kbd {
 }
 .wiz-btn.sec { background: var(--card); color: var(--text); }
 .wiz-btn.sec:hover { background: var(--border); }
-.wiz-btn.pri { background: #238636; border-color: #2ea043; color: #fff; }
-.wiz-btn.pri:hover { background: #2ea043; }
+.wiz-btn.pri { background: var(--accent); border-color: var(--accent); color: #000; }
+.wiz-btn.pri:hover { filter: brightness(1.1); }
 </style>

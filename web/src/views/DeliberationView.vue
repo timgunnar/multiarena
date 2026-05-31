@@ -32,7 +32,9 @@ const documentPreview = computed(() => {
 
 const progressPct = computed(() => {
   if (!deliberation.value) return 0
-  return Math.round((deliberation.value.progress || 0) * 100)
+  const d = deliberation.value
+  if (d.totalRounds && d.round) return Math.round((d.round / d.totalRounds) * 100)
+  return 0
 })
 
 const phase = computed(() => {
@@ -152,9 +154,9 @@ const phase = computed(() => {
   background: var(--card);
   color: var(--text-dim);
 }
-.view-badge.thinking { background: #9a670022; color: #d29922; }
-.view-badge.writing { background: #1f6feb22; color: #58a6ff; }
-.view-badge.reviewing { background: #7c3aed22; color: #a371f7; }
+.view-badge.thinking { background: var(--warning-alpha); color: var(--warning); }
+.view-badge.writing { background: var(--primary-alpha); color: var(--primary); }
+.view-badge.reviewing { background: var(--primary-alpha); color: var(--primary-hover); }
 
 .delib-empty {
   flex: 1;
@@ -173,12 +175,20 @@ const phase = computed(() => {
 
 .delib-empty-hint {
   font-size: 0.85rem;
-  color: #484f58;
+  color: var(--text-dim);
   max-width: 400px;
 }
 
 .delib-content {
   padding: 20px 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+.delib-start {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .delib-progress-bar {
@@ -191,7 +201,7 @@ const phase = computed(() => {
 
 .delib-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #58a6ff, #a371f7);
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -223,7 +233,7 @@ const phase = computed(() => {
 }
 
 .delib-think {
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.8rem;
   line-height: 1.6;
   color: var(--text-dim);
@@ -280,11 +290,11 @@ const phase = computed(() => {
 .delib-round-decision {
   margin-top: 8px;
   font-size: 0.82rem;
-  color: #3fb950;
+  color: var(--accent);
 }
 
 .delib-doc {
-  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.78rem;
   line-height: 1.55;
   color: var(--text);
@@ -309,6 +319,7 @@ const phase = computed(() => {
   .delib-start { padding: 24px 16px; }
 }
 .delib-textarea { flex: 1; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 15px; resize: vertical; min-height: 80px; font-family: inherit; }
-.delib-submit-btn { background: #7c3aed; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.delib-submit-btn { background: var(--primary); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.delib-submit-btn:hover:not(:disabled) { background: var(--primary-hover); }
 .delib-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
