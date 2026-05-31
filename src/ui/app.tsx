@@ -537,6 +537,12 @@ export const App: React.FC<{ sessionId?: string }> = ({ sessionId: initialSessio
         ?? delibConfig?.adversarial
         ?? "off";
 
+      // Diagnostic: show what adversarial level is active
+      if (adversarial !== "off") {
+        const advLabel = { low: "低", medium: "中", high: "高" }[adversarial] ?? adversarial;
+        setDeliberationDocument(`[对抗强度: ${advLabel}] 正在启动审议…`);
+      }
+
       // Assign perspectives for high adversarial mode
       let perspectives: Record<string, string> | undefined;
       if (adversarial === "high") {
