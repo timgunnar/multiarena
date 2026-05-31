@@ -8,7 +8,6 @@ import {
   runDeliberation,
   autoAssignRounds,
   assignPerspectives,
-  type DeliberationProgress,
   type AdversarialLevel,
 } from "../core/deliberation.js";
 import type { Message, StreamEvent } from "../provider/types.js";
@@ -82,7 +81,7 @@ export class SessionManager {
         muted: m.muted,
         messages: [...m.messages],
       })),
-      deliberation: null,
+      deliberation: this.lastDeliberation,
       permissionPrompt: this.getPermissionState(),
       sessionId: "", // set by caller
       inputHistory: [...this.inputHistory],
@@ -202,7 +201,26 @@ export class SessionManager {
         perspectives as any,
       );
 
+      // Initialize deliberation tracking
+      if (!this.lastDeliberation) {
+        this.lastDeliberation = { thinkText: '', document: '', rounds: [], round: 0, totalRounds: 0, phase: '' };
+      }
+
       for await (const event of stream) {
+        const evt = event as any;
+        const d = this.lastDeliberation!;
+        if (evt.round) d.round = evt.round;
+        if (evt.totalRounds) d.totalRounds = evt.totalRounds;
+        if (evt.modelName) (d as any).modelName = evt.modelName;
+        if (evt.role) (d as any).role = evt.role;
+        if (evt.type === 'think_text' && evt.content) d.thinkText += evt.content;
+        if (evt.type === 'text' && evt.content) d.document += evt.content;
+        if (evt.type === 'round_end') {
+          d.document = evt.document || d.document;
+          d.rounds.push({ round: evt.round, modelName: evt.modelName || '', role: evt.role || '', changeCount: evt.changeCount, changeSamples: evt.changeSamples });
+        }
+        if (evt.type === 'done') d.document = evt.document || d.document;
+        if (evt.type) d.phase = evt.type;
         yield { type: "deliberation" as const, event };
       }
     } catch (err: any) {

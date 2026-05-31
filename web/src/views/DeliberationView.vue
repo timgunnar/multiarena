@@ -184,13 +184,6 @@ const phase = computed(() => {
   flex: 1;
   overflow-y: auto;
 }
-.delib-start {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .delib-progress-bar {
   height: 4px;
   background: var(--card);
@@ -309,7 +302,7 @@ const phase = computed(() => {
   overflow-y: auto;
 }
 
-.delib-start { text-align: center; padding: 48px 24px; }
+.delib-start { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 48px 24px; }
 .delib-start-title { font-size: 20px; margin-bottom: 8px; color: var(--text); }
 .delib-start-hint { color: var(--text-dim); margin-bottom: 32px; font-size: 0.9rem; }
 .delib-input-row { display: flex; gap: 12px; align-items: flex-start; max-width: 100%; }

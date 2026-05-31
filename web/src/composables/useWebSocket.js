@@ -60,7 +60,10 @@ export function useWebSocket() {
     connectionError.value = null
     state.sessionId = payload.sessionId || ''
     state.mode = payload.mode || 'broadcast'
-    state.deliberation = payload.deliberation || null
+    // Preserve deliberation if user is still viewing it and server sent null
+    if (payload.deliberation || currentView.value !== 'deliberation') {
+      state.deliberation = payload.deliberation || null
+    }
     state.permissionPrompt = payload.permissionPrompt || null
 
     if (payload.models && Array.isArray(payload.models)) {
@@ -170,6 +173,7 @@ export function useWebSocket() {
 
   function connect() {
     if (!mounted) return
+    connectionError.value = null
 
     // In dev mode (Vite on :5173), connect directly to server on :3000.
     // In production, page is served from :3000 so same-origin works.
