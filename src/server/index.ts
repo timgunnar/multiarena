@@ -174,7 +174,8 @@ export function startServer(port = PORT) {
           // Send final state
           res.write(JSON.stringify({ type: "state", ...mgr.getState(), sessionId }) + "\n");
         } catch (err: any) {
-          res.write(JSON.stringify({ type: "error", message: err.message }) + "\n");
+          console.error("[submit] Error:", err.message || err);
+          res.write(JSON.stringify({ type: "error", message: err.message || String(err) }) + "\n");
         }
         res.end();
         break;
