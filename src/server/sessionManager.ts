@@ -21,6 +21,7 @@ import { saveSession, loadSession, listSessions, type SavedSession } from "../pe
 export interface ModelSnapshot {
   name: string;
   provider: string;
+  modelId: string;
   buffer: string;
   isStreaming: boolean;
   usage: { input: number; output: number };
@@ -70,6 +71,7 @@ export class SessionManager {
       models: this.session.models.map((m) => ({
         name: m.name,
         provider: m.provider,
+        modelId: this.config.models[m.name]?.model ?? m.name,
         buffer: m.buffer,
         isStreaming: m.isStreaming,
         usage: { ...m.usage },

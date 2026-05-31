@@ -189,28 +189,28 @@ export function startServer(port = PORT) {
 
     switch (type) {
       case "submit": {
+        // Fire-and-forget — LLM API calls are async, don't block WS message loop
         const text = payload.text ?? "";
         const mode = payload.mode ?? "broadcast";
-        try {
-          let stream: AsyncGenerator<any>;
-          if (mode === "deliberation") {
-            stream = mgr.deliberate(text);
-          } else if (mode === "team_chat" && payload.modelName) {
-            stream = mgr.teamChat(payload.modelName, text);
-          } else {
-            stream = mgr.broadcast(text);
+        (async () => {
+          try {
+            let stream: AsyncGenerator<any>;
+            if (mode === "deliberation") {
+              stream = mgr.deliberate(text);
+            } else if (mode === "team_chat" && payload.modelName) {
+              stream = mgr.teamChat(payload.modelName, text);
+            } else {
+              stream = mgr.broadcast(text);
+            }
+            for await (const event of stream) {
+              safeSend(ws, event);
+            }
+            safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
+          } catch (err: any) {
+            console.error("[ws] Submit error:", err.message || err);
+            safeSend(ws, { type: "error", message: err.message || String(err) });
           }
-
-          for await (const event of stream) {
-            safeSend(ws, event);
-          }
-          // Send updated state after completion
-          safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
-        } catch (err: any) {
-          console.error("[ws] Submit error:", err.message || err);
-          safeSend(ws, { type: "error", message: err.message || String(err) });
-          safeSend(ws, { type: "state", ...mgr.getState(), sessionId });
-        }
+        })();
         break;
       }
 

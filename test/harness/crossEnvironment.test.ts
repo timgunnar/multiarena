@@ -81,4 +81,54 @@ describe("Web ↔ CLI session sharing", () => {
     expect(h2!.session.models[1].muted).toBe(true);
     expect(h2!.session.models[0].muted).toBe(false);
   });
+
+  // ── State consistency ───────────────────────────────────────
+
+  it("after broadcast, model buffer is non-empty", async () => {
+    (createProvider as any).mockImplementation(mockAll("Broadcast response."));
+    const h = new Harness(["A", "B"]);
+    const result = await h.broadcast("Test broadcast");
+
+    // Each model's buffer should contain the mock response
+    for (const model of result.models) {
+      expect(model.buffer).toBeTruthy();
+      expect(model.buffer).toContain("Broadcast response.");
+    }
+    // Also verify via session state
+    for (const m of h.session.models) {
+      expect(m.buffer).toBeTruthy();
+      expect(m.buffer).toContain("Broadcast response.");
+    }
+  });
+
+  it("after deliberation, saved session includes a valid sessionId", async () => {
+    (createProvider as any).mockImplementation(mockAll("Deliberation response."));
+    const h = new Harness(["A", "B", "C"]);
+    await h.deliberate("Test deliberation");
+
+    const saved = h.save();
+    expect(saved.id).toBeDefined();
+    expect(typeof saved.id).toBe("string");
+    expect(saved.id.length).toBeGreaterThan(0);
+    // SessionId should survive resume
+    const h2 = Harness.resume(saved.id);
+    expect(h2).not.toBeNull();
+    const saved2 = h2!.save();
+    expect(saved2.id).toBe(saved.id);
+  });
+
+  it("muted state persists through save/resume (multiple models)", async () => {
+    // Already tested above for a single model; this tests all combinations
+    const h1 = new Harness(["A", "B", "C"]);
+    h1.toggleMute("A");
+    h1.toggleMute("C"); // muted: A, C; unmuted: B
+
+    const saved = h1.save();
+    const h2 = Harness.resume(saved.id);
+
+    const models = h2!.session.models;
+    expect(models.find((m) => m.name === "A")!.muted).toBe(true);
+    expect(models.find((m) => m.name === "B")!.muted).toBe(false);
+    expect(models.find((m) => m.name === "C")!.muted).toBe(true);
+  });
 });

@@ -184,4 +184,65 @@ describe("SessionManager", () => {
     // Should complete without crashing (may yield a done or have empty output)
     expect(events.some((e) => e.type === "done")).toBe(true);
   });
+
+  // ── State consistency ───────────────────────────────────────
+
+  it("models returned by getState() include provider field", () => {
+    const mgr = new SessionManager(makeConfig(["A", "B"]));
+    const state = mgr.getState();
+    expect(state.models).toHaveLength(2);
+    for (const model of state.models) {
+      expect(model.provider).toBeDefined();
+      expect(typeof model.provider).toBe("string");
+      expect(model.provider.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("models returned by getState() include modelId (actual model name from config)", () => {
+    const mgr = new SessionManager(makeConfig(["A", "B"]));
+    const state = mgr.getState();
+    expect(state.models).toHaveLength(2);
+    for (const model of state.models) {
+      expect(model.modelId).toBeDefined();
+      expect(typeof model.modelId).toBe("string");
+      // modelId comes from config.models[name].model — "gpt-4o" per makeConfig
+      expect(model.modelId).toBe("gpt-4o");
+    }
+  });
+
+  it("getState() returns consistent data shape across calls", () => {
+    const mgr = new SessionManager(makeConfig(["A", "B"]));
+    const state1 = mgr.getState();
+    const state2 = mgr.getState();
+
+    // Both calls should return the same structure
+    expect(state1.models).toHaveLength(state2.models.length);
+    expect(state1.mode).toBe(state2.mode);
+    expect(state1.targetModel).toBe(state2.targetModel);
+
+    // Model names and providers should match between calls
+    for (let i = 0; i < state1.models.length; i++) {
+      expect(state1.models[i].name).toBe(state2.models[i].name);
+      expect(state1.models[i].provider).toBe(state2.models[i].provider);
+      expect(state1.models[i].modelId).toBe(state2.models[i].modelId);
+    }
+  });
+
+  it("getState() returns correct modelId for models with different actual model names", () => {
+    // Create a config where config key differs from the model field
+    const config: ArenaConfig = {
+      models: {
+        "alias-one": { provider: "openai" as const, model: "gpt-4o-mini", api_key: "sk-test" },
+        "alias-two": { provider: "anthropic" as const, model: "claude-sonnet-4-20250514", api_key: "sk-test" },
+      },
+      defaults: { active: ["alias-one", "alias-two"], broadcast: true },
+    };
+    const mgr = new SessionManager(config);
+    const state = mgr.getState();
+
+    expect(state.models[0].name).toBe("alias-one");
+    expect(state.models[0].modelId).toBe("gpt-4o-mini");
+    expect(state.models[1].name).toBe("alias-two");
+    expect(state.models[1].modelId).toBe("claude-sonnet-4-20250514");
+  });
 });
