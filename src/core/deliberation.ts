@@ -211,8 +211,8 @@ ${previousDocument}
 ## 要求
 - 你可以在任意历史版本的基础上修订——如果后面的改动不如之前的版本，直接回到早期版本继续
 - 对照约束文档，逐条检查违规项并修正
-- 补充你发现遗漏的要点
-- 改进表达不清或逻辑不严谨的地方
+- 补充你发现遗漏的要点（用 [修订: 原文 → 补充后文本] 标注新增内容的位置）
+- 改进表达不清或逻辑不严谨的地方，可以重写、重组，但保留原有的事实信息和核心观点
 ${isFinalRound
   ? "- 输出完整的干净终稿，不要包含任何过程标注"
   : "- 在修改处用 [修订: 原文片段 → 修改后文本] 标注\n- 禁止笼统赞美，只做实质性修改\n- 输出完整的修订版文档"}`;
@@ -239,9 +239,10 @@ ${constraintBlock}
 ${previousDocument}
 
 ## 要求
+- **核心原则：保留原文，只做增量润色。** 不要删除已有的正确内容。你的任务是让已有文字更好，而非替换它们。
 - 你可以在任意历史版本的基础上润色——如果后面版本质量不如早期版本，回到早期版本继续
 - 再次对照约束文档做合规检查
-- 优化语言流畅度和可读性
+- 优化语言流畅度和可读性，但保持原文结构和内容完整
 ${isFinalRound
   ? "- 输出完整的干净终稿，不要包含任何过程标注"
   : "- 补充你独有的见解（标注 [补充: 你的贡献]）\n- 保留所有之前的修订标注\n- 输出完整的文档"}`;
@@ -260,8 +261,9 @@ ${constraintBlock}
 ${previousDocument}
 
 ## 要求
+- **核心原则：保护已有内容。** 你的任务是审查和清理，不是改写。保留所有正确的正文，只处理标注和回退错误修改。
 - 你可以选择任意历史版本作为终稿基础——不要被最新版本绑定
-- 审查是否有修改偏离了原意
+- 审查是否有修改偏离了原意——如果发现后期修订删除了原本好的内容，从早期版本恢复
 - 对照约束文档逐条再过一遍
 - 清理所有 [修订:] 和 [补充:] 等过程标注，输出干净的最终版
 - 如果认可某处修改，直接保留正文；如果需要回退，直接改回并保持正文流畅
@@ -402,6 +404,24 @@ export async function* runDeliberation(
   const lastUser = [...sharedMessages].reverse().find((m) => m.role === "user");
   const task = lastUser?.content ?? "";
 
+  // Detect follow-up editing: are there assistant messages BEFORE the last user message?
+  // This means a prior deliberation produced output, and user is now editing.
+  let priorAsstCount = 0;
+  let foundLastUser = false;
+  for (let j = sharedMessages.length - 1; j >= 0; j--) {
+    if (sharedMessages[j].role === "user" && !foundLastUser) {
+      foundLastUser = true;
+      continue;
+    }
+    if (foundLastUser && sharedMessages[j].role === "assistant") {
+      priorAsstCount++;
+    }
+  }
+  const isFollowUpEdit = priorAsstCount > 0;
+  // Determine if the user wants a rewrite (重写) vs revision (改写)
+  const isRewrite = /重[写新]|重新起草|推倒|从头|重新来|重来/.test(task);
+  const isReviseOnly = /加[入上]|增加|补充|修改|改[写一]|调整|润色|优化|删[除掉]/.test(task) || !isRewrite;
+
   for (let i = 0; i < roundConfigs.length; i++) {
     const rc = roundConfigs[i];
     const draftAuthor = i > 0 ? roundConfigs[0].modelName : undefined;
@@ -508,12 +528,22 @@ export async function* runDeliberation(
     ) + thinkBlock;
 
     // Build messages from the shared context plus this round's role instruction.
+    let instructionText: string;
+    if (rc.role === "draft") {
+      if (isFollowUpEdit) {
+        // Follow-up edit to an existing deliberation document
+        instructionText = isRewrite
+          ? `用户要求对已有文档进行**重写**：\n\n${task}\n\n请重新起草相关部分，可以完全替换原文。`
+          : `用户要求对已有文档进行**修改**：\n\n${task}\n\n请在现有文档的基础上做定向修改，保留文档整体的结构和正确内容，只针对用户要求的部分进行调整。`;
+      } else {
+        instructionText = `请起草以下文档：\n\n${task}`;
+      }
+    } else {
+      instructionText = "请根据你的角色要求和上述文档内容，输出修改后的完整文档。不要输出任何前言或后记，直接输出文档内容。";
+    }
     const instruction: Message = {
       role: "user",
-      content:
-        rc.role === "draft"
-          ? `请起草以下文档：\n\n${task}`
-          : "请根据你的角色要求和上述文档内容，输出修改后的完整文档。不要输出任何前言或后记，直接输出文档内容。",
+      content: instructionText,
     };
     const messages: Message[] = [...sharedMessages, instruction];
 
