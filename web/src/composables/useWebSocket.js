@@ -171,9 +171,7 @@ export function useWebSocket() {
 
     es.onerror = () => {
       state.connected = false
-      es.close()
-      eventSource = null
-      scheduleReconnect()
+      // EventSource auto-reconnects — don't close manually
     }
   }
 

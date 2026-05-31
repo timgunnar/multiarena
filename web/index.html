@@ -36,10 +36,20 @@
       }
 
       html { background: var(--bg); color: var(--text); }
-      /* Override common component surfaces */
-      [data-theme="light"] .sidebar { background: #ffffff !important; border-color: #d1d5db !important; }
-      [data-theme="light"] .home-hero, [data-theme="light"] section { background: #fafbfc !important; }
-      [data-theme="light"] button:not(.lang-btn) { background: #f3f4f6; color: #1a1a2e; border-color: #d1d5db; }
+      /* Comprehensive light theme overrides for Vue scoped components */
+      [data-theme="light"] #app { background: #fafbfc; color: #1a1a2e; }
+      [data-theme="light"] .home, [data-theme="light"] .broadcast, [data-theme="light"] .delib,
+      [data-theme="light"] .settings, [data-theme="light"] section { background: #fafbfc !important; }
+      [data-theme="light"] .home-hero, [data-theme="light"] .delib-top, [data-theme="light"] .broadcast-top,
+      [data-theme="light"] .delib-start, [data-theme="light"] .settings-top { background: #ffffff !important; border-color: #e5e7eb !important; }
+      [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3,
+      [data-theme="light"] p, [data-theme="light"] span, [data-theme="light"] label { color: #1a1a2e !important; }
+      [data-theme="light"] .nav-link, [data-theme="light"] button { background: #f3f4f6 !important; color: #1a1a2e !important; border-color: #d1d5db !important; }
+      [data-theme="light"] .nav-link.active { background: #e8d5ff !important; color: #7c3aed !important; }
+      [data-theme="light"] .home-grid > div, [data-theme="light"] .settings-table, [data-theme="light"] .settings-body { background: #f3f4f6 !important; border-color: #e5e7eb !important; }
+      [data-theme="light"] textarea, [data-theme="light"] input, [data-theme="light"] select { background: #ffffff !important; color: #1a1a2e !important; border-color: #d1d5db !important; }
+      [data-theme="light"] .delib-empty, [data-theme="light"] .delib-empty-hint { color: #6b7280 !important; }
+      [data-theme="light"] .connection-banner { background: #fef2f2 !important; color: #991b1b !important; }
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: var(--surface); }
       ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
